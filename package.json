@@ -1,0 +1,88 @@
+{
+  "name": "ledok",
+  "productName": "LeDoK",
+  "version": "1.0.0",
+  "description": "LeDoK – Lernentwicklungsdokumentation Grundschule (Desktop-App, offline)",
+  "author": "Dominik Kraus",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "desktop/main.js",
+  "scripts": {
+    "start": "node scripts/version-sync.js && electron .",
+    "dist:win": "node scripts/version-sync.js && electron-builder --win --publish never",
+    "dist:mac": "node scripts/version-sync.js && electron-builder --mac --publish never",
+    "dist:linux": "node scripts/version-sync.js && electron-builder --linux --publish never"
+  },
+  "devDependencies": {
+    "electron": "38.4.0",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.deep-moments.ledok",
+    "productName": "LeDoK",
+    "copyright": "© 2026 Dominik Kraus",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "desktop/**",
+      "app/**",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "LeDoK-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "installerLanguages": [
+        "de_DE"
+      ],
+      "language": "1031",
+      "shortcutName": "LeDoK",
+      "uninstallDisplayName": "LeDoK",
+      "createDesktopShortcut": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.education",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "LeDoK-${version}-mac.${ext}"
+    },
+    "dmg": {
+      "title": "LeDoK ${version}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Education",
+      "artifactName": "LeDoK-${version}.${ext}"
+    },
+    "publish": null
+  }
+}
