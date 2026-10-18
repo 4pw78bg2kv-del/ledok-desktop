@@ -1,0 +1,12 @@
+{
+  "app": "ledok-update-key",
+  "v": 1,
+  "fp": "CE5F-1656-01AF",
+  "pub": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "6Dhv-5XvgrR_AVTbwGPuMYgKwrRNO0i9OapXCP-kd14",
+    "y": "UVEjGBSroEtLQ269DNufwkMW_K7Bnq_auwDfcz5ETSc"
+  },
+  "created": "2026-10-18T07:25:11.922Z"
+}
