@@ -85,7 +85,7 @@ function menue() {
     { label: "Datei", submenu: [{ label: "Sicherungsordner öffnen", click: () => { fs.mkdirSync(sicherungsOrdner(), { recursive: true }); shell.openPath(sicherungsOrdner()); } }, { type: "separator" }, process.platform === "darwin" ? { role: "close", label: "Fenster schließen" } : { role: "quit", label: "Beenden" }] },
     { label: "Bearbeiten", submenu: [{ role: "undo", label: "Rückgängig" }, { role: "redo", label: "Wiederholen" }, { type: "separator" }, { role: "cut", label: "Ausschneiden" }, { role: "copy", label: "Kopieren" }, { role: "paste", label: "Einfügen" }, { role: "selectAll", label: "Alles auswählen" }] },
     { label: "Ansicht", submenu: [{ role: "zoomIn", label: "Größer" }, { role: "zoomOut", label: "Kleiner" }, { role: "resetZoom", label: "Originalgröße" }, { type: "separator" }, { role: "togglefullscreen", label: "Vollbild" }, ...(app.isPackaged ? [] : [{ role: "toggleDevTools", label: "Entwicklerwerkzeuge" }])] },
-    { label: "Hilfe", submenu: [ueber] },
+    { label: "Hilfe", submenu: [ueber, { label: "Problem melden …", click: () => fenster && fenster.webContents.executeJavaScript("typeof problemMelden==='function'&&problemMelden()").catch(() => {}) }] },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(vorlage));
 }

@@ -3,3 +3,5 @@ dist/
 *.ledok-updatekey
 *-PRIVAT*
 .DS_Store
+test-results/
+playwright-report/
