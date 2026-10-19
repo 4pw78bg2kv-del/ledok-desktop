@@ -4815,6 +4815,7 @@ const ROLLEN_ACT={
 
 /* ---------- Version und Updates ---------- */
 const APP_VERSION="1.0.0", APP_DATUM="2026-10-18";
+const APP_KANAL="Beta"; // nur Anzeige; leer lassen für die finale Version
 const DESKTOP=window.ledokDesktop||null;
 const verNum=v=>String(v||"0").split(".").map(x=>parseInt(x,10)||0);
 const verCmp=(a,b)=>{const x=verNum(a),y=verNum(b);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return (x[i]||0)>(y[i]||0)?1:-1}return 0};
@@ -4823,11 +4824,11 @@ async function verTag(){
   let el=document.getElementById("verTag");
   if(!el){el=document.createElement("button");el.id="verTag";el.type="button";el.title="Version und Updates";el.onclick=()=>ueberDialog();document.body.appendChild(el)}
   if(DESKTOP&&!DESKTOP_INFO){try{DESKTOP_INFO=await DESKTOP.info()}catch(e){DESKTOP_INFO=null}}
-  el.textContent=`Version ${APP_VERSION}`;
+  el.textContent=`Version ${APP_VERSION}${APP_KANAL?" "+APP_KANAL:""}`;
 }
 async function ueberDialog(msg=""){
   const di=DESKTOP?(DESKTOP_INFO=await DESKTOP.info()):null;
-  const zeilen=[`<tr><td>Version</td><td><b>${esc(APP_VERSION)}</b> vom ${esc(datStr(APP_DATUM))}</td></tr>`];
+  const zeilen=[`<tr><td>Version</td><td><b>${esc(APP_VERSION)}${APP_KANAL?" "+esc(APP_KANAL):""}</b> vom ${esc(datStr(APP_DATUM))}</td></tr>`];
   if(di){
     zeilen.push(`<tr><td>Programm</td><td>LeDoK für ${di.os==="darwin"?"macOS":di.os==="win32"?"Windows":"Linux"} · Programmversion ${esc(di.shell)}</td></tr>`);
     if(di.aktualisiert)zeilen.push(`<tr><td>Update</td><td>eingespielt am ${esc(datStr(di.updateDatum))} (ausgeliefert war ${esc(di.mitgeliefert)})</td></tr>`);

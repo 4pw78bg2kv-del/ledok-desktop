@@ -43,6 +43,7 @@ Nur Update-Dateien, die mit deinem privaten Schlüssel signiert sind, werden von
    ```js
    const APP_VERSION="1.0.0", APP_DATUM="2026-10-18";
    ```
+   Direkt darunter steht `const APP_KANAL="Beta";`. Dieser Zusatz erscheint nur in der Anzeige („Version 1.0.0 Beta“). Für die finale Version setzt du ihn auf `""`.
 2. Lade die Änderung hoch und setze einen **Tag** mit derselben Nummer, z. B. `v1.0.0`. In GitHub Desktop geht das über `History → Rechtsklick auf den Commit → Create Tag`, danach `Push`.
 3. Unter **Actions** läuft jetzt „Installer bauen“ (ca. 10–15 Minuten).
 4. Unter **Releases** liegt danach ein Entwurf mit
