@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-TpXMTxR+TbWUHD8zSLIgaIo7yq8iQOkxpdAvqUKVrgM='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2B/gFWmaZs4owNYBzDi0HoUmWFDWiXf2TQKbDqUUn5E='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -196,6 +196,10 @@ details.bs>div{padding:0 .9rem .9rem}
 /* Sperrbildschirm */
 .lock{min-height:100vh;display:grid;place-items:center;padding:1rem}
 .lock .card{width:min(440px,100%);padding:1.6rem}
+.pwwrap{display:block}.pwin{position:relative;display:block}.pwin input{width:100%;padding-right:5.6rem}
+.pwauge{position:absolute;right:.3rem;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font-size:.85rem;padding:.3rem .45rem;cursor:pointer;border-radius:6px}
+.pwauge:hover,.pwauge:focus-visible{color:var(--ink);background:var(--surface2)}
+.capshint{display:none;font-size:.85rem;color:var(--warn,#a15c00);margin-top:.25rem}.pwwrap.caps .capshint{display:block}
 .lock h1{font-size:1.6rem;margin-bottom:.2rem}
 .lock form>*+*{margin-top:.8rem}
 .lock input[type=password]{width:100%}
@@ -346,6 +350,8 @@ body.scrolled .topbar .btn{min-height:32px;padding-top:.25rem;padding-bottom:.25
 .nurmobil{display:none}
 @media (max-width:1500px){.brand .cls{display:none}}
 .topbar nav.tabs{flex:1 1 0;min-width:0;overflow-x:auto}
+@media (max-width:1100px){.topbar nav.tabs{flex:1 1 100%}}
+@media (max-width:420px){.topbar nav.tabs button{padding:.5rem .45rem;font-size:.92rem}}
 @media (max-width:640px){
  .nurbreit{display:none!important}.nurmobil{display:flex}
  #saveStatus.nurbreit:has(.bad){display:inline-flex!important}
@@ -592,7 +598,10 @@ const LOGO_SVG=`<svg class="logo" aria-hidden="true" xmlns="http://www.w3.org/20
    verschlüsselte Sicherungsdatei exportiert.
    ========================================================= */
 
-const STORE_KEY = "lernstand12.store.v1";
+const STORE_BASE = "lernstand12.store.v1";
+let STORE_KEY = STORE_BASE;   // wechselt mit dem Profil (mehrere Lehrkräfte am selben Rechner)
+const PROFIL_KEY = "ledok.profile.v1";
+const AM_RECHNER = window.ledokDesktop?"auf diesem Rechner":"im Browser";
 const IDLE_MIN = 15;
 const defaultFaecher = ()=>LP_VORLAGE.faecher.map(f=>Object.assign({},f));
 let FAECHER = [];          // aktive Fächer (wird aus S.meta.faecher abgeleitet)
@@ -2838,6 +2847,16 @@ const FENSTER_ID=Math.random().toString(36).slice(2);
 let KANAL=null;try{KANAL=new BroadcastChannel("ledok")}catch(e){}
 function standLesen(){if(desktopSpeicher())return null;try{return localStorage.getItem(standKey())}catch(e){return null}}
 function standMerken(){ST.stand=standLesen()}
+/* ---------- Profile: mehrere Lehrkräfte am selben Rechner, je ein eigener verschlüsselter Datenbestand ---------- */
+const profilDa=key=>storeHas(key); // Desktop: Datei, Browser: localStorage
+function profilIndex(){let l=[];try{l=JSON.parse(localStorage.getItem(PROFIL_KEY)||"[]")}catch(e){}return Array.isArray(l)?l.filter(p=>p&&typeof p.key==="string"&&p.key.startsWith(STORE_BASE)):[]}
+function profile(){const l=profilIndex();if(profilDa(STORE_BASE)&&!l.some(p=>p.key===STORE_BASE))l.unshift({key:STORE_BASE,name:""});return l.filter(p=>profilDa(p.key))}
+function profilMerken(key,name){const l=profilIndex(),x=l.find(p=>p.key===key);if(x){if(name)x.name=name}else l.push({key,name:name||""});
+  try{localStorage.setItem(PROFIL_KEY,JSON.stringify(l));localStorage.setItem(PROFIL_KEY+".zuletzt",key)}catch(e){}}
+function profilWaehlen(key){STORE_KEY=key;try{localStorage.setItem(PROFIL_KEY+".zuletzt",key)}catch(e){}}
+function profilStart(){const l=profile();let z=null;try{z=localStorage.getItem(PROFIL_KEY+".zuletzt")}catch(e){}STORE_KEY=(l.find(p=>p.key===z)||l[0]||{key:STORE_BASE}).key}
+const profilName=(p,i)=>p.name||`LeDoK ${i+1}`;
+const profilLabel=()=>{const l=profile(),i=l.findIndex(p=>p.key===STORE_KEY);return l.length>1&&i>=0?` (${esc(profilName(l[i],i))})`:""};
 let saveTimer=null, saving=Promise.resolve();
 function save(){DV++;ST.dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,300);updateStatus()}
 function saveNow(){
@@ -2874,7 +2893,7 @@ async function vorherSichern(anlass,nurDesktop){if(!S||(nurDesktop&&!DESKTOP))re
 function statusHtml(){
   if(ST.error)return `<button class="badge bad" data-act="backup" title="${esc(ST.error)}">⚠ Nicht gespeichert – Kopie herunterladen</button>`;
   if(ST.dirty)return `<span class="badge">Speichert …</span>`;
-  return `<span class="badge ok" title="Verschlüsselt ${DESKTOP?"auf diesem Rechner":"im Browser"} gespeichert">✓ gespeichert${ST.lastSaved?` · ${pad(ST.lastSaved.getHours())}:${pad(ST.lastSaved.getMinutes())}`:""}</span>`;
+  return `<span class="badge ok" title="Verschlüsselt ${AM_RECHNER} gespeichert">✓ gespeichert${ST.lastSaved?` · ${pad(ST.lastSaved.getHours())}:${pad(ST.lastSaved.getMinutes())}`:""}</span>`;
 }
 function updateStatus(){const el=$("#saveStatus");if(el)el.innerHTML=statusHtml()}
 async function oeffne(obj,pw){
@@ -3031,6 +3050,22 @@ const mitNoten = k=>+k.jgst>=2;
 function nimmtTeil(kid,fach){return fach==="ASV"||!kid.faecherNur||!kid.faecherNur.length||kid.faecherNur.includes(fach)}
 const faecherVon = kid=>FAECHER.filter(f=>nimmtTeil(kid,f));
 function jgstListe(){return [...new Set(S.kinder.map(k=>+k.jgst))].sort()}
+/* Jahrgangsstufe für neue Kinder: kleinste vorhandene, sonst die beim Einrichten gewählte */
+const stdJgst = ()=>{const l=jgstListe();return l.length?l[0]:((S.meta.jgStufen||[])[0]||1)};
+/* Fächer passend zu den Jahrgangsstufen ein-/ausblenden (1/2 bzw. 3/4) */
+function faecherFuerStufen(jg){
+  const h12=jg.some(j=>j<=2),h34=jg.some(j=>j>=3),ohne12=!S.meta.faecher.some(x=>x.aktiv&&fachStufe(x.name)==="12");
+  const basis=new Set(defaultFaecher().filter(f=>f.aktiv).map(f=>f.name));
+  S.meta.faecher.forEach(f=>{const st=fachStufe(f.name);
+    if(st==="12"&&!h12)f.aktiv=false;
+    if(st==="12"&&h12&&basis.has(f.name)&&ohne12)f.aktiv=true;
+    if(st==="34"&&h34&&(basis.has(f.name.replace(/ 3\/4$/,""))||f.name==="Englisch 3/4"))f.aktiv=true});
+  syncFaecher();
+}
+/* Jahrgangsstufen der Kinder, für die kein passendes Fach eingeblendet ist */
+function stufenLuecke(){if(!S||S.meta.rolle==="fl"||!S.kinder.length)return [];const akt=S.meta.faecher.filter(f=>f.aktiv&&fachStufe(f.name)!=="alle");return jgstListe().filter(j=>!akt.some(f=>jgFach(f.name).includes(j)))}
+function stufenHinweis(){const l=stufenLuecke();if(!l.length)return "";
+  return `<div class="note warn small row" style="flex-wrap:wrap;margin-bottom:1rem"><span>Für <b>Jahrgangsstufe ${l.join(" und ")}</b> ist kein passendes Fach eingeblendet. Diese Kinder würden sonst am Lehrplan einer anderen Stufe gemessen.</span><span class="spacer"></span><button class="btn small primary" data-act="stufenFaecher">Fächer ${l.some(j=>j>=3)?"3/4":"1/2"} einblenden</button></div>`}
 const jgOpts = ()=>["alle",...jgstListe().map(String)];
 const klasseBadge = k=>(k.klasse?`<span class="kl" title="Klasse ${esc(k.klasse)}">${esc(k.klasse)}</span>`:"")+(begabtListe(k).length?`<span class="bgb" title="Lernniveau Jgst. ${Math.min(4,+k.jgst+1)} in: ${esc(begabtListe(k).includes("*")?"allen Fächern":begabtListe(k).join(", "))}">↑J${Math.min(4,+k.jgst+1)}</span>`:"");
 const MODI=[["beob","Beobachtung","Beobachtung"],["fokus","Fokustag","Fokustag"],["woche","Fokuswoche","Fokuswoche"],["kind","nicht beobachten (nur beim Kind)","nur beim Kind"],["kein","nicht erfassen","nicht erfasst"],["auto","nur auswerten (aus Unterbereichen)","nur auswerten"]];
@@ -3221,60 +3256,72 @@ const EINST=[["klasse","Klasse","Kinder, Parallelklassen, Fokustage"],["team","F
 function screenStart(msg="",beendet=""){
   S=null;SESSION=null;
   const t=$(".toast");if(t)t.remove();
-  const st=readStore();
+  const st=readStore(),pl=profile();
   $("#app").innerHTML=`<div class="lock"><div class="card">
    <div class="lockhead">${LOGO_SVG}<div><h1>LeDoK</h1><div class="tag">Lernentwicklungsdokumentation Grundschule</div></div></div>
    ${beendet?`<div class="note small" style="margin:.6rem 0 1rem"><b>Beendet.</b> Deine Daten sind verschlüsselt ${DESKTOP?"auf diesem Rechner":"im Browser"} gespeichert. ${beendet.name?`Die Sicherungskopie <b>${esc(beendet.name)}</b> liegt ${ortText(beendet)}.${beendet.ort==="desktop"?" Kopiere ab und zu eine davon auf deinen USB-Stick (Menü „Datei → Sicherungsordner öffnen“).":" Verschiebe sie auf deinen USB-Stick bzw. dein Sicherungsmedium."}`:beendet.heute?"Eine Sicherungskopie hast du heute schon heruntergeladen.":""} Du kannst dieses Fenster jetzt schließen.</div>`
     :`<p class="muted">Dokumentation und Beurteilung – offline, verschlüsselt gespeichert.</p>`}
    ${st?`<form id="openForm">
-     <label class="f">Passwort<input type="password" id="pw" autocomplete="current-password"></label>
+     ${pl.length>1?`<label class="f">Wer arbeitet?<select id="profilWahl">${pl.map((p,i)=>`<option value="${esc(p.key)}" ${p.key===STORE_KEY?"selected":""}>${esc(profilName(p,i))}</option>`).join("")}</select></label>`:""}
+     <label class="f">Passwort${pwFeld("pw","current-password")}</label>
      <div class="err" id="err">${esc(msg)}</div>
      <div class="row"><button class="btn primary" type="submit">${beendet?"Wieder öffnen":"Öffnen"}</button><span class="spacer"></span><button class="btn ghost" type="button" data-act="importBackup">Sicherungskopie laden …</button></div></form>
      <p class="small muted" style="margin-top:1.2rem">${st&&st.ws?`Passwort vergessen? Der LeDoK-Admin deiner Schule (${esc(st.ws.name)}) kann den Zugang mit dem Masterkennwort wiederherstellen${st.wv?`, ebenso der freigegebene Hersteller-Support (${esc(st.wv.name)})`:""}. Sonst hilft nur eine Sicherungskopie mit bekanntem Passwort.`:"Passwort vergessen? Dann lässt sich nur eine Sicherungskopie mit bekanntem Passwort laden."} </p>
      <details class="weitere small"><summary class="muted">Weitere Optionen</summary><p class="small muted" style="margin:.4rem 0">Nur wenn du ganz neu anfangen willst: Löscht alle Daten ${DESKTOP?"auf diesem Rechner":"in diesem Browser"}. Vorher wird automatisch eine verschlüsselte Sicherung angelegt.</p><button class="btn ghost small danger" data-act="wipeAll">Alles löschen …</button></details>`
    :`<div class="err" id="err">${esc(msg)}</div>
      <div class="row"><button class="btn primary" data-act="startNew">Neue Klasse anlegen …</button><button class="btn" data-act="importBackup">Sicherungskopie laden …</button></div>`}
-   <p class="small" style="margin:1rem 0 0;text-align:right"><a href="#" data-act="adminOeffnen">LeDoK-Admin …</a></p>
+   <p class="small row" style="margin:1rem 0 0;flex-wrap:wrap">${st?`<a href="#" data-act="profilNeu" title="Jede Lehrkraft bekommt ein eigenes, getrennt verschlüsseltes LeDoK mit eigenem Passwort.">Andere Lehrkraft an diesem Rechner? Eigenes LeDoK anlegen …</a>`:""}<span class="spacer"></span><a href="#" data-act="adminOeffnen">LeDoK-Admin …</a></p>
   </div></div>`;
+  const pw=$("#profilWahl");if(pw)pw.onchange=()=>{profilWaehlen(pw.value);screenStart()};
   if(st){
     if(!beendet)$("#pw").focus();
     $("#openForm").onsubmit=async e=>{
       e.preventDefault();$("#err").textContent="Entschlüssele …";
-      try{await oeffne(readStore(),$("#pw").value);ST.lastSaved=new Date();startApp()}
+      try{await oeffne(readStore(),$("#pw").value);ST.lastSaved=new Date();
+        const pr=profile().find(p=>p.key===STORE_KEY);if(pr&&!pr.name&&S.meta.lehrkraft)profilMerken(STORE_KEY,S.meta.lehrkraft);startApp()}
       catch(err){$("#err").textContent=oeffneFehler(err)}
     };
   }
 }
-function setupDialog(){
-  let sk=null;
+function setupDialog(neuesProfil){
+  let sk=null,ohneSk=false;
   const d=dialog(`<form id="setupForm" class="stack" style="gap:.65rem"><h2 style="margin:0">Neu beginnen</h2>
     <fieldset class="rollwahl"><legend class="small muted">Ich nutze LeDoK als</legend>
      <label class="rw"><input type="radio" name="rolle" value="kl" checked><span><b>Klassenlehrkraft</b><br><span class="small muted">Eigene Klasse, alle Grundeinstellungen, gibt Fachpakete an Fachlehrkräfte.</span></span></label>
      <label class="rw"><input type="radio" name="rolle" value="fl"><span><b>Fachlehrkraft</b><br><span class="small muted">Klassen kommen als Fachpaket von der Klassenlehrkraft; du bewertest und gibst Rückmeldungen zurück.</span></span></label></fieldset>
-    <div class="note small">Lege ein Passwort fest. Alle Daten werden damit verschlüsselt. Ohne Passwort – und ohne Schulschlüssel – sind sie nicht wiederherstellbar.</div>
-    <label class="f">Passwort (mind. 8 Zeichen)<input type="password" id="pw1" autocomplete="new-password"></label>
-    <label class="f">Passwort wiederholen<input type="password" id="pw2" autocomplete="new-password"></label>
-    <div class="row small" style="gap:.5rem;flex-wrap:wrap"><button type="button" class="btn small" id="skWahl">Schulschlüssel einlesen …</button><span id="skInfo" class="muted">empfohlen – damit kann der LeDoK-Admin bei vergessenem Passwort helfen</span></div>
+    ${neuesProfil?`<label class="f">Dein Name <span class="small muted">(erscheint nur in der Auswahl „Wer arbeitet?“ auf diesem Rechner)</span><input type="text" id="profilName" autocomplete="off" placeholder="z. B. Frau Huber"></label>`:""}
+    <fieldset class="rollwahl" id="jgRow"><legend class="small muted">Ich unterrichte Jahrgangsstufe</legend><div class="row" style="gap:1rem;flex-wrap:wrap">${[1,2,3,4].map(j=>`<label class="row small" style="gap:.35rem"><input type="checkbox" name="jgst" value="${j}" ${j<=2?"checked":""}> ${j}</label>`).join("")}</div>
+     <span class="small muted">Danach richten sich die Fächer (1/2 oder 3/4) und die Jahrgangsstufe neuer Kinder. Später änderbar unter Einstellungen.</span></fieldset>
+    <div class="note small">Lege ein Passwort fest. Alle Daten werden damit verschlüsselt. Schreib es dir an einem sicheren Ort auf.</div>
+    <label class="f">Passwort (mind. 8 Zeichen)${pwFeld("pw1","new-password")}</label>
+    <label class="f">Passwort wiederholen${pwFeld("pw2","new-password")}</label>
+    <div class="note small stack" style="gap:.4rem"><span><b>Schulschlüssel (dringend empfohlen)</b><br>Hast du von deinem LeDoK-Admin eine Datei <code>.ledok-schule</code> bekommen? Dann lies sie jetzt ein. Nur damit kann dir jemand helfen, wenn du dein Passwort vergisst. Du kannst ihn auch später unter Einstellungen → Daten &amp; Sicherheit einlesen.</span>
+     <div class="row small" style="gap:.5rem;flex-wrap:wrap"><button type="button" class="btn small" id="skWahl">Schulschlüssel einlesen …</button><span id="skInfo" class="muted">noch keiner eingelesen</span></div></div>
     <label class="row small" id="demoRow" style="gap:.4rem"><input type="checkbox" id="demo"> Mit Beispielklasse starten (zum Ausprobieren, später löschbar)</label>
     <div class="err" id="err2"></div>
     <div class="row"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Starten</button></div></form>`,true);
   $("#pw1").focus();
-  d.querySelectorAll("input[name=rolle]").forEach(r=>r.onchange=()=>{$("#demoRow").hidden=d.querySelector("input[name=rolle]:checked").value==="fl"});
+  d.querySelectorAll("input[name=rolle]").forEach(r=>r.onchange=()=>{const fl=d.querySelector("input[name=rolle]:checked").value==="fl";$("#demoRow").hidden=fl;$("#jgRow").hidden=fl});
   $("#skWahl").onclick=async()=>{const k=await schulKeyLesen();if(!k)return;sk=k;$("#skInfo").innerHTML=`<span class="badge ok">✓ ${esc(k.name)}</span> Fingerabdruck <code>${esc(k.fp)}</code>${k.support?` · <b>Hersteller-Support eingeschaltet</b> (${esc(supportTxt(k.support))})`:""}`};
   $("#setupForm").onsubmit=async e=>{
     e.preventDefault();
     const p1=$("#pw1").value,p2=$("#pw2").value,rolle=d.querySelector("input[name=rolle]:checked").value,demo=rolle==="kl"&&$("#demo").checked;
     if(p1.length<8)return $("#err2").textContent="Das Passwort muss mindestens 8 Zeichen haben.";
     if(p1!==p2)return $("#err2").textContent="Die Passwörter stimmen nicht überein.";
+    const jg=[...d.querySelectorAll("input[name=jgst]:checked")].map(x=>+x.value);
+    if(rolle==="kl"&&!jg.length)return $("#err2").textContent="Bitte mindestens eine Jahrgangsstufe ankreuzen.";
+    if(!sk&&!ohneSk){ohneSk=true;$("#skWahl").focus();return $("#err2").innerHTML="Ohne Schulschlüssel kann dir niemand helfen, wenn du das Passwort vergisst – dann sind alle Daten verloren. Lies ihn oben ein oder klicke noch einmal auf <b>Starten</b>, um ohne Schulschlüssel zu beginnen."}
     $("#err2").textContent="Verschlüssele …";
     SESSION=await neueSession(p1);
     S=defaultState();S.meta.rolle=rolle;if(sk)S.meta.schulKey=sk;
     if(rolle==="fl"){S.meta.faecher.forEach(f=>f.aktiv=false);S.meta.klasse="Fachlehrkraft";S.raster=[]}
-    else if(demo)loadDemo();
+    else{S.meta.jgStufen=jg;faecherFuerStufen(jg);if(demo){loadDemo();faecherFuerStufen([...new Set([1,2,...jg])])}}
     protokoll(`Neu angelegt als ${ROLLEN[rolle]}${sk?` mit Schulschlüssel „${sk.name}“`:""}`);
     if(sk&&sk.support)protokoll(`Hersteller-Support eingeschaltet: ${supportTxt(sk.support)} (${sk.support.fp})`);
     standMerken();ST.konflikt=false;await saveNow();if(ST.error)return $("#err2").textContent=ST.error;
+    if(neuesProfil)profilMerken(STORE_KEY,($("#profilName").value||"").trim());
     d.close();startApp();
+    if(rolle==="kl")setTimeout(()=>toast("Tipp: Oben schaltest du mit <b>Kürzel ⇄ Namen</b> zwischen S01, S02 … und den Vornamen um.",8000),400);
   };
 }
 function startApp(){DV++;closeDlg();syncFaecher();fensterMelden();if(S.meta.rolle==='fl'&&!S.kinder.length){UI.tab='heute'}save();UI.kind=UI.kind&&kidById(UI.kind)?UI.kind:(S.kinder[0]||{}).id||null;lastActivity=Date.now();render()}
@@ -3307,7 +3354,7 @@ function render(){
     <button class="btn ${UI.tab==="einst"?"on-set":"ghost"}" data-act="tab" data-v="einst" title="Klasse, Raster, Textbausteine, Daten & Sicherheit">⚙ <span class="mlab">Einstellungen</span></button>
     <button class="btn primary" data-act="beenden" title="Speichern, Sicherungskopie herunterladen und sperren">Beenden</button>
   </div></header>
-  <main id="main">${UI.tab==="einst"?einstellungen():VIEWS[UI.tab]()}</main>`;
+  <main id="main">${stufenHinweis()}${UI.tab==="einst"?einstellungen():VIEWS[UI.tab]()}</main>`;
 }
 
 /* ---------- Einstellungen ---------- */
@@ -3522,8 +3569,8 @@ themeSetzen(themeLesen());
 /* ---------- Klassenliste: nur mit Passwort ---------- */
 function klasseSperre(){
   return `<div class="card stack" style="max-width:520px"><h2 style="margin:0">🔒 Klassenliste</h2>
-   <p class="small" style="margin:0">Die Klassenliste enthält Klarnamen und Geburtsdaten. Zum Ansehen und Bearbeiten bitte das Passwort eingeben, mit dem du die Datei öffnest.</p>
-   <form class="row" id="kgf" data-nosubmit><input type="password" id="kgpw" autocomplete="current-password" placeholder="Passwort" style="flex:1 1 200px"><button class="btn primary" data-act="klasseEntsperren">Entsperren</button></form>
+   <p class="small" style="margin:0">Die Klassenliste enthält Klarnamen und Geburtsdaten. Zum Schutz der Namen fragt LeDoK hier noch einmal nach deinem Passwort – demselben, mit dem du LeDoK öffnest.</p>
+   <form class="row" id="kgf" data-nosubmit style="align-items:flex-start"><span style="flex:1 1 200px">${pwFeld("kgpw")}</span><button class="btn primary" data-act="klasseEntsperren">Entsperren</button></form>
    <p class="small muted" style="margin:0">Die Freigabe gilt, bis du sperrst, beendest oder die Datei sich automatisch sperrt.</p></div>`;
 }
 async function passwortPruefen(pw){try{await openSealed(await sealState(),pw);return true}catch(e){return false}}
@@ -3615,7 +3662,7 @@ hilfe(){
   <div class="hlpgrid">
 
   <section class="card" id="h-tag"><h3>Ein Tag mit LeDoK</h3>
-   <ol><li>Datei öffnen, Passwort eingeben.</li>
+   <ol><li>${window.ledokDesktop?"LeDoK starten":"Datei öffnen"}, Passwort eingeben. Teilen sich mehrere Lehrkräfte den Rechner: bei <b>Wer arbeitet?</b> dich selbst wählen.</li>
    <li>${go("heute","Heute")} zeigt Fokustag, Fokuswoche und Kinder, die Aufmerksamkeit brauchen.</li>
    <li>Im Reiter ${go("erfassen","Erfassen")} bewerten – im Unterricht oder danach.</li>
    <li><b>Beenden</b> klicken: speichert, sperrt und lädt eine Sicherungskopie herunter.</li></ol>
@@ -3680,7 +3727,7 @@ hilfe(){
    <p class="small muted">Ein neues Fachpaket aktualisiert Kinderliste und Raster bei der Fachlehrkraft; ihre Bewertungen bleiben erhalten. Rückmeldungen lassen sich beliebig oft einlesen – doppelte Einträge entstehen nicht.</p></section>
 
   <section class="card" id="h-schutz"><h3>Datenschutz &amp; Sicherung</h3>
-   <ul><li>Keine Internetverbindung, alles AES-256-verschlüsselt im Browser.</li>
+   <ul><li>Keine Internetverbindung, alles AES-256-verschlüsselt ${AM_RECHNER}.</li>
    <li>Schieberegler <b>Kürzel ⟷ Namen</b>: Im Klassenzimmer auf Kürzel lassen. Namen erscheinen als „Anna M.“.</li>
    <li>Die ${go("klasse","Klassenliste")} fragt erneut nach dem Passwort.</li>
    <li><b>Schulschlüssel</b> unter ${go("daten","Daten &amp; Sicherheit")} einlesen: Dann kann der LeDoK-Admin bei vergessenem Passwort helfen.</li>
@@ -3690,13 +3737,15 @@ hilfe(){
    <p class="small muted">Details unter ${go("daten","Daten &amp; Sicherheit")}.</p></section>
 
   <section class="card" id="h-probleme"><h3>Wenn etwas nicht klappt</h3>
-   <details><summary>Nach dem Öffnen ist keine Klasse da</summary><p class="small">Anderer Browser, verschobene/umbenannte Datei oder gelöschte Browserdaten. Startbildschirm → <b>Sicherungskopie laden …</b></p></details>
-   <details><summary>Passwort vergessen</summary><p class="small">Die Daten sind nicht wiederherstellbar. Hilft nur eine Kopie mit bekanntem Passwort – bei Kopien gilt das Passwort zum Zeitpunkt der Kopie.</p></details>
+   <details><summary>Nach dem Öffnen ist keine Klasse da</summary><p class="small">${window.ledokDesktop?"Anderes Benutzerkonto am Rechner oder anderer Rechner.":"Anderer Browser, verschobene/umbenannte Datei oder gelöschte Browserdaten."} Teilen sich mehrere Lehrkräfte den Rechner, oben bei <b>Wer arbeitet?</b> das richtige LeDoK wählen. Sonst: Startbildschirm → <b>Sicherungskopie laden …</b></p></details>
+   <details><summary>Passwort vergessen</summary><p class="small">${S&&S.meta.schulKey?`Wende dich an den <b>LeDoK-Admin</b> deiner Schule (${esc(S.meta.schulKey.name)}): Er kann den Zugang an deinem Gerät mit dem Masterkennwort wiederherstellen (Startbildschirm → <b>LeDoK-Admin …</b>).`:`Ohne Schulschlüssel sind die Daten nicht wiederherstellbar. Es hilft nur eine Sicherungskopie mit bekanntem Passwort – bei Kopien gilt das Passwort zum Zeitpunkt der Kopie. Lies deshalb jetzt einen Schulschlüssel ein (${go("daten","Daten &amp; Sicherheit")}), dann kann künftig der LeDoK-Admin helfen.`}</p></details>
+   <details><summary>Mehrere Lehrkräfte an einem Rechner</summary><p class="small">Auf dem Startbildschirm <b>Andere Lehrkraft an diesem Rechner? Eigenes LeDoK anlegen …</b> wählen. Jede Lehrkraft hat dann ein eigenes, getrennt verschlüsseltes LeDoK mit eigenem Passwort und wählt beim Öffnen unter <b>Wer arbeitet?</b> sich selbst aus.</p></details>
    <details><summary>Thema fehlt in der Beobachtung</summary><p class="small">Im Raster prüfen: sichtbar? richtiges Halbjahr? Erfassung „Beobachtung“? Filter „nur ★“ aktiv?</p></details>
    <details><summary>Fokustag zeigt keine Themen</summary><p class="small">Im Raster mindestens ein Thema auf „Fokustag“ stellen – ggf. getrennt je Jahrgangsstufe.</p></details>
    <details><summary>Ein Fach fehlt überall</summary><p class="small">Unter Fächer &amp; Raster → Fächer verwalten einblenden. Die Daten bleiben beim Ausblenden erhalten.</p></details>
    <details><summary>Mehrere Geräte</summary><p class="small">Nicht gleichzeitig arbeiten. Am anderen Gerät die letzte Sicherungskopie laden und dort weitermachen.</p></details>
    <details><summary>Hinweis „keine Verschlüsselung“</summary><p class="small">Datei per Doppelklick lokal in aktuellem Firefox, Chrome oder Edge öffnen – nicht aus einer Vorschau oder dem Mailprogramm.</p></details>
+   <details><summary>Etwas anderes funktioniert nicht</summary><p class="small">Erstelle einen Problembericht und schicke ihn an den Hersteller. Er enthält deine Beschreibung und technische Angaben, aber keine Schülerdaten.</p><button class="btn small" data-act="problemMelden">Problem melden …</button></details>
   </section>
 
   </div></div>`;
@@ -3922,9 +3971,9 @@ daten(){
   return `<div class="stack"><h2>Daten &amp; Sicherheit</h2>
   <div class="grid2">
   <div class="card"><h3 style="margin-top:0">Speicherort</h3>
-   <p class="small">Alle Änderungen werden sofort <b>verschlüsselt im Browser</b> gespeichert. Mit <b>„Beenden“</b> (oben rechts) wird zusätzlich eine Sicherungskopie in deinen Download-Ordner geladen – verschiebe sie auf deinen USB-Stick bzw. dein Sicherungsmedium, nicht in eine Cloud.</p>
+   <p class="small">Alle Änderungen werden sofort <b>verschlüsselt ${AM_RECHNER}</b> gespeichert. Mit <b>„Beenden“</b> (oben rechts) wird zusätzlich eine Sicherungskopie in deinen Download-Ordner geladen – verschiebe sie auf deinen USB-Stick bzw. dein Sicherungsmedium, nicht in eine Cloud.</p>
    <p class="small">Status: ${statusHtml()}</p>
-   <p class="small muted">Wichtig: Immer denselben Browser auf demselben Rechner nutzen und die Datei nicht verschieben. „Browserdaten löschen“ entfernt die Daten – dann hilft die letzte Sicherungskopie.</p></div>
+   <p class="small muted">${window.ledokDesktop?"Die Daten liegen in deinem Benutzerkonto auf diesem Rechner und bleiben auch beim Deinstallieren erhalten. Auf einem anderen Rechner hilft die letzte Sicherungskopie.":"Wichtig: Immer denselben Browser auf demselben Rechner nutzen und die Datei nicht verschieben. „Browserdaten löschen“ entfernt die Daten – dann hilft die letzte Sicherungskopie."}</p></div>
   <div class="card"><h3 style="margin-top:0">Sicherungskopie</h3>
    <p class="small">Eine zweite Kopie schützt vor Defekt oder Verlust des Speicherorts. Lade <b>wöchentlich</b> eine Kopie herunter und lege sie auf ein anderes verschlüsseltes Medium (nicht in eine Cloud). Eine Kopie lässt sich wie die Datendatei öffnen.</p>
    <p class="small">Letzte Kopie: <b>${m.lastBackup?new Date(m.lastBackup).toLocaleString("de-DE"):"noch nie"}</b>${days!=null&&days>7?' – <span style="color:var(--warn)">bitte erneuern</span>':""}</p>
@@ -3941,12 +3990,12 @@ daten(){
    <div class="row"><button class="btn danger" data-act="wipeKids">Schülerdaten löschen …</button><button class="btn danger" data-act="wipeAll">Alles ${DESKTOP?"auf diesem Rechner":"im Browser"} löschen …</button></div></div>
   </div>
   <div class="card small"><h3 style="margin-top:0">So schützt diese Datei die Daten</h3><ul>
-   <li>Keine Netzwerkverbindungen: Die Datei enthält eine Sicherheitsrichtlinie, die dem Browser jeden Datenverkehr nach außen verbietet. Sie funktioniert ohne Internet.</li>
-   <li>Verschlüsselung mit AES-256-GCM; der Schlüssel wird aus deinem Passwort abgeleitet (PBKDF2, 250.000 Runden). Gespeichert wird nur verschlüsselt – im Browser und in den Sicherungskopien.</li>
+   <li>Keine Netzwerkverbindungen: ${window.ledokDesktop?"Das Programm sperrt jeden Datenverkehr nach außen sowie Kamera, Mikrofon und Standort.":"Die Datei enthält eine Sicherheitsrichtlinie, die dem Browser jeden Datenverkehr nach außen verbietet."} Es funktioniert ohne Internet.</li>
+   <li>Verschlüsselung mit AES-256-GCM; der Schlüssel wird aus deinem Passwort abgeleitet (PBKDF2, 250.000 Runden). Gespeichert wird nur verschlüsselt – ${AM_RECHNER} und in den Sicherungskopien.</li>
    <li>Kürzel-Modus für den Bildschirm im Klassenzimmer, CSV-Export nur mit Kürzeln.</li>
    <li>Freitexte liegen verschlüsselt im selben Speicher. Der KI-Export ersetzt bekannte Namen durch Kürzel und verlangt eine Prüfung, bevor er das Herunterladen oder Kopieren zulässt.</li>
    <li>Voraussetzungen bleiben: Gerät bei der Schulleitung angezeigt, Festplattenverschlüsselung, Updates, kein Cloud-Sync des Ordners, in dem diese Datei und die Sicherungen liegen.</li>
-   <li>Empfohlen: aktueller Firefox, Chrome oder Edge; Datei per Doppelklick öffnen. Im Browser keine Erweiterungen mit Zugriff auf „alle Websites“ verwenden.</li></ul></div></div>`;
+   ${window.ledokDesktop?"":`<li>Empfohlen: aktueller Firefox, Chrome oder Edge; Datei per Doppelklick öffnen. Im Browser keine Erweiterungen mit Zugriff auf „alle Websites“ verwenden.</li>`}</ul></div></div>`;
 }
 };
 
@@ -4431,7 +4480,7 @@ function schulKeyCard(){
   return `<div class="card"><h3 style="margin-top:0">Schulschlüssel (Masterkennwort der Schule)</h3>
   ${sk?`<p class="small"><span class="badge ok">✓ hinterlegt</span> <b>${esc(sk.name)}</b> · Fingerabdruck <code>${esc(sk.fp)}</code>${sk.ver?` · Version ${sk.ver}`:""}</p>
    <div class="supbox ${sk.support?"an":""}"><b>Hersteller-Support: ${sk.support?"eingeschaltet":"ausgeschaltet"}</b><br><span class="small">${sk.support?`Deine Schule hat ${esc(supportTxt(sk.support))} seit ${datStr(sk.support.seit)} freigegeben (Fingerabdruck <code>${esc(sk.support.fp)}</code>). Der Hersteller kann bei vergessenem Passwort helfen – nur mit Daten, die ihm übergeben werden; einen Fernzugriff gibt es nicht. Jede Wiederherstellung über LeDoK steht im Protokoll. Ein- und ausschalten kann nur der LeDoK-Admin deiner Schule.`:"Nur der LeDoK-Admin deiner Schule kann den Zugang wiederherstellen."}</span></div>
-   <p class="small muted">Alles, was LeDoK ab jetzt verschlüsselt – Daten im Browser, Sicherungskopien, Übergabedateien und Fachpakete –, kann der LeDoK-Admin deiner Schule mit dem Masterkennwort wieder öffnen, falls du dein Passwort vergisst. Im Alltag sieht er nichts; jede Wiederherstellung über LeDoK steht unten im Protokoll. Ältere Kopien ohne Schulschlüssel sind nicht erfasst – lade jetzt eine neue Kopie herunter.</p>
+   <p class="small muted">Alles, was LeDoK ab jetzt verschlüsselt – Daten ${AM_RECHNER}, Sicherungskopien, Übergabedateien und Fachpakete –, kann der LeDoK-Admin deiner Schule mit dem Masterkennwort wieder öffnen, falls du dein Passwort vergisst. Im Alltag sieht er nichts; jede Wiederherstellung über LeDoK steht unten im Protokoll. Ältere Kopien ohne Schulschlüssel sind nicht erfasst – lade jetzt eine neue Kopie herunter.</p>
    <div class="row"><button class="btn small" data-act="schulKeyEin">Anderen Schulschlüssel einlesen …</button><span class="spacer"></span><button class="btn ghost small danger" data-act="schulKeyAus">Entfernen</button></div>`
   :`<p class="small"><span class="badge warn">nicht hinterlegt</span> Vergisst du dein Passwort, sind die Daten verloren.</p>
    <p class="small muted">Der LeDoK-Admin deiner Schule erstellt einmalig einen Schulschlüssel (Datei <code>.ledok-schule</code>), geschützt mit dem Masterkennwort. Lies ihn hier ein – dann kann er im Notfall deinen Zugang wiederherstellen. Vergleiche den Fingerabdruck mit dem Aushang des Admins.</p>
@@ -4456,9 +4505,9 @@ function screenAdmin(msg=""){
     <button class="btn primary" data-act="adminKeyNeu">Schulschlüssel erstellen</button>
     <div id="akOut"></div></details>
    <details class="adm" ${st&&st.ws&&location.hash!=="#hersteller"?"open":""}><summary><b>2 · Zugang wiederherstellen</b> <span class="small muted">Passwort vergessen</span></summary>
-    <p class="small">Am Gerät der Lehrkraft die Daten im Browser mit einem neuen Passwort freischalten – oder eine Datei (Sicherungskopie, Übergabedatei, Fachpaket) neu verschlüsseln.</p>
-    <div class="row">${st?`<button class="btn primary" data-act="adminRetten" data-v="browser" ${st.ws?"":"disabled"}>Daten in diesem Browser${st.ws?` · ${esc(st.ws.name)}`:""}</button>`:""}<button class="btn" data-act="adminRetten" data-v="datei">Datei wählen …</button></div>
-    ${st&&!st.ws?`<p class="small muted">Die Daten in diesem Browser wurden ohne Schulschlüssel gespeichert und lassen sich nicht wiederherstellen.</p>`:""}
+    <p class="small">Am Gerät der Lehrkraft die Daten ${AM_RECHNER} mit einem neuen Passwort freischalten – oder eine Datei (Sicherungskopie, Übergabedatei, Fachpaket) neu verschlüsseln.</p>
+    <div class="row">${st?`<button class="btn primary" data-act="adminRetten" data-v="browser" ${st.ws?"":"disabled"}>Daten ${AM_RECHNER}${profilLabel()}${st.ws?` · ${esc(st.ws.name)}`:""}</button>`:""}<button class="btn" data-act="adminRetten" data-v="datei">Datei wählen …</button></div>
+    ${st&&!st.ws?`<p class="small muted">Die Daten ${AM_RECHNER}${profilLabel()} wurden ohne Schulschlüssel gespeichert und lassen sich nicht wiederherstellen.</p>`:""}
     <p class="small muted">Jede Wiederherstellung über LeDoK wird in der Datei protokolliert und ist für die Lehrkraft sichtbar.</p></details>
    <details class="adm"><summary><b>3 · Schulschlüssel prüfen</b></summary>
     <p class="small">Prüft, ob Schulschlüssel-Datei und Masterkennwort zusammenpassen, und zeigt Fingerabdruck und Support-Status.</p>
@@ -4475,7 +4524,7 @@ function screenAdmin(msg=""){
     <div class="err" id="hsErr"></div>
     <button class="btn" data-act="herstellerKeyNeu">Support-Schlüssel erzeugen</button>
     <p class="small" style="margin-top:1rem"><b>Wiederherstellung durch den Support</b></p>
-    <div class="row">${st&&st.wv?`<button class="btn primary" data-act="adminRetten" data-v="browser" data-m="support">Daten in diesem Browser</button>`:""}<button class="btn" data-act="adminRetten" data-v="datei" data-m="support">Datei wählen …</button></div></details>
+    <div class="row">${st&&st.wv?`<button class="btn primary" data-act="adminRetten" data-v="browser" data-m="support">Daten ${AM_RECHNER}${profilLabel()}</button>`:""}<button class="btn" data-act="adminRetten" data-v="datei" data-m="support">Datei wählen …</button></div></details>
    <details class="adm adm-h"><summary><b>Hersteller · Updates</b> <span class="small muted">Desktop-Apps, offline per Datei</span></summary>
     <p class="small"><b>Einmalig:</b> Update-Schlüssel erzeugen. Die Datei <code>ledok-update-key.json</code> kommt ins App-Projekt (Ordner <code>desktop/</code>) und wird mit jeder App ausgeliefert. Die <b>private</b> Datei bleibt bei dir – nur damit signierte Updates werden von den Apps angenommen.</p>
     <label class="f">Passphrase für den privaten Update-Schlüssel (mind. 16 Zeichen)<input type="password" id="huPw1" autocomplete="new-password"></label>
@@ -4865,6 +4914,7 @@ const ROLLEN_ACT={
     fachpaketUebernehmen(d)},
   rueckExport:async b=>{const P=S.meta.pakete.find(p=>p.pid===b.dataset.v);if(!P)return;
     const d=rueckmeldungDaten(P);
+    if(!d.eintraege.length&&!d.notizen.length&&!await frage("Du hast in dieser Klasse noch nichts bewertet. Trotzdem eine leere Rückmeldung erstellen?"))return;
     const file=await versiegeln("ledok-rueckmeldung",d,{rawKey:P.rkey});file.pid=P.pid;file.info={klasse:P.klasse,faecher:P.faecher};
     const name=`rueckmeldung-${slug(P.faecher.join("-")||"ASV")}-${slug(P.klasse)}-${today()}.ledok`;
     download(name,JSON.stringify(file),"application/octet-stream");
@@ -4907,8 +4957,9 @@ async function ueberDialog(msg=""){
      <div class="row"><button class="btn primary" type="button" id="updWahl" ${di.updateKey?"":"disabled"}>Update-Datei wählen …</button>${di.aktualisiert?`<button class="btn ghost" type="button" id="updReset">Zur ausgelieferten Version ${esc(di.mitgeliefert)} zurück</button>`:""}<button class="btn ghost" type="button" id="updOrdner">Sicherungen anzeigen</button></div>`
    :`<h3 style="margin:1rem 0 .3rem">Aktualisieren</h3>
      <p class="small">Im Browser aktualisierst du LeDoK, indem du die alte Datei <b>LeDoK.html</b> durch die neue ersetzt – gleicher Ordner, gleicher Dateiname. Deine Daten bleiben im Browser erhalten. Lade vorher sicherheitshalber eine Sicherungskopie herunter.</p>`}
-   <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" id="ueZu">Schließen</button></div>`);
+   <div class="row" style="margin-top:1rem"><button class="btn ghost" type="button" id="uePm">Problem melden …</button><span class="spacer"></span><button class="btn" type="button" id="ueZu">Schließen</button></div>`);
   $("#ueZu").onclick=()=>d.close();
+  $("#uePm").onclick=()=>problemMelden();
   if(!di)return;
   const wahl=$("#updWahl");if(wahl)wahl.onclick=async()=>{
     const f=await pickFile(".ledok-update");if(!f)return;
@@ -4932,6 +4983,70 @@ async function ueberDialog(msg=""){
     if(!await frage(`Das eingespielte Update entfernen und zur ausgelieferten Version ${di.mitgeliefert} zurückkehren? Deine Daten bleiben erhalten. LeDoK startet neu.`))return;
     if(S)await saveNow();await DESKTOP.updateZuruecksetzen(storeRaw()||"")};
   $("#updOrdner").onclick=()=>DESKTOP.sicherungenOeffnen();
+}
+/* ---------- Problem melden ---------- */
+// Sammelt technische Angaben für eine Fehlermeldung an den Hersteller – ohne Schülerdaten.
+// Die Lehrkraft sieht den vollständigen Text, bevor sie ihn kopiert oder speichert.
+const FEHLER_LOG=[];
+function fehlerMerken(art,text){
+  FEHLER_LOG.push({z:new Date(),art,text:String(text||"").slice(0,300)});
+  if(FEHLER_LOG.length>20)FEHLER_LOG.shift();
+}
+window.addEventListener("error",e=>fehlerMerken("Fehler",`${e.message||"unbekannt"}${e.lineno?` (Zeile ${e.lineno})`:""}`));
+window.addEventListener("unhandledrejection",e=>fehlerMerken("Fehler",e.reason&&e.reason.message||e.reason));
+// Namen und zitierte Inhalte aus Fehlertexten entfernen, damit nichts Personenbezogenes im Bericht landet
+function ohneNamen(t){
+  t=String(t).replace(/"[^"]*"|'[^']*'|„[^“]*“/g,"…");
+  for(const k of (S&&S.kinder)||[])for(const n of [k.vorname,k.nachname])if(n&&n.length>1)t=t.split(n).join(k.id);
+  return t;
+}
+async function problemBericht(beschreibung){
+  const di=DESKTOP?await DESKTOP.info().catch(()=>null):null;
+  const os=di?(di.os==="darwin"?"macOS":di.os==="win32"?"Windows":"Linux"):"";
+  const zeit=d=>d.toLocaleString("de-DE");
+  const rolle=!S?"nicht angemeldet":istFL()?"Fachlehrkraft":"Klassenlehrkraft";
+  return [
+    "LeDoK – Problembericht",
+    `Erstellt: ${zeit(new Date())}`,
+    "",
+    "Was ist passiert?",
+    (beschreibung||"").trim()||"(keine Beschreibung)",
+    "",
+    "Technische Angaben (ohne Schülerdaten)",
+    `Version: ${APP_VERSION}${typeof APP_KANAL==="string"&&APP_KANAL?" "+APP_KANAL:""} vom ${APP_DATUM}`,
+    `Umgebung: ${di?`Desktop-App für ${os}, Programmversion ${di.shell}${di.aktualisiert?`, Update eingespielt (ausgeliefert war ${di.mitgeliefert})`:""}`:"Browser"}`,
+    `Browser-Kennung: ${navigator.userAgent}`,
+    `Fenster: ${innerWidth} × ${innerHeight} Pixel, Zoom ${Math.round(devicePixelRatio*100)} %`,
+    `Rolle: ${rolle}`,
+    `Ansicht: ${S?UI.tab:"Startbildschirm"}`,
+    S?`Umfang: ${S.kinder.length} Kinder, ${S.eintraege.length} Einträge`:"",
+    "",
+    "Letzte Fehlermeldungen",
+    ...(FEHLER_LOG.length?FEHLER_LOG.map(f=>`${zeit(f.z)} · ${ohneNamen(f.text)}`):["keine"]),
+  ].filter((z,i,a)=>z!==""||a[i-1]!=="").join("\n");
+}
+function problemMelden(){
+  const d=dialog(`<h2>Problem melden</h2>
+   <p class="small">Beschreibe kurz, was du tun wolltest und was stattdessen passiert ist. LeDoK ergänzt technische Angaben wie Version und Betriebssystem. <b>Namen von Kindern und Noten gehören nicht in den Bericht.</b></p>
+   <textarea id="pmText" rows="4" placeholder="Zum Beispiel: Ich wollte im Tab Erfassen eine Bewertung speichern. Nach dem Klick auf 5 ist nichts passiert."></textarea>
+   <details style="margin-top:.6rem"><summary class="small">Bericht ansehen, so wie er gespeichert wird</summary><pre id="pmVorschau" class="small" style="white-space:pre-wrap;max-height:16rem;overflow:auto"></pre></details>
+   <p class="small muted">Schicke die Datei oder den kopierten Text per Mail an dominik@deep-moments.com. LeDoK selbst versendet nichts.</p>
+   <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" id="pmZu">Schließen</button><button class="btn" type="button" id="pmKopie">Text kopieren</button><button class="btn primary" type="button" id="pmDatei">Als Datei speichern</button></div>`,true);
+  const text=()=>problemBericht($("#pmText").value);
+  const vorschau=async()=>{$("#pmVorschau").textContent=await text()};
+  $("#pmText").oninput=vorschau;vorschau();$("#pmText").focus();
+  $("#pmZu").onclick=()=>d.close();
+  $("#pmKopie").onclick=async()=>{
+    const t=await text();
+    try{await navigator.clipboard.writeText(t)}
+    catch(e){const h=document.createElement("textarea");h.value=t;d.appendChild(h);h.select();document.execCommand("copy");h.remove()}
+    toast("Bericht kopiert. Füge ihn in eine Mail ein.",3000);
+  };
+  $("#pmDatei").onclick=async()=>{
+    const z=new Date(),p=n=>String(n).padStart(2,"0");
+    download(`LeDoK-Problembericht-${z.getFullYear()}-${p(z.getMonth()+1)}-${p(z.getDate())}-${p(z.getHours())}${p(z.getMinutes())}.txt`,await text(),"text/plain;charset=utf-8");
+    toast("Bericht gespeichert. Hänge die Datei an eine Mail an.",3000);
+  };
 }
 /* ---------- Dialoge ---------- */
 function dialog(html,breit){const d=$("#dlg");d.style.width=breit?"min(760px, calc(100% - 2rem))":"";d.innerHTML=html;d.showModal();return d}
@@ -4971,9 +5086,12 @@ function info(text,titel){
     d.showModal();d.querySelector("button").focus();
   });
 }
+/* Passwortfeld mit „Anzeigen“ und Hinweis auf die Feststelltaste */
+const pwFeld=(id,ac)=>`<span class="pwwrap"><span class="pwin"><input type="password" id="${id}" autocomplete="${ac||"current-password"}"><button type="button" class="pwauge" data-act="pwZeigen" data-v="${id}" aria-label="Passwort anzeigen">Anzeigen</button></span><span class="capshint">⇪ Die Feststelltaste ist an.</span></span>`;
+["keydown","keyup"].forEach(t=>document.addEventListener(t,e=>{const i=e.target;if(!i||!i.closest||!e.getModifierState)return;const w=i.closest(".pwwrap");if(w)w.classList.toggle("caps",e.getModifierState("CapsLock"))}));
 function askPassword(title,text){
   return new Promise(res=>{
-    const d=dialog(`<form method="dialog" id="pf"><h2>${esc(title)}</h2><p class="small muted">${esc(text)}</p><input type="password" id="pfpw" style="width:100%" autocomplete="current-password">
+    const d=dialog(`<form method="dialog" id="pf"><h2>${esc(title)}</h2><p class="small muted">${esc(text)}</p>${pwFeld("pfpw")}
     <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" value="cancel" type="button" id="pfc">Abbrechen</button><button class="btn primary" type="submit">OK</button></div></form>`);
     $("#pfpw").focus();
     $("#pfc").onclick=()=>{d.close();res(null)};
@@ -5012,6 +5130,7 @@ function addEntry(k,c,w,q,n=""){DV++;
 }
 const ACT = {
   hJump:a=>{const el=document.getElementById(a.dataset.v);if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.add("hflash");setTimeout(()=>el.classList.remove("hflash"),1200)}},
+  problemMelden:()=>problemMelden(),
   hilfeDruck:()=>drucke(`<div class="hilfe-druck">${VIEWS.hilfe().replace(/<button[^>]*>.*?<\/button>/g,"").replace(/<details>/g,"<details open>")}</div>`),
   tab:a=>{const v=a.dataset.v;if(v==="einst"){UI.tab="einst";UI.einst=einstTabs().some(e=>e[0]===UI.einst)?UI.einst:einstTabs()[0][0]}else if(EINST.some(e=>e[0]===v)){UI.tab="einst";UI.einst=v}else UI.tab=v;render();window.scrollTo(0,0)},
   mode:a=>{UI.mode=a.dataset.v;render()},
@@ -5196,8 +5315,12 @@ const ACT = {
     S.eintraege=S.eintraege.filter(e=>!ids.has(e.c));S.raster=S.raster.filter(x=>!ids.has(x.id));save();const y=window.scrollY;render();window.scrollTo(0,y)},
   resetBausteine:async()=>{if(await frage("Alle Textbausteine auf den Standard zurücksetzen?")){S.bausteine=defaultBausteine();save();render()}},
   addKid:()=>{addKid("");save();render()},
-  addKids:async()=>{const t=await askText("Kinder hinzufügen","Vornamen eingeben, durch Komma oder Zeilenumbruch getrennt. Optional mit Jahrgangsstufe: „Lena 2, Tim 1“","",true);if(!t)return;
-    t.split(/[,\n;]+/).map(s=>s.trim()).filter(Boolean).forEach(s=>{const m=s.match(/^(.*?)\s+([12])$/);addKid(m?m[1]:s,m?+m[2]:1)});save();render()},
+  pwZeigen:b=>{const i=document.getElementById(b.dataset.v);if(!i)return;const an=i.type==="password";i.type=an?"text":"password";b.textContent=an?"Verbergen":"Anzeigen";b.setAttribute("aria-label",an?"Passwort verbergen":"Passwort anzeigen");i.focus()},
+  profilNeu:()=>{const alt=STORE_KEY;let n;do{n=STORE_BASE+".p"+Array.from(rnd(4),x=>x.toString(16).padStart(2,"0")).join("")}while(profilDa(n));
+    STORE_KEY=n;setupDialog(true);const d=$("#dlg");const zurueck=()=>{d.removeEventListener("close",zurueck);if(!profilDa(STORE_KEY))STORE_KEY=alt};d.addEventListener("close",zurueck)},
+  stufenFaecher:()=>{faecherFuerStufen(jgstListe());save();render();toast("Fächer eingeblendet. Feinheiten unter Einstellungen → Fächer &amp; Raster.",5000)},
+  addKids:async()=>{const t=await askText("Kinder hinzufügen","Vornamen eingeben, durch Komma oder Zeilenumbruch getrennt. Optional mit Jahrgangsstufe 1–4: „Lena 3, Tim 4“","",true);if(!t)return;
+    t.split(/[,\n;]+/).map(s=>s.trim()).filter(Boolean).forEach(s=>{const m=s.match(/^(.*?)\s+([1-4])$/);addKid(m?m[1]:s,m?+m[2]:stdJgst())});save();render()},
   delKid:async a=>{const id=a.dataset.v;if(!await frage(`${id} und alle zugehörigen Einträge, Freitexte und Texte endgültig löschen?`,{ja:"Löschen",gefahr:true}))return;
     await vorherSichern("vor-kind-loeschen",true);kindLoeschen(id);save();render()},
   autoGroups:async()=>{if(!await frage("Fokustage Montag bis Freitag gleichmäßig neu verteilen?"))return;sortedKids("alle").forEach((k,i)=>k.gruppe="ABCDE"[i%5]);save();render()},
@@ -5578,7 +5701,7 @@ function uebergabeCard(kid){
     <div class="note warn"><b>Nach dem Export</b><br><label class="row small" style="gap:.35rem;margin-top:.3rem"><input type="checkbox" id="ueDel"> ${kidLabel(kid)} anschließend aus dieser Klasse löschen</label><span class="small">Weitergabe an eine andere Schule nur über die Schulleitung bzw. die Schülerakte.</span></div>
    </div></div>`;
 }
-function addKid(vorname,jgst=1){let n=1;while(S.kinder.find(k=>k.id==="S"+pad(n)))n++;
+function addKid(vorname,jgst=stdJgst()){let n=1;while(S.kinder.find(k=>k.id==="S"+pad(n)))n++;
   const counts={};"ABCDE".split("").forEach(g=>counts[g]=S.kinder.filter(k=>k.gruppe===g).length);
   const g=Object.keys(counts).sort((a,b)=>counts[a]-counts[b])[0];
   S.kinder.push({id:"S"+pad(n),vorname,jgst,gruppe:g,pronomen:"",klasse:"",faecherNur:[]})}
@@ -5754,6 +5877,7 @@ Object.assign(ACT,ADMIN_ACT,ROLLEN_ACT);Object.assign(VIEWS,ROLLEN_VIEWS);
   verTag();
   if(!window.isSecureContext||!window.crypto||!crypto.subtle){
     $("#app").innerHTML=`<div class="lock"><div class="card"><div class="lockhead">${LOGO_SVG}<div><h1>LeDoK</h1></div></div><p class="note warn">Dieser Browser stellt hier keine Verschlüsselung bereit. Bitte die Datei lokal (Doppelklick) in einem aktuellen Firefox, Chrome oder Edge öffnen.</p></div></div>`;return}
+  profilStart();
   screenStart();
 })();
 </script>
