@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-2B/gFWmaZs4owNYBzDi0HoUmWFDWiXf2TQKbDqUUn5E='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -210,6 +210,9 @@ details.bs>div{padding:0 .9rem .9rem}
 .toast button{background:transparent;border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg);border-radius:7px;padding:.25rem .6rem}
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:1.2rem;width:min(560px,calc(100% - 2rem));box-shadow:0 10px 40px rgba(0,0,0,.25)}
 dialog::backdrop{background:rgba(0,0,0,.35)}
+.msgtext{white-space:pre-line}
+.demoband{background:#fdf0cf;color:#5c3d00;border-bottom:1px solid #e8d49a;padding:.45rem 1rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;font-size:.9rem}
+.weitere{margin-top:.8rem}.weitere summary{cursor:pointer}
 .preview{border:1px solid var(--line);border-radius:var(--r);background:#fff;color:#1a1a1a;padding:1.4rem;max-height:70vh;overflow:auto}
 
 /* Druck */
@@ -2777,9 +2780,15 @@ async function versiegeln(app,obj,o={}){
   const ws=await schulWrap(dek,skx);if(ws)out.ws=ws;
   if(skx&&skx.support&&skx.support.pub){const sp=await crypto.subtle.importKey("jwk",skx.support.pub,RSA,false,["encrypt"]);
     out.wv={name:skx.support.name,fp:skx.support.fp,ct:b64(await crypto.subtle.encrypt({name:"RSA-OAEP"},sp,raw))}}
-  Object.assign(out,await aesEnc(dek,enc.encode(JSON.stringify(obj))));out.saved=new Date().toISOString();
+  let pt=enc.encode(JSON.stringify(obj));
+  if(o.zip&&KANN_ZIP){pt=await zipBytes(pt,true);out.z="gzip"}
+  Object.assign(out,await aesEnc(dek,pt));out.saved=new Date().toISOString();
   return out;
 }
+// Eigene Daten werden vor dem Verschlüsseln komprimiert (spart ca. 80–90 % Speicher)
+const KANN_ZIP=typeof CompressionStream==="function"&&typeof DecompressionStream==="function";
+async function zipBytes(u8,packen){const s=new Blob([u8]).stream().pipeThrough(packen?new CompressionStream("gzip"):new DecompressionStream("gzip"));return new Uint8Array(await new Response(s).arrayBuffer())}
+async function klartext(obj,pt){if(obj.z==="gzip"){if(!KANN_ZIP)throw new Error("alt");pt=await zipBytes(pt,false)}return JSON.parse(dec.decode(pt))}
 async function entsiegeln(obj,o={}){
   if(!obj||!obj.ct)throw new Error("format");
   if(obj.v!==2){
@@ -2794,22 +2803,52 @@ async function entsiegeln(obj,o={}){
   else if(o.rawKey){if(!obj.wk)throw new Error("format");try{dek=await importDek(await aesDec(await rawAesKey(o.rawKey),obj.wk))}catch(e){throw new Error("key")}}
   else{if(!obj.wp)throw new Error("format");pwKey=await deriveKey(o.pw,salt);try{dek=await importDek(await aesDec(pwKey,obj.wp))}catch(e){throw new Error("pw")}}
   let pt;try{pt=await aesDec(dek,obj)}catch(e){throw new Error("format")}
-  return {data:JSON.parse(dec.decode(pt)),dek,pwKey,salt};
+  return {data:await klartext(obj,pt),dek,pwKey,salt};
 }
-async function sealState(){return versiegeln("lernstand12",S,{dek:SESSION.dek,pwKey:SESSION.pwKey,salt:SESSION.salt})}
+async function sealState(){return versiegeln("lernstand12",S,{dek:SESSION.dek,pwKey:SESSION.pwKey,salt:SESSION.salt,zip:true})}
 async function sealObj(app,obj,pw){const salt=rnd(16);return versiegeln(app,obj,{pwKey:await deriveKey(pw,salt),salt})}
 async function openObj(obj,pw){return (await entsiegeln(obj,{pw})).data}
 async function openSealed(obj,pw){
   if(!obj||obj.app!=="lernstand12")throw new Error("format");
   const r=await entsiegeln(obj,{pw});
+  if(r.data&&r.data.meta&&+r.data.meta.schema>SCHEMA)throw new Error("neuer");
   return {state:r.data,dek:r.dek||await neuerDatenschluessel(),pwKey:r.pwKey,salt:r.salt};
 }
 async function neueSession(pw){const salt=rnd(16);return {dek:await neuerDatenschluessel(),pwKey:await deriveKey(pw,salt),salt}}
 /* ---------- Speicherung im Browser (verschlüsselt) + Sicherungskopie beim Beenden ---------- */
-const ST = {dirty:false,lastSaved:null,error:null};
-function readStore(){try{const r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):null}catch(e){return null}}
+const ST = {dirty:false,lastSaved:null,error:null,stand:null,konflikt:false};
+const SCHEMA=2; // Datenformat; ältere LeDoK-Versionen öffnen neuere Daten nicht, statt sie falsch zu lesen
+/* Speicherort: im Browser localStorage; in der Desktop-App eine Datei im Benutzerordner (ohne Größengrenze) */
+const standKey=()=>STORE_KEY+".stand";
+const STORE_DESKTOP={}; // je Speicherschlüssel der zuletzt gelesene/geschriebene Text
+const desktopSpeicher=()=>!!(window.ledokDesktop&&window.ledokDesktop.datenLaden);
+function storeRaw(key=STORE_KEY){
+  if(desktopSpeicher()){
+    if(!(key in STORE_DESKTOP)){try{STORE_DESKTOP[key]=window.ledokDesktop.datenLaden(key)||null}catch(e){STORE_DESKTOP[key]=null}}
+    if(STORE_DESKTOP[key])return STORE_DESKTOP[key]; // sonst: Daten aus früheren Versionen noch im localStorage
+  }
+  try{return localStorage.getItem(key)}catch(e){return null}
+}
+const storeHas=(key=STORE_KEY)=>!!storeRaw(key);
+function readStore(key=STORE_KEY){try{const r=storeRaw(key);return r?JSON.parse(r):null}catch(e){return null}}
+async function storeWrite(text,key=STORE_KEY){
+  if(desktopSpeicher()){
+    const r=await window.ledokDesktop.datenSpeichern(key,text);if(!r||!r.ok)throw new Error((r&&r.fehler)||"Speichern fehlgeschlagen");
+    STORE_DESKTOP[key]=text;try{localStorage.removeItem(key)}catch(e){}return;
+  }
+  localStorage.setItem(key,text);
+}
+async function storeRemove(key=STORE_KEY){
+  if(desktopSpeicher()){await window.ledokDesktop.datenLoeschen(key);STORE_DESKTOP[key]=null}
+  try{localStorage.removeItem(key);localStorage.removeItem(key+".stand")}catch(e){}
+}
+/* Zwei Fenster mit LeDoK (nur Browser): Stand-Marke prüfen, bevor gespeichert wird */
+const FENSTER_ID=Math.random().toString(36).slice(2);
+let KANAL=null;try{KANAL=new BroadcastChannel("ledok")}catch(e){}
+function standLesen(){if(desktopSpeicher())return null;try{return localStorage.getItem(standKey())}catch(e){return null}}
+function standMerken(){ST.stand=standLesen()}
 /* ---------- Profile: mehrere Lehrkräfte am selben Rechner, je ein eigener verschlüsselter Datenbestand ---------- */
-function profilDa(key){try{return !!localStorage.getItem(key)}catch(e){return false}}
+const profilDa=key=>storeHas(key); // Desktop: Datei, Browser: localStorage
 function profilIndex(){let l=[];try{l=JSON.parse(localStorage.getItem(PROFIL_KEY)||"[]")}catch(e){}return Array.isArray(l)?l.filter(p=>p&&typeof p.key==="string"&&p.key.startsWith(STORE_BASE)):[]}
 function profile(){const l=profilIndex();if(profilDa(STORE_BASE)&&!l.some(p=>p.key===STORE_BASE))l.unshift({key:STORE_BASE,name:""});return l.filter(p=>profilDa(p.key))}
 function profilMerken(key,name){const l=profilIndex(),x=l.find(p=>p.key===key);if(x){if(name)x.name=name}else l.push({key,name:name||""});
@@ -2824,12 +2863,33 @@ function saveNow(){
   clearTimeout(saveTimer);saveTimer=null;
   if(!S||!SESSION)return saving;
   saving=saving.then(async()=>{
-    try{const sealed=await sealState();localStorage.setItem(STORE_KEY,JSON.stringify(sealed));ST.dirty=false;ST.error=null;ST.lastSaved=new Date()}
-    catch(e){ST.error="Der Browser verweigert das Speichern (privates Fenster oder Speicher voll?)"}
+    if(ST.konflikt)return;
+    const jetzt=standLesen();
+    if(jetzt&&jetzt!==ST.stand){ST.konflikt=true;ST.error="LeDoK ist noch in einem anderen Fenster geöffnet und hat dort neuer gespeichert. Hier wird nichts mehr gespeichert.";updateStatus();setTimeout(()=>lock("fenster"),0);return}
+    try{const sealed=await sealState();await storeWrite(JSON.stringify(sealed));
+      if(!desktopSpeicher()){ST.stand=sealed.saved+"|"+FENSTER_ID;localStorage.setItem(standKey(),ST.stand)}
+      ST.dirty=false;ST.error=null;ST.lastSaved=new Date()}
+    catch(e){ST.error=DESKTOP?"Speichern auf diesem Rechner fehlgeschlagen: "+e.message:"Der Browser verweigert das Speichern (privates Fenster oder Speicher voll?)"}
     updateStatus();
   });
   return saving;
 }
+if(KANAL)KANAL.onmessage=async e=>{
+  const m=e.data||{};if(m.id===FENSTER_ID||m.key!==STORE_KEY)return;
+  // Ein anderes Fenster öffnet LeDoK: hier sofort speichern und sperren – das neue Fenster lädt danach den neuesten Stand
+  if(m.typ==="offen"&&S&&!ST.konflikt){await saveNow();KANAL.postMessage({typ:"gesperrt",id:FENSTER_ID,key:STORE_KEY});lock("fenster")}
+  else if(m.typ==="gesperrt"&&S&&SESSION&&!ST.dirty&&standLesen()!==ST.stand){
+    try{const r=await entsiegeln(readStore(),{dek:SESSION.dek});S=migrate(r.data);standMerken();DV++;render()}catch(err){lock()}}
+};
+function fensterMelden(){standMerken();ST.konflikt=false;if(KANAL)KANAL.postMessage({typ:"offen",id:FENSTER_ID,key:STORE_KEY})}
+/* Sicherungskopie: Desktop-App still nach Dokumente/LeDoK-Sicherungen (mit Ausdünnen), im Browser als Download */
+async function sicherungAnlegen(anlass,roh){
+  const text=roh||JSON.stringify(await sealState());
+  if(DESKTOP&&DESKTOP.sicherung){const r=await DESKTOP.sicherung(text,anlass);if(!r||!r.ok)throw new Error((r&&r.fehler)||"Sicherung fehlgeschlagen");return {name:r.datei,ort:"desktop"}}
+  const name=kopieName(anlass);download(name,text,"application/octet-stream");return {name,ort:"download"};
+}
+const ortText=r=>r.ort==="desktop"?"im Ordner Dokumente/LeDoK-Sicherungen":"in deinem Download-Ordner";
+async function vorherSichern(anlass,nurDesktop){if(!S||(nurDesktop&&!DESKTOP))return null;try{await saveNow();return await sicherungAnlegen(anlass)}catch(e){return null}}
 function statusHtml(){
   if(ST.error)return `<button class="badge bad" data-act="backup" title="${esc(ST.error)}">⚠ Nicht gespeichert – Kopie herunterladen</button>`;
   if(ST.dirty)return `<span class="badge">Speichert …</span>`;
@@ -2840,12 +2900,13 @@ async function oeffne(obj,pw){
   if(obj&&obj.app==="lernstand12-kind")throw new Error("kind");
   const r=await openSealed(obj,pw);S=migrate(r.state);SESSION={dek:r.dek,pwKey:r.pwKey,salt:r.salt};ST.dirty=false;ST.error=null;ST.lastSaved=null;
 }
-const oeffneFehler = e=>e.message==="pw"?"Falsches Passwort.":e.message==="kind"?"Das ist eine Übergabedatei für ein einzelnes Kind. Öffne zuerst deine Klasse und importiere sie unter „Einstellungen → Klasse → Kind importieren“.":"Diese Datei ist keine LeDoK-Datei oder beschädigt.";
-const kopieName = ()=>{const d=new Date();return `ledok-kopie-${today()}-${pad(d.getHours())}${pad(d.getMinutes())}.lernstand`};
+const oeffneFehler = e=>e.message==="pw"?"Falsches Passwort.":e.message==="kind"?"Das ist eine Übergabedatei für ein einzelnes Kind. Öffne zuerst deine Klasse und importiere sie unter „Einstellungen → Klasse → Kind importieren“."
+  :e.message==="neuer"?"Diese Daten stammen aus einer neueren LeDoK-Version. Bitte aktualisiere LeDoK, bevor du sie öffnest."
+  :e.message==="alt"?"Dieser Browser ist zu alt für diese Daten. Bitte einen aktuellen Firefox, Chrome oder Edge verwenden.":"Diese Datei ist keine LeDoK-Datei oder beschädigt.";
+const kopieName = anlass=>{const d=new Date();return `ledok-${anlass?anlass+"-":"kopie-"}${today()}-${pad(d.getHours())}${pad(d.getMinutes())}.lernstand`};
 async function kopieHerunterladen(){
-  await saveNow();const sealed=await sealState();const name=kopieName();
-  download(name,JSON.stringify(sealed),"application/octet-stream");
-  S.meta.lastBackup=new Date().toISOString();await saveNow();return name;
+  await saveNow();const r=await sicherungAnlegen("");
+  S.meta.lastBackup=new Date().toISOString();await saveNow();return r;
 }
 // Rechtschreibkorrekturen 2026 auch in bereits gespeicherte Raster und Textbausteine übernehmen (nur exakte Fehlerstellen)
 const RS_FIX=[["Aussschnitte", "Ausschnitte"], ["Bewegründe", "Beweggründe"], ["(z. B. Lieblins)Tiere", "(z. B. Lieblings-)Tiere"], ["Gestaltungelemente", "Gestaltungselemente"], ["Präsentationmedium", "Präsentationsmedium"], ["Alhamdullillah", "Alhamdulillah"], ["[d/ecision]", ""], ["(u.a. ", "(u. a. "], ["Parcours,Vertrauens-", "Parcours, Vertrauens-"], ["Bruchzahlen (,,)", "Bruchzahlen (½, ¼, ¾)"], ["Bruchzahlen (;;)", "Bruchzahlen (½, ¼, ¾)"], ["Lernbereichen 1 - 3 ", "Lernbereichen 1 bis 3 "], ["= 80 - 8 =", "= 80 – 8 ="], ["Fachvokabular - immer", "Fachvokabular – immer"], ["„Gott sei Dank!\"", "„Gott sei Dank!“"], ["„Gott bewahre\"", "„Gott bewahre“"], ["„Vergelt’s Gott\"", "„Vergelt’s Gott“"], ["„Grüß Gott\"", "„Grüß Gott“"], ["„kleines Osterfest\"", "„kleines Osterfest“"], ["(z. B 1 h", "(z. B. 1 h"], ["(z. B Vogel", "(z. B. Vogel"], ["(z. B eckig", "(z. B. eckig"], ["(z. B ocker", "(z. B. ocker"], ["gelungen ist und schildern", "gelungen ist, und schildern"], ["Wendungen erfragen und nutzen", "Wendungen erfragen, und nutzen"], ["mit Gott machen und gewinnen", "mit Gott machen, und gewinnen"], ["Festzeiten gehören und bringen", "Festzeiten gehören, und bringen"], ["eine Möglichkeit Gott zu sagen, was Menschen bewegt und bringen", "eine Möglichkeit, Gott zu sagen, was Menschen bewegt, und bringen"], ["Nähe hinweisen und bringen", "Nähe hinweisen, und bringen"], ["beantwortet wurden und zeigen", "beantwortet wurden, und zeigen"], ["Sprichwörter aussagen und erklären", "Sprichwörter aussagen, und erklären"], ["ein Buch.) und beachten", "ein Buch.), und beachten"], ["Mobilität entstehen und reflektieren", "Mobilität entstehen, und reflektieren"], ["Filmsequenzen) und fragen nach", "Filmsequenzen), und fragen nach"], ["Beurteilung gibt und tolerieren", "Beurteilung gibt, und tolerieren"], ["Auferstandenen machen und bringen", "Auferstandenen machen, und bringen"], ["Kirchenraum wichtig ist und tauschen", "Kirchenraum wichtig ist, und tauschen"], ["infrage stellen und wägen", "infrage stellen, und wägen"], ["hilft, wenn {Name} darum gebeten wird", "hilft, wenn {Vorname} darum gebeten wird"], ["Es gelingt {Name} zunehmend, bei einer Aufgabe zu bleiben; bei", "{Vorname} schafft es zunehmend, bei einer Aufgabe zu bleiben; bei"], ["Das Einhalten der Klassenregeln fällt {Name} noch schwer; dabei braucht {Vorname} regelmäßig Unterstützung.", "{Vorname} hat noch Mühe, die Klassenregeln einzuhalten, und braucht dabei regelmäßig Unterstützung."], ["bei Themen, die {Name} besonders interessieren.", "bei Themen, für die {Vorname} sich besonders interessiert."]];
@@ -2873,6 +2934,38 @@ function migrate(st){
     for(const g of Object.values(st.bausteine.asv||{}))for(const st2 of Object.values(g||{}))if(st2&&st2.b)st2.b=rsFix(st2.b);
     st.meta.rs2026=true}
   st.bausteine.phrasen=Object.assign(d.bausteine.phrasen,st.bausteine.phrasen||{});if(!Array.isArray(st.bausteine.notizen))st.bausteine.notizen=d.bausteine.notizen;
+  st.proben.forEach(p=>{p.werte=p.werte||{};p.fehlt=p.fehlt||{};if(!Array.isArray(p.items))p.items=[]});
+  datenBereinigen(st);st.meta.schema=SCHEMA;
+  return st;
+}
+/* Daten, die aus Dateien anderer Personen stammen können, nur in gültiger Form behalten (Schutz vor eingeschleustem Code) */
+const ID_RE=/^[^<>"'`&\\\u0000-\u001f]{1,80}$/, DAT_RE=/^\d{4}-\d{2}-\d{2}$/;
+const idOk=v=>typeof v==="string"&&ID_RE.test(v);
+const neueNotizId=()=>"n"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function eintragOk(e){
+  if(!e||!idOk(e.k)||!idOk(e.c)||!DAT_RE.test(String(e.d||"")))return null;
+  const w=+e.w;if(!(w>=1&&w<=9))return null;
+  const x=Object.assign({},e,{w,q:QUELLE[e.q]?e.q:"b",n:typeof e.n==="string"?e.n:"",t:Number.isFinite(+e.t)?+e.t:Date.now()+Math.random()});
+  for(const f of ["p","vp"])if(x[f]!=null&&!idOk(x[f]))delete x[f];
+  return x;
+}
+function notizOk(n){
+  if(!n||!idOk(n.k)||typeof n.text!=="string"||isNaN(Date.parse(n.ts)))return null;
+  return Object.assign({},n,{id:idOk(n.id)?n.id:neueNotizId(),kat:typeof n.kat==="string"&&n.kat?n.kat:"Allgemein"});
+}
+function datenBereinigen(st){
+  const umb={},vergeben=new Set(st.kinder.map(k=>k.id).filter(idOk));
+  st.kinder=st.kinder.filter(k=>k&&typeof k==="object");
+  for(const k of st.kinder){if(idOk(k.id))continue;let n=1,neu;do{neu="S"+pad(n++)}while(vergeben.has(neu));vergeben.add(neu);umb[k.id]=neu;k.id=neu}
+  if(Object.keys(umb).length){
+    for(const x of [...st.eintraege,...st.notizen])if(x&&umb[x.k])x.k=umb[x.k];
+    for(const P of (st.meta.pakete||[]))for(const [o,l] of Object.entries(P.map||{}))if(umb[l])P.map[o]=umb[l];
+    for(const key of Object.keys(st.texte)){const [k,...rest]=key.split("|");if(umb[k]){st.texte[[umb[k],...rest].join("|")]=st.texte[key];delete st.texte[key]}}
+  }
+  st.kinder.forEach(k=>{k.jgst=Math.min(4,Math.max(1,+k.jgst||1))});
+  st.eintraege=st.eintraege.map(eintragOk).filter(Boolean);
+  st.notizen=st.notizen.map(notizOk).filter(Boolean);
+  st.raster=st.raster.filter(r=>r&&idOk(r.id));
   return st;
 }
 
@@ -3166,14 +3259,15 @@ function screenStart(msg="",beendet=""){
   const st=readStore(),pl=profile();
   $("#app").innerHTML=`<div class="lock"><div class="card">
    <div class="lockhead">${LOGO_SVG}<div><h1>LeDoK</h1><div class="tag">Lernentwicklungsdokumentation Grundschule</div></div></div>
-   ${beendet?`<div class="note small" style="margin:.6rem 0 1rem"><b>Beendet.</b> Deine Daten sind verschlüsselt im Browser gespeichert, und die Sicherungskopie <b>${esc(beendet)}</b> liegt in deinem Download-Ordner. Verschiebe sie auf deinen USB-Stick bzw. dein Sicherungsmedium. Du kannst dieses Fenster jetzt schließen.</div>`
+   ${beendet?`<div class="note small" style="margin:.6rem 0 1rem"><b>Beendet.</b> Deine Daten sind verschlüsselt ${DESKTOP?"auf diesem Rechner":"im Browser"} gespeichert. ${beendet.name?`Die Sicherungskopie <b>${esc(beendet.name)}</b> liegt ${ortText(beendet)}.${beendet.ort==="desktop"?" Kopiere ab und zu eine davon auf deinen USB-Stick (Menü „Datei → Sicherungsordner öffnen“).":" Verschiebe sie auf deinen USB-Stick bzw. dein Sicherungsmedium."}`:beendet.heute?"Eine Sicherungskopie hast du heute schon heruntergeladen.":""} Du kannst dieses Fenster jetzt schließen.</div>`
     :`<p class="muted">Dokumentation und Beurteilung – offline, verschlüsselt gespeichert.</p>`}
    ${st?`<form id="openForm">
      ${pl.length>1?`<label class="f">Wer arbeitet?<select id="profilWahl">${pl.map((p,i)=>`<option value="${esc(p.key)}" ${p.key===STORE_KEY?"selected":""}>${esc(profilName(p,i))}</option>`).join("")}</select></label>`:""}
      <label class="f">Passwort${pwFeld("pw","current-password")}</label>
      <div class="err" id="err">${esc(msg)}</div>
      <div class="row"><button class="btn primary" type="submit">${beendet?"Wieder öffnen":"Öffnen"}</button><span class="spacer"></span><button class="btn ghost" type="button" data-act="importBackup">Sicherungskopie laden …</button></div></form>
-     <p class="small muted" style="margin-top:1.2rem">${st&&st.ws?`Passwort vergessen? Der LeDoK-Admin deiner Schule (${esc(st.ws.name)}) kann den Zugang mit dem Masterkennwort wiederherstellen${st.wv?`, ebenso der freigegebene Hersteller-Support (${esc(st.wv.name)})`:""}. Sonst hilft nur eine Sicherungskopie mit bekanntem Passwort.`:"Passwort vergessen? Dann lässt sich nur eine Sicherungskopie mit bekanntem Passwort laden."} <button class="btn ghost small danger" data-act="wipeAll">Alles im Browser löschen</button></p>`
+     <p class="small muted" style="margin-top:1.2rem">${st&&st.ws?`Passwort vergessen? Der LeDoK-Admin deiner Schule (${esc(st.ws.name)}) kann den Zugang mit dem Masterkennwort wiederherstellen${st.wv?`, ebenso der freigegebene Hersteller-Support (${esc(st.wv.name)})`:""}. Sonst hilft nur eine Sicherungskopie mit bekanntem Passwort.`:"Passwort vergessen? Dann lässt sich nur eine Sicherungskopie mit bekanntem Passwort laden."} </p>
+     <details class="weitere small"><summary class="muted">Weitere Optionen</summary><p class="small muted" style="margin:.4rem 0">Nur wenn du ganz neu anfangen willst: Löscht alle Daten ${DESKTOP?"auf diesem Rechner":"in diesem Browser"}. Vorher wird automatisch eine verschlüsselte Sicherung angelegt.</p><button class="btn ghost small danger" data-act="wipeAll">Alles löschen …</button></details>`
    :`<div class="err" id="err">${esc(msg)}</div>
      <div class="row"><button class="btn primary" data-act="startNew">Neue Klasse anlegen …</button><button class="btn" data-act="importBackup">Sicherungskopie laden …</button></div>`}
    <p class="small row" style="margin:1rem 0 0;flex-wrap:wrap">${st?`<a href="#" data-act="profilNeu" title="Jede Lehrkraft bekommt ein eigenes, getrennt verschlüsseltes LeDoK mit eigenem Passwort.">Andere Lehrkraft an diesem Rechner? Eigenes LeDoK anlegen …</a>`:""}<span class="spacer"></span><a href="#" data-act="adminOeffnen">LeDoK-Admin …</a></p>
@@ -3203,7 +3297,7 @@ function setupDialog(neuesProfil){
     <label class="f">Passwort wiederholen${pwFeld("pw2","new-password")}</label>
     <div class="note small stack" style="gap:.4rem"><span><b>Schulschlüssel (dringend empfohlen)</b><br>Hast du von deinem LeDoK-Admin eine Datei <code>.ledok-schule</code> bekommen? Dann lies sie jetzt ein. Nur damit kann dir jemand helfen, wenn du dein Passwort vergisst. Du kannst ihn auch später unter Einstellungen → Daten &amp; Sicherheit einlesen.</span>
      <div class="row small" style="gap:.5rem;flex-wrap:wrap"><button type="button" class="btn small" id="skWahl">Schulschlüssel einlesen …</button><span id="skInfo" class="muted">noch keiner eingelesen</span></div></div>
-    <label class="row small" id="demoRow" style="gap:.4rem"><input type="checkbox" id="demo" checked> Mit Beispielklasse starten (zum Ausprobieren, später löschbar)</label>
+    <label class="row small" id="demoRow" style="gap:.4rem"><input type="checkbox" id="demo"> Mit Beispielklasse starten (zum Ausprobieren, später löschbar)</label>
     <div class="err" id="err2"></div>
     <div class="row"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Starten</button></div></form>`,true);
   $("#pw1").focus();
@@ -3224,16 +3318,17 @@ function setupDialog(neuesProfil){
     else{S.meta.jgStufen=jg;faecherFuerStufen(jg);if(demo){loadDemo();faecherFuerStufen([...new Set([1,2,...jg])])}}
     protokoll(`Neu angelegt als ${ROLLEN[rolle]}${sk?` mit Schulschlüssel „${sk.name}“`:""}`);
     if(sk&&sk.support)protokoll(`Hersteller-Support eingeschaltet: ${supportTxt(sk.support)} (${sk.support.fp})`);
-    await saveNow();if(ST.error)return $("#err2").textContent=ST.error;
+    standMerken();ST.konflikt=false;await saveNow();if(ST.error)return $("#err2").textContent=ST.error;
     if(neuesProfil)profilMerken(STORE_KEY,($("#profilName").value||"").trim());
     d.close();startApp();
     if(rolle==="kl")setTimeout(()=>toast("Tipp: Oben schaltest du mit <b>Kürzel ⇄ Namen</b> zwischen S01, S02 … und den Vornamen um.",8000),400);
   };
 }
-function startApp(){DV++;closeDlg();syncFaecher();if(S.meta.rolle==='fl'&&!S.kinder.length){UI.tab='heute'}save();UI.kind=UI.kind&&kidById(UI.kind)?UI.kind:(S.kinder[0]||{}).id||null;lastActivity=Date.now();render()}
+function startApp(){DV++;closeDlg();syncFaecher();fensterMelden();if(S.meta.rolle==='fl'&&!S.kinder.length){UI.tab='heute'}save();UI.kind=UI.kind&&kidById(UI.kind)?UI.kind:(S.kinder[0]||{}).id||null;lastActivity=Date.now();render()}
 
 function render(){
   if(!S)return;
+  legFlush();
   syncFaecher();
   const days=S.meta.lastBackup?Math.floor((Date.now()-new Date(S.meta.lastBackup))/864e5):null;
   const bk=days==null?`<span class="badge warn" title="Noch keine Sicherungskopie heruntergeladen">Kopie: nie</span>`:days>7?`<span class="badge warn">Kopie vor ${days} Tagen</span>`:"";
@@ -3241,7 +3336,8 @@ function render(){
   setTimeout(()=>{const nb=$(".rbaum");if(nb&&_rbs)nb.scrollTop=_rbs},0);
   document.body.classList.toggle("einst-weit",UI.tab==="einst");
   const th=themeLesen();
-  $("#app").innerHTML=`<header class="top"><div class="topbar">
+  const demo=S.meta.demo?`<div class="demoband" role="status"><span><b>Beispielklasse</b> – nur zum Ausprobieren. Trage hier keine echten Kinder ein.</span><button class="btn small" data-act="demoEntfernen">Beispiel entfernen und eigene Klasse anlegen</button></div>`:"";
+  $("#app").innerHTML=`${demo}<header class="top"><div class="topbar">
     <div class="brand">${LOGO_SVG}<h1>LeDoK</h1>${rolleBadge()}<span class="cls">${esc(S.meta.klasse)} · ${esc(S.meta.schuljahr)} · ${S.meta.halbjahr}. HJ</span></div>
     <nav class="tabs">${TABS.map(([k,l])=>`<button class="${UI.tab===k?"on":""}" data-act="tab" data-v="${k}">${l}</button>`).join("")}</nav>
     <label class="nswitch ${UI.showNames?"an":""}" title="${UI.showNames?"Klarnamen sichtbar (Vorname + Initial) – ausschalten für Kürzel":"Kürzel-Modus – einschalten für Klarnamen"}"><span class="nl-k">Kürzel</span><input type="checkbox" data-chg="namenSwitch" ${UI.showNames?"checked":""} aria-label="Klarnamen anzeigen"><span class="sl"></span><span class="nl-n">Namen</span></label>
@@ -3288,7 +3384,7 @@ function rasterFaecher(){
   return `<p class="muted" style="margin:0">Ausgeblendete Fächer verschwinden aus Erfassung, Übersicht, Berichten, LEG-Bögen und Diagrammen – ihre Daten bleiben erhalten. Religionslehren, Ethik und Deutsch als Zweitsprache sind in der Vorlage enthalten, aber zunächst ausgeblendet: Blende ein, was du unterrichtest.</p>
   <div class="row">${`<div class="seg stufenseg">${[...da.sort((a,b)=>Object.keys(STUFEN).indexOf(a)-Object.keys(STUFEN).indexOf(b)),"*"].map(x=>`<button class="${cur===x?"on":""}" data-act="rFStufe" data-v="${x}">${x==="*"?"alle Fächer":STUFEN[x]}</button>`).join("")}</div>`}<span class="small muted">${S.meta.faecher.filter(f=>cur==="*"||fachStufe(f.name)===cur).length} Fächer</span></div>
   <div class="tw"><table class="edit"><tr><th>Fach</th><th>Kurzname</th><th>ID-Präfix</th><th>Stufe</th><th class="num">Anzeige</th><th class="num">benotet</th><th title="Auf welcher Ebene formulieren Bericht und LEG-Bogen Stärken und Übungsfelder?">Bericht/LEG nennt</th><th class="num">Bereiche / Einträge</th><th></th></tr>${fRows}</table></div>
-  <form class="row" id="fachAdd" onsubmit="return false"><input type="text" id="nfName" placeholder="Neues Fach oder Wahlfach, z. B. Chor" style="min-width:240px"><input type="text" id="nfKurz" placeholder="Kurzname" style="width:110px" maxlength="10">
+  <form class="row" id="fachAdd" data-nosubmit><input type="text" id="nfName" placeholder="Neues Fach oder Wahlfach, z. B. Chor" style="min-width:240px"><input type="text" id="nfKurz" placeholder="Kurzname" style="width:110px" maxlength="10">
    <label class="row small" style="gap:.35rem"><input type="checkbox" id="nfNote"> benotet</label><button class="btn primary" data-act="fachAdd">Fach hinzufügen</button></form>`;
 }
 function rasterAustausch(){
@@ -3474,7 +3570,7 @@ themeSetzen(themeLesen());
 function klasseSperre(){
   return `<div class="card stack" style="max-width:520px"><h2 style="margin:0">🔒 Klassenliste</h2>
    <p class="small" style="margin:0">Die Klassenliste enthält Klarnamen und Geburtsdaten. Zum Schutz der Namen fragt LeDoK hier noch einmal nach deinem Passwort – demselben, mit dem du LeDoK öffnest.</p>
-   <form class="row" id="kgf" onsubmit="return false" style="align-items:flex-start"><span style="flex:1 1 200px">${pwFeld("kgpw")}</span><button class="btn primary" data-act="klasseEntsperren">Entsperren</button></form>
+   <form class="row" id="kgf" data-nosubmit style="align-items:flex-start"><span style="flex:1 1 200px">${pwFeld("kgpw")}</span><button class="btn primary" data-act="klasseEntsperren">Entsperren</button></form>
    <p class="small muted" style="margin:0">Die Freigabe gilt, bis du sperrst, beendest oder die Datei sich automatisch sperrt.</p></div>`;
 }
 async function passwortPruefen(pw){try{await openSealed(await sealState(),pw);return true}catch(e){return false}}
@@ -3487,7 +3583,7 @@ function kbMark(){document.querySelectorAll(".kb").forEach(el=>el.classList.remo
 function kbStart(){toast("Tastatur aktiv: Ziffer bewertet das markierte Kind, danach geht es automatisch weiter.",3500)}
 document.addEventListener("keydown",e=>{
   if(!S||UI.tab!=="erfassen"||e.ctrlKey||e.metaKey||e.altKey)return;
-  if($("#dlg").open)return;const t=e.target;if(t&&t.closest&&t.closest("input,textarea,select,[contenteditable]"))return;
+  if(dlgOffen())return;const t=e.target;if(t&&t.closest&&t.closest("input,textarea,select,[contenteditable]"))return;
   const ziffer=/^[1-9]$/.test(e.key)?+e.key:null;
   if(UI.mode==="beob"){
     const ids=kbSichtbar(".rmain [id^=kid-]").map(el=>el.id.slice(4));if(!ids.length||!UI.komp)return;
@@ -3543,7 +3639,7 @@ function spontanDialog(k){
   $("#spL").onclick=e=>{const b=e.target.closest(".spitem");if(!b)return;sel=b.dataset.c;liste()};
   $("#spW").onclick=e=>{const b=e.target.closest("[data-w]");if(!b)return;wert=+b.dataset.w;$("#spW").querySelectorAll("button").forEach(x=>x.classList.toggle("sel",x===b))};
   bindNbChips();
-  $("#spf").onsubmit=e=>{e.preventDefault();if(!sel)return alert("Bitte ein Thema wählen.");if(!wert)return alert("Bitte einen Wert wählen.");
+  $("#spf").onsubmit=e=>{e.preventDefault();if(!sel)return info("Bitte ein Thema wählen.");if(!wert)return info("Bitte einen Wert wählen.");
     const n=$("#spN").value.trim();addEntry(k,sel,wert,"b",n);
     if(n&&$("#spJ").checked){const it=items.find(x=>x.id===sel);addNotiz(k,it&&it.fach!=="Arbeits- und Sozialverhalten"?it.fach:"Allgemein",n)}
     save();d.close();render();toast(`<b>${kidLabel(kid)}</b> · ${esc(sel)} · ${wert} gespeichert.`,3000)};
@@ -3770,7 +3866,7 @@ kind(){
   <div class="card${istFL()?" hidden-fl":""}">
    <div class="row"><div class="seg">${[["bericht","Bericht / Zeugnistext"],["leg","LEG-Bogen"]].map(([k,l])=>`<button class="${UI.expTab===k?"on":""}" data-act="expTab" data-v="${k}">${l}</button>`).join("")}</div><span class="spacer"></span>
    ${UI.expTab==="bericht"?`<span class="small muted">${saved?"Überarbeitete Fassung gespeichert":"Automatischer Entwurf"}</span><button class="btn" data-act="regen">Neu erzeugen</button><button class="btn primary" data-act="saveText">Speichern</button><button class="btn" data-act="printOne" data-v="bericht">Drucken</button>`:""}</div>
-   ${UI.expTab==="bericht"?`<p class="small muted">Entwurf aus den Textbausteinen. Lies gegen, kürze und ergänze einen persönlichen Satz – dann „Speichern“. ${kid.vorname?"":"<b>Tipp:</b> Trage unter „Einstellungen → Klasse“ den Vornamen ein, damit der Text den Namen enthält."}</p>
+   ${UI.expTab==="bericht"?`<p class="small muted">Entwurf aus den Textbausteinen. Lies gegen, kürze und ergänze einen persönlichen Satz. Deine Änderungen werden beim Tippen automatisch gespeichert. ${kid.vorname?"":"<b>Tipp:</b> Trage unter „Einstellungen → Klasse“ den Vornamen ein, damit der Text den Namen enthält."}</p>
    <textarea id="berichtTA" rows="16">${esc(berichtText(kid))}</textarea>`:legEditor(kid)}
   </div></div>`;
 },
@@ -3891,7 +3987,7 @@ daten(){
    <div class="row"><button class="btn" data-act="csv">CSV herunterladen</button><button class="btn" data-act="csvImport">CSV importieren …</button></div></div>
   <div class="card"><h3 style="margin-top:0">Löschen</h3>
    <p class="small">Schülerdaten löschen behält Raster, Textbausteine und Einstellungen – praktisch, um nach dem Ausprobieren mit der echten Klasse zu starten.</p>
-   <div class="row"><button class="btn danger" data-act="wipeKids">Schülerdaten löschen …</button><button class="btn danger" data-act="wipeAll">Alles im Browser löschen …</button></div></div>
+   <div class="row"><button class="btn danger" data-act="wipeKids">Schülerdaten löschen …</button><button class="btn danger" data-act="wipeAll">Alles ${DESKTOP?"auf diesem Rechner":"im Browser"} löschen …</button></div></div>
   </div>
   <div class="card small"><h3 style="margin-top:0">So schützt diese Datei die Daten</h3><ul>
    <li>Keine Netzwerkverbindungen: ${window.ledokDesktop?"Das Programm sperrt jeden Datenverkehr nach außen sowie Kamera, Mikrofon und Standort.":"Die Datei enthält eine Sicherheitsrichtlinie, die dem Browser jeden Datenverkehr nach außen verbietet."} Es funktioniert ohne Internet.</li>
@@ -4342,7 +4438,9 @@ const istFL=()=>!!(S&&S.meta&&S.meta.rolle==="fl");
 const slug=t=>String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ß/g,"ss").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)||"datei";
 const hexStr=buf=>[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
 const neueId=()=>hexStr(crypto.getRandomValues(new Uint8Array(8)));
-async function fingerabdruck(pub,spub){const h=hexStr(await crypto.subtle.digest("SHA-256",enc.encode(pub.n+"."+pub.e+(spub?"."+spub.x+"."+spub.y:"")))).toUpperCase().slice(0,12);return h.match(/.{4}/g).join("-")}
+async function fingerabdruck(pub,spub){const h=hexStr(await crypto.subtle.digest("SHA-256",enc.encode(pub.n+"."+pub.e+(spub?"."+spub.x+"."+spub.y:"")))).toUpperCase().slice(0,20);return h.match(/.{4}/g).join("-")}
+// Fingerabdrücke haben 80 Bit (5 Blöcke); ältere Schlüsseldateien tragen noch die ersten 3 Blöcke
+const fpPasst=(berechnet,gespeichert)=>!!gespeichert&&(berechnet===gespeichert||berechnet.slice(0,14)===gespeichert);
 const ECDSA={name:"ECDSA",namedCurve:"P-256"}, ECSIGN={name:"ECDSA",hash:"SHA-256"};
 // Update-Pakete: gleiche Berechnung in desktop/update.js (Hauptprozess der Desktop-App)
 const updPayload=u=>JSON.stringify(["ledok-update",1,u.version,u.datum,u.sha256,u.hinweise||""]);
@@ -4370,19 +4468,19 @@ function hashStr(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCode
 /* ---------- Schulschlüssel (bei der Lehrkraft) ---------- */
 async function schulKeyLesen(){
   const f=await pickFile(".ledok-schule,.json,application/json");if(!f)return null;
-  let o;try{o=JSON.parse(await f.text())}catch(e){alert("Diese Datei kann nicht gelesen werden.");return null}
-  if(!o||o.app!=="ledok-schule"||!o.pub||!o.ek||!o.msalt){alert("Das ist keine Schulschlüssel-Datei (.ledok-schule).");return null}
+  let o;try{o=JSON.parse(await f.text())}catch(e){info("Diese Datei kann nicht gelesen werden.");return null}
+  if(!o||o.app!=="ledok-schule"||!o.pub||!o.ek||!o.msalt){info("Das ist keine Schulschlüssel-Datei (.ledok-schule).");return null}
   const fp=await fingerabdruck(o.pub,o.spub);
-  if(fp!==o.fp){alert("Der Schulschlüssel ist beschädigt oder verändert (Fingerabdruck stimmt nicht).");return null}
-  if(!await skPruefen(o)){alert("Der Schulschlüssel ist verändert worden – die Signatur der Schule stimmt nicht. Bitte die Originaldatei vom LeDoK-Admin verwenden.");return null}
+  if(!fpPasst(fp,o.fp)){info("Der Schulschlüssel ist beschädigt oder verändert (Fingerabdruck stimmt nicht).");return null}
+  if(!await skPruefen(o)){info("Der Schulschlüssel ist verändert worden – die Signatur der Schule stimmt nicht. Bitte die Originaldatei vom LeDoK-Admin verwenden.");return null}
   return {sid:o.sid,name:o.name,fp:o.fp,pub:o.pub,msalt:o.msalt,ek:o.ek,esk:o.esk,spub:o.spub,sig:o.sig,ver:o.ver||1,support:o.support||null,created:o.created};
 }
 function schulKeyCard(){
   const sk=S.meta.schulKey, pr=(S.meta.protokoll||[]);
   return `<div class="card"><h3 style="margin-top:0">Schulschlüssel (Masterkennwort der Schule)</h3>
   ${sk?`<p class="small"><span class="badge ok">✓ hinterlegt</span> <b>${esc(sk.name)}</b> · Fingerabdruck <code>${esc(sk.fp)}</code>${sk.ver?` · Version ${sk.ver}`:""}</p>
-   <div class="supbox ${sk.support?"an":""}"><b>Hersteller-Support: ${sk.support?"eingeschaltet":"ausgeschaltet"}</b><br><span class="small">${sk.support?`Deine Schule hat ${esc(supportTxt(sk.support))} seit ${datStr(sk.support.seit)} freigegeben (Fingerabdruck <code>${esc(sk.support.fp)}</code>). Der Hersteller kann bei vergessenem Passwort helfen – nur mit Daten, die ihm übergeben werden; einen Fernzugriff gibt es nicht. Jede Wiederherstellung steht im Protokoll. Ein- und ausschalten kann nur der LeDoK-Admin deiner Schule.`:"Nur der LeDoK-Admin deiner Schule kann den Zugang wiederherstellen."}</span></div>
-   <p class="small muted">Alles, was LeDoK ab jetzt verschlüsselt – Daten ${AM_RECHNER}, Sicherungskopien, Übergabedateien und Fachpakete –, kann der LeDoK-Admin deiner Schule mit dem Masterkennwort wieder öffnen, falls du dein Passwort vergisst. Im Alltag sieht er nichts; jede Wiederherstellung steht unten im Protokoll. Ältere Kopien ohne Schulschlüssel sind nicht erfasst – lade jetzt eine neue Kopie herunter.</p>
+   <div class="supbox ${sk.support?"an":""}"><b>Hersteller-Support: ${sk.support?"eingeschaltet":"ausgeschaltet"}</b><br><span class="small">${sk.support?`Deine Schule hat ${esc(supportTxt(sk.support))} seit ${datStr(sk.support.seit)} freigegeben (Fingerabdruck <code>${esc(sk.support.fp)}</code>). Der Hersteller kann bei vergessenem Passwort helfen – nur mit Daten, die ihm übergeben werden; einen Fernzugriff gibt es nicht. Jede Wiederherstellung über LeDoK steht im Protokoll. Ein- und ausschalten kann nur der LeDoK-Admin deiner Schule.`:"Nur der LeDoK-Admin deiner Schule kann den Zugang wiederherstellen."}</span></div>
+   <p class="small muted">Alles, was LeDoK ab jetzt verschlüsselt – Daten ${AM_RECHNER}, Sicherungskopien, Übergabedateien und Fachpakete –, kann der LeDoK-Admin deiner Schule mit dem Masterkennwort wieder öffnen, falls du dein Passwort vergisst. Im Alltag sieht er nichts; jede Wiederherstellung über LeDoK steht unten im Protokoll. Ältere Kopien ohne Schulschlüssel sind nicht erfasst – lade jetzt eine neue Kopie herunter.</p>
    <div class="row"><button class="btn small" data-act="schulKeyEin">Anderen Schulschlüssel einlesen …</button><span class="spacer"></span><button class="btn ghost small danger" data-act="schulKeyAus">Entfernen</button></div>`
   :`<p class="small"><span class="badge warn">nicht hinterlegt</span> Vergisst du dein Passwort, sind die Daten verloren.</p>
    <p class="small muted">Der LeDoK-Admin deiner Schule erstellt einmalig einen Schulschlüssel (Datei <code>.ledok-schule</code>), geschützt mit dem Masterkennwort. Lies ihn hier ein – dann kann er im Notfall deinen Zugang wiederherstellen. Vergleiche den Fingerabdruck mit dem Aushang des Admins.</p>
@@ -4410,12 +4508,12 @@ function screenAdmin(msg=""){
     <p class="small">Am Gerät der Lehrkraft die Daten ${AM_RECHNER} mit einem neuen Passwort freischalten – oder eine Datei (Sicherungskopie, Übergabedatei, Fachpaket) neu verschlüsseln.</p>
     <div class="row">${st?`<button class="btn primary" data-act="adminRetten" data-v="browser" ${st.ws?"":"disabled"}>Daten ${AM_RECHNER}${profilLabel()}${st.ws?` · ${esc(st.ws.name)}`:""}</button>`:""}<button class="btn" data-act="adminRetten" data-v="datei">Datei wählen …</button></div>
     ${st&&!st.ws?`<p class="small muted">Die Daten ${AM_RECHNER}${profilLabel()} wurden ohne Schulschlüssel gespeichert und lassen sich nicht wiederherstellen.</p>`:""}
-    <p class="small muted">Jede Wiederherstellung wird in der Datei protokolliert und ist für die Lehrkraft sichtbar.</p></details>
+    <p class="small muted">Jede Wiederherstellung über LeDoK wird in der Datei protokolliert und ist für die Lehrkraft sichtbar.</p></details>
    <details class="adm"><summary><b>3 · Schulschlüssel prüfen</b></summary>
     <p class="small">Prüft, ob Schulschlüssel-Datei und Masterkennwort zusammenpassen, und zeigt Fingerabdruck und Support-Status.</p>
     <button class="btn" data-act="adminPruefen">Schulschlüssel-Datei wählen …</button></details>
    <details class="adm"><summary><b>4 · Hersteller-Support</b> <span class="small muted">freiwillig, jederzeit abschaltbar</span></summary>
-    <p class="small">Eingeschaltet kann zusätzlich der Hersteller von LeDoK bei vergessenem Passwort helfen – aber nur mit einer Datei, die ihm übergeben wird, oder am Gerät der Lehrkraft. Einen Fernzugriff gibt es nicht. Die Freigabe ist mit dem Masterkennwort signiert, alle Lehrkräfte sehen sie unter „Daten &amp; Sicherheit“, und jede Wiederherstellung durch den Hersteller steht im Protokoll der Datei.</p>
+    <p class="small">Eingeschaltet kann zusätzlich der Hersteller von LeDoK bei vergessenem Passwort helfen – aber nur mit einer Datei, die ihm übergeben wird, oder am Gerät der Lehrkraft. Einen Fernzugriff gibt es nicht. Die Freigabe ist mit dem Masterkennwort signiert, alle Lehrkräfte sehen sie unter „Daten &amp; Sicherheit“, und jede Wiederherstellung durch den Hersteller über LeDoK steht im Protokoll der Datei. Ausschalten wirkt nur für neu gespeicherte Daten: Bereits erstellte Kopien bleiben für den Support lesbar.</p>
     <button class="btn" data-act="adminSupport">Schulschlüssel-Datei wählen …</button><div id="supOut"></div></details>
    ${location.hash==="#hersteller"?`<details class="adm adm-h" open><summary><b>Hersteller · Support-Schlüssel</b></summary>
     <p class="small">Nur für den Hersteller. Erzeugt das Schlüsselpaar für den Support: Die <b>öffentliche</b> Datei (<code>.ledok-support</code>) gibst du Schulen, die Support wünschen. Die <b>private</b> Datei bleibt ausschließlich bei dir, geschützt mit deiner Passphrase.</p>
@@ -4471,65 +4569,65 @@ const ADMIN_ACT={
   adminPruefen:async()=>{
     const sk=await schulKeyLesen();if(!sk)return;
     const m=await askPassword("Masterkennwort",`Schulschlüssel „${sk.name}“ · Fingerabdruck ${sk.fp}`);if(m==null)return;
-    try{await schulPrivat(sk,m);alert(`Passt. Schulschlüssel „${sk.name}“, Fingerabdruck ${sk.fp}, Version ${sk.ver||1}.\nHersteller-Support: ${sk.support?"eingeschaltet – "+supportTxt(sk.support)+" ("+sk.support.fp+")":"ausgeschaltet"}`)}catch(e){alert("Das Masterkennwort passt nicht zu diesem Schulschlüssel.")}
+    try{await schulPrivat(sk,m);info(`Passt. Schulschlüssel „${sk.name}“, Fingerabdruck ${sk.fp}, Version ${sk.ver||1}.\nHersteller-Support: ${sk.support?"eingeschaltet – "+supportTxt(sk.support)+" ("+sk.support.fp+")":"ausgeschaltet"}`)}catch(e){info("Das Masterkennwort passt nicht zu diesem Schulschlüssel.")}
   },
   adminRetten:async a=>{
     const mode=a.dataset.m==="support"?"support":"schule";let obj,name=null;
     if(a.dataset.v==="browser")obj=readStore();
-    else{const f=await pickFile(".lernstand,.ledok,.lernstand-kind,.json");if(!f)return;name=f.name;try{obj=JSON.parse(await f.text())}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}}
-    if(!obj||!obj.ct)return alert("Das ist keine verschlüsselte LeDoK-Datei.");
-    if(obj.app==="ledok-rueckmeldung")return alert("Rückmeldungen von Fachlehrkräften brauchen kein Passwort – sie werden im LeDoK der Klassenlehrkraft automatisch geöffnet.");
+    else{const f=await pickFile(".lernstand,.ledok,.lernstand-kind,.json");if(!f)return;name=f.name;try{obj=JSON.parse(await f.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}}
+    if(!obj||!obj.ct)return info("Das ist keine verschlüsselte LeDoK-Datei.");
+    if(obj.app==="ledok-rueckmeldung")return info("Rückmeldungen von Fachlehrkräften brauchen kein Passwort – sie werden im LeDoK der Klassenlehrkraft automatisch geöffnet.");
     let r,wer;
     if(mode==="support"){
-      if(!obj.wv)return alert("Für diese Daten ist kein Hersteller-Support eingeschaltet. Eine Wiederherstellung durch den Hersteller ist nicht möglich.");
+      if(!obj.wv)return info("Für diese Daten ist kein Hersteller-Support eingeschaltet. Eine Wiederherstellung durch den Hersteller ist nicht möglich.");
       const f=await askFile("Schritt 2 · Privater Support-Schlüssel",`Die Daten sind für den Support-Schlüssel ${obj.wv.fp} (${obj.wv.name}) freigegeben. Wähle jetzt deine private Datei (.ledok-support-privat).`,".ledok-support-privat,.json","Private Support-Datei wählen …");if(!f)return;let pk;
-      try{pk=JSON.parse(await f.text())}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}
-      if(!pk||pk.app!=="ledok-support-privat")return alert("Das ist keine private Support-Schlüssel-Datei.");
-      if(pk.fp!==obj.wv.fp)return alert(`Diese Daten sind für den Support-Schlüssel ${obj.wv.fp} freigegeben, die gewählte Datei ist ${pk.fp}.`);
+      try{pk=JSON.parse(await f.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
+      if(!pk||pk.app!=="ledok-support-privat")return info("Das ist keine private Support-Schlüssel-Datei.");
+      if(pk.fp!==obj.wv.fp)return info(`Diese Daten sind für den Support-Schlüssel ${obj.wv.fp} freigegeben, die gewählte Datei ist ${pk.fp}.`);
       const pass=await askPassword("Support-Passphrase",`Support-Schlüssel ${pk.fp}`);if(pass==null)return;
-      let priv;try{priv=await schulPrivat(pk,pass)}catch(e){return alert("Die Passphrase ist falsch.")}
-      try{const dek=await importDek(await crypto.subtle.decrypt({name:"RSA-OAEP"},priv,unb64(obj.wv.ct)));r=await entsiegeln(obj,{dek})}catch(e){return alert("Die Datei konnte nicht geöffnet werden.")}
+      let priv;try{priv=await schulPrivat(pk,pass)}catch(e){return info("Die Passphrase ist falsch.")}
+      try{const dek=await importDek(await crypto.subtle.decrypt({name:"RSA-OAEP"},priv,unb64(obj.wv.ct)));r=await entsiegeln(obj,{dek})}catch(e){return info("Die Datei konnte nicht geöffnet werden.")}
       wer=`den Hersteller-Support (${obj.wv.name})`;
     }else{
-      if(!obj.ws)return alert("Diese Daten wurden ohne Schulschlüssel gespeichert. Eine Wiederherstellung ist leider nicht möglich.");
+      if(!obj.ws)return info("Diese Daten wurden ohne Schulschlüssel gespeichert. Eine Wiederherstellung ist leider nicht möglich.");
       const master=await askPassword("Masterkennwort",`Schulschlüssel „${obj.ws.name}“ · Fingerabdruck ${obj.ws.fp}`);if(master==null)return;
-      try{r=await entsiegeln(obj,{master})}catch(e){return alert(e.message==="master"?"Das Masterkennwort ist falsch.":"Die Datei konnte nicht geöffnet werden.")}
+      try{r=await entsiegeln(obj,{master})}catch(e){return info(e.message==="master"?"Das Masterkennwort ist falsch.":"Die Datei konnte nicht geöffnet werden.")}
       wer="den LeDoK-Admin mit dem Masterkennwort";
     }
-    const p1=await askPassword("Neues Passwort für die Lehrkraft","Mindestens 8 Zeichen. Die Lehrkraft ändert es danach selbst.");if(p1==null)return;if(p1.length<8)return alert("Mindestens 8 Zeichen.");
-    const p2=await askPassword("Neues Passwort","Bitte wiederholen");if(p1!==p2)return alert("Die Passwörter stimmen nicht überein.");
+    const p1=await askPassword("Neues Passwort für die Lehrkraft","Mindestens 8 Zeichen. Die Lehrkraft ändert es danach selbst.");if(p1==null)return;if(p1.length<8)return info("Mindestens 8 Zeichen.");
+    const p2=await askPassword("Neues Passwort","Bitte wiederholen");if(p1!==p2)return info("Die Passwörter stimmen nicht überein.");
     const salt=rnd(16),pwKey=await deriveKey(p1,salt);let data=r.data;
     if(obj.app==="lernstand12"&&data.meta)data.meta.protokoll=[{ts:new Date().toISOString(),text:`Zugang durch ${wer} wiederhergestellt – neues Passwort vergeben.`},...(data.meta.protokoll||[])].slice(0,60);
     const sk=(obj.app==="lernstand12"&&data.meta&&data.meta.schulKey)||schulKeyAusWrap(obj.ws);
-    const neu=await versiegeln(obj.app,data,{dek:r.dek,pwKey,salt,sk:sk||null});
+    const neu=await versiegeln(obj.app,data,{dek:r.dek,pwKey,salt,sk:sk||null,zip:obj.app==="lernstand12"});
     for(const k of ["pid","info","wk","ws","wv"])if(obj[k]!=null&&neu[k]==null)neu[k]=obj[k];
-    if(a.dataset.v==="browser"){localStorage.setItem(STORE_KEY,JSON.stringify(neu));screenAdmin(`<b>Zugang wiederhergestellt</b> durch ${esc(wer)}. Die Lehrkraft meldet sich jetzt mit dem neuen Passwort an und ändert es unter „Einstellungen → Daten &amp; Sicherheit → Passwort ändern“. Der Vorgang steht im Protokoll.`)}
+    if(a.dataset.v==="browser"){try{await storeWrite(JSON.stringify(neu));if(!desktopSpeicher())localStorage.setItem(standKey(),neu.saved+"|admin")}catch(e){return info("Nicht gespeichert","Die wiederhergestellten Daten konnten nicht gespeichert werden: "+e.message)}screenAdmin(`<b>Zugang wiederhergestellt</b> durch ${esc(wer)}. Die Lehrkraft meldet sich jetzt mit dem neuen Passwort an und ändert es unter „Einstellungen → Daten &amp; Sicherheit → Passwort ändern“. Der Vorgang steht im Protokoll.`)}
     else{const nn=(name||"ledok-datei.lernstand").replace(/(\.[A-Za-z-]+)$/,"-neu$1");download(nn,JSON.stringify(neu),"application/octet-stream");screenAdmin(`<b>Neu verschlüsselt:</b> „${esc(nn)}“ liegt im Download-Ordner und öffnet mit dem neuen Passwort.`)}
   },
   adminSupport:async()=>{
     const f=await pickFile(".ledok-schule,.json");if(!f)return;let sk;
-    try{sk=JSON.parse(await f.text())}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}
-    if(!sk||sk.app!=="ledok-schule")return alert("Das ist keine Schulschlüssel-Datei.");
-    if(!sk.spub||!sk.esk)return alert("Dieser Schulschlüssel stammt aus einer älteren LeDoK-Version und kann noch nicht signieren. Bitte einen neuen Schulschlüssel erstellen und an die Lehrkräfte verteilen.");
-    if(await fingerabdruck(sk.pub,sk.spub)!==sk.fp||!await skPruefen(sk))return alert("Diese Schulschlüssel-Datei ist verändert worden.");
+    try{sk=JSON.parse(await f.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
+    if(!sk||sk.app!=="ledok-schule")return info("Das ist keine Schulschlüssel-Datei.");
+    if(!sk.spub||!sk.esk)return info("Dieser Schulschlüssel stammt aus einer älteren LeDoK-Version und kann noch nicht signieren. Bitte einen neuen Schulschlüssel erstellen und an die Lehrkräfte verteilen.");
+    if(!fpPasst(await fingerabdruck(sk.pub,sk.spub),sk.fp)||!await skPruefen(sk))return info("Diese Schulschlüssel-Datei ist verändert worden.");
     const m=await askPassword("Masterkennwort",`Schulschlüssel „${sk.name}“ · Fingerabdruck ${sk.fp}`);if(m==null)return;
-    try{await schulPrivat(sk,m)}catch(e){return alert("Das Masterkennwort passt nicht zu diesem Schulschlüssel.")}
+    try{await schulPrivat(sk,m)}catch(e){return info("Das Masterkennwort passt nicht zu diesem Schulschlüssel.")}
     let txt;
     if(sk.support){
-      if(!confirm(`Hersteller-Support ist eingeschaltet:\n${supportTxt(sk.support)}\nSupport-Fingerabdruck ${sk.support.fp}, seit ${datStr(sk.support.seit)}.\n\nAusschalten?`))return;
+      if(!await frage(`Hersteller-Support ist eingeschaltet:\n${supportTxt(sk.support)}\nSupport-Fingerabdruck ${sk.support.fp}, seit ${datStr(sk.support.seit)}.\n\nAusschalten?`))return;
       sk.support=null;txt="ausgeschaltet";
     }else{
       const g=await askFile("Support-Schlüssel des Herstellers","Masterkennwort stimmt. Wähle jetzt die öffentliche Support-Datei des Herstellers (.ledok-support).",".ledok-support,.json","Support-Datei wählen …");if(!g)return;let sp;
-      try{sp=JSON.parse(await g.text())}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}
-      if(!sp||sp.app!=="ledok-support"||!sp.pub)return alert("Das ist keine Support-Schlüssel-Datei des Herstellers (.ledok-support).");
-      if(await fingerabdruck(sp.pub)!==sp.fp)return alert("Die Support-Schlüssel-Datei ist beschädigt oder verändert.");
-      if(!confirm(`Hersteller-Support einschalten?\n\n${supportTxt(sp)}\nSupport-Fingerabdruck: ${sp.fp}\n\nDanach kann der Hersteller bei vergessenem Passwort helfen, wenn ihm Daten übergeben werden. Alle Lehrkräfte sehen das. Du kannst es jederzeit wieder ausschalten.`))return;
+      try{sp=JSON.parse(await g.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
+      if(!sp||sp.app!=="ledok-support"||!sp.pub)return info("Das ist keine Support-Schlüssel-Datei des Herstellers (.ledok-support).");
+      if(!fpPasst(await fingerabdruck(sp.pub),sp.fp))return info("Die Support-Schlüssel-Datei ist beschädigt oder verändert.");
+      if(!await frage(`Hersteller-Support einschalten?\n\n${supportTxt(sp)}\nSupport-Fingerabdruck: ${sp.fp}\n\nDanach kann der Hersteller bei vergessenem Passwort helfen, wenn ihm Daten übergeben werden. Alle Lehrkräfte sehen das. Du kannst es jederzeit wieder ausschalten.`))return;
       sk.support={name:sp.name,kontakt:sp.kontakt||"",fp:sp.fp,pub:sp.pub,seit:new Date().toISOString()};txt="eingeschaltet";
     }
     sk.ver=(sk.ver||1)+1;await skSignieren(sk,m);
     const datei=`Schulschluessel-${slug(sk.name)}-v${sk.ver}.ledok-schule`;
     download(datei,JSON.stringify(sk),"application/json");
-    $("#supOut").innerHTML=`<div class="note small" style="margin-top:.8rem"><b>Hersteller-Support ${txt}.</b> Neue Datei: <b>${esc(datei)}</b> (Version ${sk.ver}, Fingerabdruck unverändert <code>${esc(sk.fp)}</code>).<br>Gib die Datei an alle Lehrkräfte weiter. Sie lesen sie unter „Einstellungen → Daten &amp; Sicherheit → Anderen Schulschlüssel einlesen“ ein. Erst danach gilt die Änderung für ihre neu gespeicherten Daten.</div>`;
+    $("#supOut").innerHTML=`<div class="note small" style="margin-top:.8rem"><b>Hersteller-Support ${txt}.</b> Neue Datei: <b>${esc(datei)}</b> (Version ${sk.ver}, Fingerabdruck unverändert <code>${esc(sk.fp)}</code>).<br>Gib die Datei an alle Lehrkräfte weiter. Sie lesen sie unter „Einstellungen → Daten &amp; Sicherheit → Anderen Schulschlüssel einlesen“ ein. Erst danach gilt die Änderung für ihre neu gespeicherten Daten.${txt==="ausgeschaltet"?" Bereits erstellte Sicherungskopien bleiben für den Support lesbar – die Lehrkräfte sollten danach neue Kopien anlegen und alte vernichten.":""}</div>`;
   },
   updateKeyNeu:async()=>{
     const p1=$("#huPw1").value,p2=$("#huPw2").value,err=$("#huErr");
@@ -4548,13 +4646,17 @@ const ADMIN_ACT={
     const out=$("#huOut");out.innerHTML="";
     const f=await pickFile(".html,.htm,text/html");if(!f)return;const html=await f.text();
     const m=html.match(/const APP_VERSION="(\d+\.\d+\.\d+)"/);
-    if(!m||!/LeDoK/.test(html))return alert("In dieser Datei steht keine LeDoK-Versionsnummer (const APP_VERSION=\"x.y.z\").");
+    if(!m||!/LeDoK/.test(html))return info("In dieser Datei steht keine LeDoK-Versionsnummer (const APP_VERSION=\"x.y.z\").");
     const version=m[1];
+    // Ohne passenden CSP-Hash würde das Skript in der neuen Fassung gar nicht starten
+    const si=html.indexOf("\n<\x73cript>\n"),sj=html.lastIndexOf("\n<\/script>\n<\/body>"),csp=/script-src ('sha256-[^']+')/.exec(html.slice(0,Math.max(0,si)));
+    if(si<0||sj<si||!csp||csp[1]!==`'sha256-${b64(await crypto.subtle.digest("SHA-256",enc.encode(html.slice(si+9,sj+1))))}'`)
+      return info("Update nicht erstellt","In dieser LeDoK.html passt der CSP-Hash nicht zum Skript – sie würde nicht starten. Bitte im Projekt „node scripts/csp-hash.js“ ausführen und die Datei erneut wählen.");
     const g=await askFile(`Update ${version} signieren`,"Wähle jetzt deinen privaten Update-Schlüssel (.ledok-updatekey).",".ledok-updatekey,.json","Privaten Update-Schlüssel wählen …");if(!g)return;
-    let pk;try{pk=JSON.parse(await g.text())}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}
-    if(!pk||pk.app!=="ledok-updatekey-privat")return alert("Das ist kein privater Update-Schlüssel.");
+    let pk;try{pk=JSON.parse(await g.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
+    if(!pk||pk.app!=="ledok-updatekey-privat")return info("Das ist kein privater Update-Schlüssel.");
     const pass=await askPassword("Passphrase",`Update-Schlüssel ${pk.fp}`);if(pass==null)return;
-    let key;try{const mk=await deriveKey(pass,unb64(pk.msalt),MASTER_IT);key=await crypto.subtle.importKey("pkcs8",await aesDec(mk,pk.ek),ECDSA,false,["sign"])}catch(e){return alert("Die Passphrase ist falsch.")}
+    let key;try{const mk=await deriveKey(pass,unb64(pk.msalt),MASTER_IT);key=await crypto.subtle.importKey("pkcs8",await aesDec(mk,pk.ek),ECDSA,false,["sign"])}catch(e){return info("Die Passphrase ist falsch.")}
     const datum=new Date().toISOString(),hinweise=$("#huNotes").value.trim(),sha=hexStr(await crypto.subtle.digest("SHA-256",enc.encode(html)));
     const sig=b64(await crypto.subtle.sign(ECSIGN,key,enc.encode(updPayload({version,datum,sha256:sha,hinweise}))));
     const datei=`LeDoK-${version}.ledok-update`;
@@ -4649,11 +4751,13 @@ function rueckDialog(a,d){
   const key=e=>e.k+"|"+e.c+"|"+e.d+"|"+e.t;
   const am=new Map(S.eintraege.filter(e=>e.vp===a.id).map(e=>[key(e),e]));
   let fremd=0;const neu=[],nm=new Map();
-  for(const e of d.eintraege||[]){if(!kidById(e.k)){fremd++;continue}neu.push(e);nm.set(key(e),e)}
+  for(const e0 of (Array.isArray(d.eintraege)?d.eintraege:[])){const e=eintragOk(e0);if(!e)continue;if(!kidById(e.k)){fremd++;continue}neu.push(e);nm.set(key(e),e)}
   let plus=0,geaendert=0,weg=0;
   for(const [k,e] of nm){const x=am.get(k);if(!x)plus++;else if(x.w!==e.w||(x.n||"")!==(e.n||""))geaendert++}
   for(const k of am.keys())if(!nm.has(k))weg++;
-  const notesNeu=(d.notizen||[]).filter(n=>kidById(n.k)&&!S.notizen.some(m=>m.id===n.id));
+  // Notizen der Fachlehrkraft werden wie ihre Bewertungen komplett ersetzt – so kommen auch Änderungen und Löschungen an
+  const notesAlle=(Array.isArray(d.notizen)?d.notizen:[]).map(notizOk).filter(n=>n&&kidById(n.k));
+  const notesNeu=notesAlle.filter(n=>!S.notizen.some(m=>m.id===n.id&&m.vp===a.id));
   const nKids=new Set(neu.map(e=>e.k)).size, aelter=a.zurueckCreated&&d.created<a.zurueckCreated;
   const dl=dialog(`<h2>Rückmeldung einlesen</h2><p><b>${esc(d.fl||a.name)}</b> · ${esc((d.faecher||a.faecher).join(", ")||"Arbeits-/Sozialverhalten")} · erstellt am ${new Date(d.created).toLocaleString("de-DE")}</p>
    ${aelter?`<p class="note small">Achtung: Diese Rückmeldung ist <b>älter</b> als die zuletzt eingelesene (${new Date(a.zurueckCreated).toLocaleString("de-DE")}).</p>`:""}
@@ -4662,7 +4766,8 @@ function rueckDialog(a,d){
    <div class="row"><span class="spacer"></span><button class="btn" data-act="closeDlg">Abbrechen</button><button class="btn primary" id="rueckOk">Übernehmen</button></div>`);
   $("#rueckOk").onclick=()=>{
     S.eintraege=S.eintraege.filter(e=>e.vp!==a.id).concat(neu.map(e=>Object.assign({},e,{von:a.name,vp:a.id})));
-    for(const n of notesNeu)S.notizen.push(Object.assign({},n,{von:a.name,vp:a.id}));
+    S.notizen=S.notizen.filter(n=>n.vp!==a.id).concat(notesAlle.map(n=>Object.assign({},n,{von:a.name,vp:a.id})));
+    datenBereinigen(S);
     a.zurueck=new Date().toISOString();a.zurueckCreated=d.created;a.nRueck=neu.length;
     protokoll(`Rückmeldung von ${a.name} eingelesen: ${plus} neu, ${geaendert} geändert, ${weg} entfernt, ${notesNeu.length} Notizen`);
     DV++;save();dl.close();render();toast(`Rückmeldung von ${esc(a.name)} übernommen.`,4000)};
@@ -4677,9 +4782,11 @@ function paketKarte(P){
    <div class="flmeta small"><span><b>${paketIds(P).size}</b> Kinder</span><span>Paket Version ${P.version} · eingelesen ${datStr(P.importiert)}</span><span>Letzte Rückmeldung: ${P.export?`${datStr(P.export)}${t!=null?` (vor ${t} ${t===1?"Tag":"Tagen"})`:""}`:"noch keine"}</span></div>
    <div class="row" style="flex-wrap:wrap"><button class="btn primary small" data-act="rueckExport" data-v="${P.pid}">Rückmeldung erstellen</button><span class="spacer"></span><button class="btn ghost small danger" data-act="paketDel" data-v="${P.pid}">Klasse entfernen …</button></div></div>`;
 }
-function fachpaketUebernehmen(d){
+async function fachpaketUebernehmen(d){
+  if(!d||!Array.isArray(d.kinder)||!Array.isArray(d.raster)||!Array.isArray(d.faecher)||!Array.isArray(d.fachMeta)||!idOk(d.pid))return info("Fachpaket beschädigt","Das Fachpaket ist unvollständig oder beschädigt.");
+  d.faecher=d.faecher.filter(f=>typeof f==="string");d.kinder=d.kinder.filter(pk=>pk&&idOk(pk.id));d.eintraege=(d.eintraege||[]).map(eintragOk).filter(Boolean);
   let P=S.meta.pakete.find(p=>p.pid===d.pid);
-  if(P&&d.version<P.version&&!confirm(`Du hast bereits Version ${P.version} dieses Fachpakets. Die gewählte Datei ist älter (Version ${d.version}). Trotzdem übernehmen?`))return;
+  if(P&&d.version<P.version&&!await frage(`Du hast bereits Version ${P.version} dieses Fachpakets. Die gewählte Datei ist älter (Version ${d.version}). Trotzdem übernehmen?`))return;
   if(!P){P={pid:d.pid,map:{}};S.meta.pakete.push(P)}
   Object.assign(P,{klassenId:d.klassenId,klasse:d.klasse,schule:d.schule,kl:d.kl,fl:d.fl,faecher:d.faecher,asv:d.asv,rkey:d.rkey,version:d.version,importiert:new Date().toISOString(),schuljahr:d.schuljahr});
   for(const fm of d.fachMeta){const ex=S.meta.faecher.find(x=>x.name===fm.name);if(ex)Object.assign(ex,fm,{aktiv:true});else S.meta.faecher.push(Object.assign({},fm,{aktiv:true}))}
@@ -4706,7 +4813,7 @@ function fachpaketUebernehmen(d){
   }
   S.eintraege=S.eintraege.filter(e=>!(e.ext&&e.vp===d.pid));
   let nv=0;for(const e of d.eintraege||[]){const id=P.map[e.k];if(id){S.eintraege.push(Object.assign({},e,{k:id,ext:1,vp:d.pid}));nv++}}
-  DV++;syncFaecher();protokoll(`Fachpaket Version ${d.version} übernommen: ${d.faecher.join(", ")||"ASV"}, Klasse ${d.klasse}`);save();
+  datenBereinigen(S);DV++;syncFaecher();protokoll(`Fachpaket Version ${d.version} übernommen: ${d.faecher.join(", ")||"ASV"}, Klasse ${d.klasse}`);save();
   UI.tab="heute";UI.kind=null;render();
   dialog(`<h2>Fachpaket übernommen</h2><p><b>${esc(d.faecher.join(", ")||"Arbeits-/Sozialverhalten")}</b> · ${esc(klTxt(d.klasse))} · Version ${d.version}${d.kl?" · von "+esc(d.kl):""}</p>
    <ul class="small"><li>${plus} Kinder neu, ${upd} aktualisiert</li>${weg.length?`<li>${weg.length} Kinder entfernt, weil sie nicht mehr im Paket sind</li>`:""}${bleibt.length?`<li><b>${bleibt.length} Kinder sind nicht mehr im Paket</b>, haben aber noch nicht zurückgemeldete Bewertungen – sie bleiben, bis du die nächste Rückmeldung erstellt hast.</li>`:""}<li>${nv} bisherige Bewertungen der Klassenlehrkraft als Verlauf</li><li>Raster und Erfassung so, wie die Klassenlehrkraft sie eingestellt hat</li></ul>
@@ -4752,24 +4859,33 @@ const ROLLEN_VIEWS={
 const ROLLEN_ACT={
   schulKeyEin:async()=>{const sk=await schulKeyLesen();if(!sk)return;
     const alt=S.meta.schulKey;
-    if(alt&&alt.sid===sk.sid&&(sk.ver||1)<(alt.ver||1)&&!confirm(`Diese Datei ist älter (Version ${sk.ver||1}) als dein hinterlegter Schulschlüssel (Version ${alt.ver||1}). Trotzdem übernehmen?`))return;
-    if(!confirm(`Schulschlüssel „${sk.name}“ übernehmen?\n\nFingerabdruck: ${sk.fp}\nVergleiche ihn mit dem Aushang deines LeDoK-Admins.\n\nHersteller-Support: ${sk.support?"EINGESCHALTET – "+supportTxt(sk.support)+" ("+sk.support.fp+")":"ausgeschaltet"}`))return;
+    if(alt&&alt.sid===sk.sid){
+      // Gleiche Schule: nur annehmen, wenn Schulschlüssel und Signaturschlüssel unverändert sind. Sonst stammt die Datei nicht vom eigenen LeDoK-Admin.
+      const pubGleich=!!(sk.pub&&alt.pub&&sk.pub.n===alt.pub.n&&sk.pub.e===alt.pub.e);
+      const spubGleich=alt.spub?!!(sk.spub&&sk.spub.x===alt.spub.x&&sk.spub.y===alt.spub.y):true;
+      if(!pubGleich||!spubGleich)return info("Schulschlüssel abgelehnt","Diese Datei gibt sich als Schulschlüssel deiner Schule aus, stammt aber nicht vom LeDoK-Admin deiner Schule. Sie wurde nicht übernommen. Bitte wende dich an deinen LeDoK-Admin.");
+    }else if(alt){
+      if(!sk.spub)return info("Schulschlüssel abgelehnt","Diese Schulschlüssel-Datei stammt aus einer älteren LeDoK-Version und ist nicht signiert. Bitte deinen LeDoK-Admin um einen aktuellen Schulschlüssel.");
+      if(!await frage(`Achtung: Das ist der Schlüssel einer ANDEREN Schule („${sk.name}“) als bisher („${alt.name}“).\n\nÜbernimm ihn nur, wenn du wirklich die Schule gewechselt hast und der Fingerabdruck ${sk.fp} mit dem Aushang deines neuen LeDoK-Admins übereinstimmt.`,{titel:"Andere Schule",ja:"Übernehmen",gefahr:true,tippen:sk.fp.slice(0,4)}))return;
+    }
+    if(alt&&alt.sid===sk.sid&&(sk.ver||1)<(alt.ver||1)&&!await frage(`Diese Datei ist älter (Version ${sk.ver||1}) als dein hinterlegter Schulschlüssel (Version ${alt.ver||1}). Trotzdem übernehmen?`))return;
+    if(!await frage(`Schulschlüssel „${sk.name}“ übernehmen?\n\nFingerabdruck: ${sk.fp}\nVergleiche ihn mit dem Aushang deines LeDoK-Admins.\n\nHersteller-Support: ${sk.support?"EINGESCHALTET – "+supportTxt(sk.support)+" ("+sk.support.fp+")":"ausgeschaltet"}`))return;
     S.meta.schulKey=sk;protokoll(`Schulschlüssel „${sk.name}“ (${sk.fp}, Version ${sk.ver||1}) eingelesen`);
     const vorher=!!(alt&&alt.support),nachher=!!sk.support;
     if(nachher&&(!vorher||alt.support.fp!==sk.support.fp))protokoll(`Hersteller-Support eingeschaltet: ${supportTxt(sk.support)} (${sk.support.fp})`);
-    if(vorher&&!nachher)protokoll("Hersteller-Support ausgeschaltet");
+    if(vorher&&!nachher){protokoll("Hersteller-Support ausgeschaltet");setTimeout(()=>info("Hersteller-Support ausgeschaltet","Ab jetzt gespeicherte Daten kann nur noch der LeDoK-Admin deiner Schule wiederherstellen. Ältere Sicherungskopien bleiben für den Support lesbar – lege jetzt eine neue Kopie an und vernichte die alten."),300)}
     await saveNow();render();
     toast("Schulschlüssel hinterlegt. Lade jetzt eine neue Sicherungskopie herunter – sie ist dann ebenfalls geschützt.",6000)},
-  schulKeyAus:async()=>{if(!confirm("Schulschlüssel entfernen? Danach kann der LeDoK-Admin bei vergessenem Passwort nicht mehr helfen."))return;
+  schulKeyAus:async()=>{if(!await frage("Schulschlüssel entfernen? Danach kann der LeDoK-Admin bei vergessenem Passwort nicht mehr helfen."))return;
     protokoll(`Schulschlüssel „${S.meta.schulKey.name}“ entfernt`);delete S.meta.schulKey;await saveNow();render()},
   flEdit:a=>flDialog(a.dataset.v||""),
-  flDel:a=>{const x=S.meta.fachlehrer.find(f=>f.id===a.dataset.v);if(!x)return;
-    if(!confirm(`${x.name} entfernen? Bereits eingelesene Bewertungen bleiben erhalten; neue Rückmeldungen dieser Fachlehrkraft lassen sich danach nicht mehr einlesen.`))return;
+  flDel:async a=>{const x=S.meta.fachlehrer.find(f=>f.id===a.dataset.v);if(!x)return;
+    if(!await frage(`${x.name} entfernen? Bereits eingelesene Bewertungen bleiben erhalten; neue Rückmeldungen dieser Fachlehrkraft lassen sich danach nicht mehr einlesen.`))return;
     S.meta.fachlehrer=S.meta.fachlehrer.filter(f=>f!==x);protokoll(`Fachlehrkraft ${x.name} entfernt`);save();render()},
   flPaket:async b=>{const a=S.meta.fachlehrer.find(x=>x.id===b.dataset.v);if(!a)return;const ks=flKinder(a);
-    if(!ks.length)return alert("Für diese Fachlehrkraft sind keine Kinder ausgewählt.");
+    if(!ks.length)return info("Für diese Fachlehrkraft sind keine Kinder ausgewählt.");
     const pw=await askPassword("Paket-Passwort",`Passwort für das Fachpaket an ${a.name} (mind. 8 Zeichen). Sag es ihr persönlich – nicht in derselben Mail wie die Datei. Für Folgepakete kannst du dasselbe Passwort nehmen.`);if(pw==null)return;
-    if(pw.length<8)return alert("Mindestens 8 Zeichen.");
+    if(pw.length<8)return info("Mindestens 8 Zeichen.");
     const d=fachpaketDaten(a,ks);
     const file=await sealObj("ledok-fachpaket",d,pw);file.pid=a.id;file.info={klasse:S.meta.klasse,faecher:a.faecher,version:d.version};
     const name=`fachpaket-${slug(a.faecher.join("-")||"ASV")}-${slug(S.meta.klasse)}-v${d.version}.ledok`;
@@ -4778,34 +4894,34 @@ const ROLLEN_ACT={
     toast(`Fachpaket „${esc(name)}“ heruntergeladen – per USB-Stick oder Dienst-Mail an ${esc(a.name)}, das Passwort persönlich.`,7000)},
   rueckImport:async()=>{
     const f=await pickFile(".ledok,.json");if(!f)return;let obj;
-    try{obj=JSON.parse(await f.text())}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}
-    if(obj.app==="ledok-fachpaket")return alert("Das ist ein Fachpaket – es wird im LeDoK der Fachlehrkraft importiert.");
-    if(obj.app!=="ledok-rueckmeldung")return alert("Das ist keine Rückmeldung einer Fachlehrkraft.");
+    try{obj=JSON.parse(await f.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
+    if(obj.app==="ledok-fachpaket")return info("Das ist ein Fachpaket – es wird im LeDoK der Fachlehrkraft importiert.");
+    if(obj.app!=="ledok-rueckmeldung")return info("Das ist keine Rückmeldung einer Fachlehrkraft.");
     const a=S.meta.fachlehrer.find(x=>x.id===obj.pid);
-    if(!a)return alert("Diese Rückmeldung gehört zu keiner Fachlehrkraft dieser Klasse. Hast du die richtige Klasse geöffnet?");
-    let d;try{d=(await entsiegeln(obj,{rawKey:a.rkey})).data}catch(e){return alert("Die Rückmeldung konnte nicht geöffnet werden (beschädigt oder zu einem anderen Paket).")}
-    if(d.klassenId!==S.meta.klassenId)return alert("Diese Rückmeldung gehört zu einer anderen Klasse.");
+    if(!a)return info("Diese Rückmeldung gehört zu keiner Fachlehrkraft dieser Klasse. Hast du die richtige Klasse geöffnet?");
+    let d;try{d=(await entsiegeln(obj,{rawKey:a.rkey})).data}catch(e){return info("Die Rückmeldung konnte nicht geöffnet werden (beschädigt oder zu einem anderen Paket).")}
+    if(d.klassenId!==S.meta.klassenId)return info("Diese Rückmeldung gehört zu einer anderen Klasse.");
     rueckDialog(a,d)},
   paketImport:async()=>{
-    if(!istFL()&&!confirm("Fachpakete werden im LeDoK einer Fachlehrkraft importiert. Du bist als Klassenlehrkraft angemeldet. Trotzdem fortfahren?"))return;
+    if(!istFL()&&!await frage("Fachpakete werden im LeDoK einer Fachlehrkraft importiert. Du bist als Klassenlehrkraft angemeldet. Trotzdem fortfahren?"))return;
     const f=await pickFile(".ledok,.json");if(!f)return;let obj;
-    try{obj=JSON.parse(await f.text())}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}
-    if(obj.app==="ledok-rueckmeldung")return alert("Das ist eine Rückmeldung – sie wird bei der Klassenlehrkraft eingelesen.");
-    if(obj.app!=="ledok-fachpaket")return alert("Das ist kein Fachpaket.");
+    try{obj=JSON.parse(await f.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
+    if(obj.app==="ledok-rueckmeldung")return info("Das ist eine Rückmeldung – sie wird bei der Klassenlehrkraft eingelesen.");
+    if(obj.app!=="ledok-fachpaket")return info("Das ist kein Fachpaket.");
     const info=obj.info?`${(obj.info.faecher||[]).join(", ")||"Arbeits-/Sozialverhalten"} · ${klTxt(obj.info.klasse)} · Version ${obj.info.version||"?"}`:"Fachpaket";
     const pw=await askPassword("Fachpaket öffnen",`${info} – Passwort, das du von der Klassenlehrkraft bekommen hast.`);if(pw==null)return;
-    let d;try{d=await openObj(obj,pw)}catch(e){return alert(e.message==="pw"?"Falsches Passwort.":"Das Fachpaket ist beschädigt.")}
+    let d;try{d=await openObj(obj,pw)}catch(e){return info(e.message==="pw"?"Falsches Passwort.":"Das Fachpaket ist beschädigt.")}
     fachpaketUebernehmen(d)},
   rueckExport:async b=>{const P=S.meta.pakete.find(p=>p.pid===b.dataset.v);if(!P)return;
     const d=rueckmeldungDaten(P);
-    if(!d.eintraege.length&&!d.notizen.length&&!confirm("Du hast in dieser Klasse noch nichts bewertet. Trotzdem eine leere Rückmeldung erstellen?"))return;
+    if(!d.eintraege.length&&!d.notizen.length&&!await frage("Du hast in dieser Klasse noch nichts bewertet. Trotzdem eine leere Rückmeldung erstellen?"))return;
     const file=await versiegeln("ledok-rueckmeldung",d,{rawKey:P.rkey});file.pid=P.pid;file.info={klasse:P.klasse,faecher:P.faecher};
     const name=`rueckmeldung-${slug(P.faecher.join("-")||"ASV")}-${slug(P.klasse)}-${today()}.ledok`;
     download(name,JSON.stringify(file),"application/octet-stream");
     P.exportT=Date.now();P.export=new Date().toISOString();protokoll(`Rückmeldung für ${klTxt(P.klasse)} erstellt: ${d.eintraege.length} Bewertungen, ${d.notizen.length} Notizen`);save();render();
     toast(`Rückmeldung „${esc(name)}“ heruntergeladen. Auf den USB-Stick und an ${esc(P.kl||"die Klassenlehrkraft")} – ein Passwort ist nicht nötig, nur ihr LeDoK kann die Datei öffnen.`,8000)},
-  paketDel:b=>{const P=S.meta.pakete.find(p=>p.pid===b.dataset.v);if(!P)return;const ids=paketIds(P),n=paketNeu(P);
-    if(!confirm(`${klTxt(P.klasse)} (${P.faecher.join(", ")}) mit ${ids.size} Kindern und allen Bewertungen aus diesem LeDoK entfernen?${n?`\n\nAchtung: ${n} Einträge sind noch nicht zurückgemeldet!`:""}`))return;
+  paketDel:async b=>{const P=S.meta.pakete.find(p=>p.pid===b.dataset.v);if(!P)return;const ids=paketIds(P),n=paketNeu(P);
+    if(!await frage(`${klTxt(P.klasse)} (${P.faecher.join(", ")}) mit ${ids.size} Kindern und allen Bewertungen aus diesem LeDoK entfernen?${n?`\n\nAchtung: ${n} Einträge sind noch nicht zurückgemeldet!`:""}`))return;
     S.kinder=S.kinder.filter(k=>!ids.has(k.id));S.eintraege=S.eintraege.filter(e=>!ids.has(e.k));S.notizen=S.notizen.filter(x=>!ids.has(x.k));
     S.meta.pakete=S.meta.pakete.filter(p=>p!==P);
     for(const f of P.faecher)if(!S.meta.pakete.some(p=>p.faecher.includes(f))){const fo=S.meta.faecher.find(x=>x.name===f);if(fo)fo.aktiv=false}
@@ -4861,12 +4977,12 @@ async function ueberDialog(msg=""){
       $("#u2n").onclick=()=>{d2.close();res(false)};$("#u2j").onclick=()=>{d2.close();res(true)};d2.oncancel=()=>res(false)});
     if(!ok)return;
     if(S)await saveNow();
-    const r2=await DESKTOP.updateInstallieren(txt,localStorage.getItem(STORE_KEY)||"");
+    const r2=await DESKTOP.updateInstallieren(txt,storeRaw()||"");
     if(!r2.ok)return ueberDialog(`<b>Update nicht möglich:</b> ${esc(r2.fehler)}`);
   };
   const rs=$("#updReset");if(rs)rs.onclick=async()=>{
-    if(!confirm(`Das eingespielte Update entfernen und zur ausgelieferten Version ${di.mitgeliefert} zurückkehren? Deine Daten bleiben erhalten. LeDoK startet neu.`))return;
-    if(S)await saveNow();await DESKTOP.updateZuruecksetzen(localStorage.getItem(STORE_KEY)||"")};
+    if(!await frage(`Das eingespielte Update entfernen und zur ausgelieferten Version ${di.mitgeliefert} zurückkehren? Deine Daten bleiben erhalten. LeDoK startet neu.`))return;
+    if(S)await saveNow();await DESKTOP.updateZuruecksetzen(storeRaw()||"")};
   $("#updOrdner").onclick=()=>DESKTOP.sicherungenOeffnen();
 }
 /* ---------- Problem melden ---------- */
@@ -4936,6 +5052,7 @@ function problemMelden(){
 /* ---------- Dialoge ---------- */
 function dialog(html,breit){const d=$("#dlg");d.style.width=breit?"min(760px, calc(100% - 2rem))":"";d.innerHTML=html;d.showModal();return d}
 function closeDlg(){const d=$("#dlg");if(d.open)d.close()}
+const dlgOffen=()=>$("#dlg").open||!!document.querySelector("#dlgMsg[open]");
 function askText(title,text,def,mehrzeilig){
   return new Promise(res=>{
     const feld=mehrzeilig?`<textarea id="atx" rows="4" style="width:100%">${esc(def||"")}</textarea>`:`<input type="text" id="atx" style="width:100%" value="${esc(def||"")}">`;
@@ -4945,6 +5062,29 @@ function askText(title,text,def,mehrzeilig){
     const f=$("#atx");f.focus();if(f.select)f.select();
     $("#atc").onclick=()=>ende(null);d.oncancel=()=>ende(null);
     $("#atf").onsubmit=e=>{e.preventDefault();ende($("#atx").value)};
+  });
+}
+/* Eigene Rückfragen statt confirm()/alert(): sehen in Browser und Desktop-App gleich aus und lassen sich nicht vom Browser stummschalten */
+function msgDialog(){let d=document.getElementById("dlgMsg");if(!d){d=document.createElement("dialog");d.id="dlgMsg";d.className="msgdlg";document.body.appendChild(d)}return d}
+function frage(text,o={}){
+  return new Promise(res=>{
+    const d=msgDialog();
+    d.innerHTML=`<form method="dialog">${o.titel?`<h2>${esc(o.titel)}</h2>`:""}<p class="msgtext">${esc(text)}</p>${o.tippen?`<label class="f">Zur Bestätigung „${esc(o.tippen)}“ eintippen<input type="text" id="msgTipp" autocomplete="off"></label>`:""}
+    <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" id="msgNein">${esc(o.nein||"Abbrechen")}</button><button class="btn ${o.gefahr?"danger":"primary"}" type="submit" id="msgJa">${esc(o.ja||"OK")}</button></div></form>`;
+    let fertig=false;const ende=v=>{if(fertig)return;fertig=true;if(d.open)d.close();res(v)};
+    d.querySelector("#msgNein").onclick=()=>ende(false);d.oncancel=e=>{e.preventDefault();ende(false)};
+    d.querySelector("form").onsubmit=e=>{e.preventDefault();if(o.tippen&&d.querySelector("#msgTipp").value.trim().toUpperCase()!==o.tippen.toUpperCase()){d.querySelector("#msgTipp").focus();return}ende(true)};
+    d.showModal();(o.tippen?d.querySelector("#msgTipp"):d.querySelector(o.gefahr?"#msgNein":"#msgJa")).focus();
+  });
+}
+function info(text,titel){
+  // Aufruf mit (titel,text) oder nur (text)
+  if(titel!=null){const t=text;text=titel;titel=t}
+  return new Promise(res=>{
+    const d=msgDialog();
+    d.innerHTML=`<form method="dialog">${titel?`<h2>${esc(titel)}</h2>`:""}<p class="msgtext">${esc(text)}</p><div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn primary" type="submit">OK</button></div></form>`;
+    d.querySelector("form").onsubmit=e=>{e.preventDefault();d.close();res()};d.oncancel=()=>res();
+    d.showModal();d.querySelector("button").focus();
   });
 }
 /* Passwortfeld mit „Anzeigen“ und Hinweis auf die Feststelltaste */
@@ -5043,7 +5183,7 @@ const ACT = {
   pEdit:a=>{const p=S.proben.find(x=>x.id===a.dataset.v);if(!p)return;UI.probe=JSON.parse(JSON.stringify(p));UI.pSchritt=3;UI.pAnsicht="edit";render();window.scrollTo(0,0)},
   pZeig:a=>{UI.pSel=a.dataset.v;UI.pAnsicht="auswertung";render();window.scrollTo(0,0)},
   pListe:()=>{UI.pAnsicht="liste";render()},
-  pAbbruch:()=>{if(UI.probe&&Object.keys(UI.probe.werte).length&&!confirm("Eingaben verwerfen?"))return;UI.probe=null;UI.pAnsicht="liste";render()},
+  pAbbruch:async()=>{if(UI.probe&&Object.keys(UI.probe.werte).length&&!await frage("Eingaben verwerfen?"))return;UI.probe=null;UI.pAnsicht="liste";render()},
   pSchritt:a=>{UI.pSchritt=+a.dataset.v;render();window.scrollTo(0,0)},
   pFach:a=>{const p=UI.probe;if(p.fach!==a.dataset.v){p.fach=a.dataset.v;p.items=[];}render()},
   pJg:a=>{UI.probe.jg=a.dataset.v;render()},
@@ -5052,7 +5192,7 @@ const ACT = {
   pRaus:a=>{UI.probe.items.splice(+a.dataset.i,1);render()},
   pSpeichern:()=>probeSpeichern(),
   pDruck:a=>{const p=S.proben.find(x=>x.id===a.dataset.v);if(p)drucke(probeSeite(p))},
-  pDel:a=>{const p=S.proben.find(x=>x.id===a.dataset.v);if(!p||!confirm(`Probe „${p.name||"ohne Namen"}“ und ihre ${S.eintraege.filter(e=>e.p===p.id).length} gebuchten Werte löschen?`))return;
+  pDel:async a=>{const p=S.proben.find(x=>x.id===a.dataset.v);if(!p||!await frage(`Probe „${p.name||"ohne Namen"}“ und ihre ${S.eintraege.filter(e=>e.p===p.id).length} gebuchten Werte löschen?`))return;
     S.eintraege=S.eintraege.filter(e=>e.p!==p.id);S.proben=S.proben.filter(x=>x!==p);save();UI.pAnsicht="liste";render();toast("Probe gelöscht.",2500)},
   saveLZK:()=>{
     if(!UI.komp)return;let n=0;const name=($("#lzkName")||{}).value||"";
@@ -5110,7 +5250,7 @@ const ACT = {
      <div class="row" style="margin-top:1rem"><button class="btn ghost small" type="button" id="kfAll">alle</button><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Übernehmen</button></div></form>`);
     $("#kfAll").onclick=()=>document.querySelectorAll("input[name=kf]").forEach(x=>x.checked=true);
     $("#kff").onsubmit=e=>{e.preventDefault();const ch=[...document.querySelectorAll("input[name=kf]:checked")].map(x=>x.value);
-      if(!ch.length)return alert("Mindestens ein Fach wählen.");k.faecherNur=ch.length===alle.length?[]:ch;save();d.close();render()}},
+      if(!ch.length)return info("Mindestens ein Fach wählen.");k.faecherNur=ch.length===alle.length?[]:ch;save();d.close();render()}},
   fRate:a=>{const k=a.dataset.k,c=a.dataset.c,w=+a.dataset.w,sc=a.dataset.s||"tag";
     const ex=wertIn(k,c,sc);UI.kbF=k+"|"+c;
     if(ex){if(ex.w===w){S.eintraege=S.eintraege.filter(e=>e!==ex)}else{ex.w=w;ex.q="f"}}else addEntry(k,c,w,"f");
@@ -5125,38 +5265,38 @@ const ACT = {
     if(!n)return toast("Nichts zu übernehmen – entweder schon bewertet oder noch kein früherer Wert.",3500);
     save();const y=window.scrollY;render();window.scrollTo(0,y);toast(`${n} Werte vom letzten Mal übernommen.`,3000)},
   fachAdd:()=>{const name=$("#nfName").value.trim();if(!name)return $("#nfName").focus();
-    if(S.meta.faecher.some(f=>f.name.toLowerCase()===name.toLowerCase())||name==="ASV")return alert("Dieses Fach gibt es schon.");
+    if(S.meta.faecher.some(f=>f.name.toLowerCase()===name.toLowerCase())||name==="ASV")return info("Dieses Fach gibt es schon.");
     const kurz=$("#nfKurz").value.trim()||name.slice(0,8);
     let prefix=name.replace(/[^A-Za-zÄÖÜäöü]/g,"").slice(0,2).toUpperCase()||"WF";while(S.meta.faecher.some(f=>f.prefix===prefix))prefix+="X";
     S.meta.faecher.push({name,kurz,prefix,aktiv:true,benotet:$("#nfNote").checked});
     S.raster.push({id:`${prefix}-1`,fach:name,parent:"",ebene:1,text:"",soll1:6,soll2:7,hj1:true,hj2:true,modus:"beob"});
     save();render();toast(`„${esc(name)}“ angelegt. Trag die Kompetenz im Raster ein.`,4000)},
   fachDel:async a=>{const fo=S.meta.faecher[+a.dataset.i];const comps=S.raster.filter(r=>r.fach===fo.name).map(r=>r.id);const ne=S.eintraege.filter(e=>comps.includes(e.c)).length;
-    if(ne){if(confirm(`„${fo.name}“ hat ${ne} Einträge. Statt zu löschen, das Fach ausblenden? (Die Daten bleiben erhalten.)\n\nOK = ausblenden · Abbrechen = weiter zum Löschen`)){fo.aktiv=false;save();render();return}
+    if(ne){if(await frage(`„${fo.name}“ hat ${ne} Einträge. Statt zu löschen, das Fach ausblenden? (Die Daten bleiben erhalten.)\n\nOK = ausblenden · Abbrechen = weiter zum Löschen`)){fo.aktiv=false;save();render();return}
       if(((await askText("Fach endgültig löschen",`Zum endgültigen Löschen von „${fo.name}“ mit allen ${ne} Einträgen „LÖSCHEN“ eintippen:`,""))||"").trim()!=="LÖSCHEN")return}
-    else if(!confirm(`Fach „${fo.name}“ löschen?`))return;
+    else if(!await frage(`Fach „${fo.name}“ löschen?`))return;
     S.eintraege=S.eintraege.filter(e=>!comps.includes(e.c));S.raster=S.raster.filter(r=>r.fach!==fo.name);S.meta.faecher.splice(+a.dataset.i,1);save();render()},
   fachMove:a=>{const i=+a.dataset.i,j=i+ +a.dataset.v,F=S.meta.faecher;if(j<0||j>=F.length)return;[F[i],F[j]]=[F[j],F[i]];save();render()},
   vMode:a=>{UI.vMode=a.dataset.v;render()},
   vFach:a=>{UI.vFach=a.dataset.v;render()},
   printVerlauf:()=>{const kid=kidById(UI.kind);drucke(verlaufSeite(kid)+(UI.vMode==="thema"?`<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – ${esc(UI.vFach==="ASV"?"Arbeits- und Sozialverhalten":UI.vFach)} je Thema</h2><div class="minis" style="margin-top:8px">${verlaufThemen(kid,UI.vFach)}</div></section>`:""))},
   legSave:()=>{legCollect(kidById(UI.kind));render();toast("LEG-Bogen gespeichert.",2000)},
-  legReset:()=>{if(!confirm("Alle individuellen Änderungen am LEG-Bogen verwerfen?"))return;const kid=kidById(UI.kind),t=S.texte[textKey(kid)];if(t){delete t.leg;if(!t.bericht)delete S.texte[textKey(kid)]}save();render()},
-  legTitelReset:()=>{if(confirm("Überschriften, Selbsteinschätzung und Anzeige des LEG-Bogens auf Standard zurücksetzen?")){S.meta.leg=DEFAULT_LEG();save();render()}},
+  legReset:async()=>{if(!await frage("Alle individuellen Änderungen am LEG-Bogen verwerfen?"))return;const kid=kidById(UI.kind),t=S.texte[textKey(kid)];if(t){delete t.leg;if(!t.bericht)delete S.texte[textKey(kid)]}save();render()},
+  legTitelReset:async()=>{if(await frage("Überschriften, Selbsteinschätzung und Anzeige des LEG-Bogens auf Standard zurücksetzen?")){S.meta.leg=DEFAULT_LEG();save();render()}},
   noteKid:a=>noteDialog(a.dataset.k,null),
   editNote:a=>{const n=S.notizen.find(x=>x.id===a.dataset.id);if(n)noteDialog(n.k,n)},
-  delNote:a=>{const n=S.notizen.find(x=>x.id===a.dataset.id);if(!n||!confirm(`Freitext vom ${fmtTs(n.ts)} löschen?`))return;S.notizen=S.notizen.filter(x=>x!==n);save();render()},
+  delNote:async a=>{const n=S.notizen.find(x=>x.id===a.dataset.id);if(!n||!await frage(`Freitext vom ${fmtTs(n.ts)} löschen?`))return;S.notizen=S.notizen.filter(x=>x!==n);save();render()},
   saveJournal:()=>{const t=$("#jText").value.trim();if(!t)return $("#jText").focus();UI.jKat=$("#jKat").value;addNotiz(UI.kind,UI.jKat,t);save();render();toast("Freitext gespeichert.",2000)},
   kiBuild:()=>{const r=buildKI();UI.ki.text=r.txt;UI.ki.stats=r.stats;UI.ki.ok=false;render();const el=$("#kiTA");if(el)el.scrollIntoView({behavior:"smooth",block:"center"})},
   kiClear:()=>{UI.ki.text=null;UI.ki.ok=false;render()},
   kiPromptReset:()=>{S.meta.kiPrompt=DEFAULT_KI_PROMPT;save();render()},
-  kiDownload:()=>{const t=$("#kiTA").value;download(`ki-auswertung-anonymisiert-${today()}.txt`,t,"text/plain;charset=utf-8");toast("Heruntergeladen. Die Datei nach der Auswertung löschen.",4000)},
+  kiDownload:()=>{const t=$("#kiTA").value;download(`ki-auswertung-pseudonymisiert-${today()}.txt`,t,"text/plain;charset=utf-8");toast("Heruntergeladen. Die Datei nach der Auswertung löschen.",4000)},
   kiCopy:async()=>{try{await navigator.clipboard.writeText($("#kiTA").value);toast("In die Zwischenablage kopiert.",2500)}catch(e){$("#kiTA").select();document.execCommand("copy");toast("Kopiert.",2000)}},
-  regen:()=>{const kid=kidById(UI.kind);if(S.texte[textKey(kid)]&&S.texte[textKey(kid)].bericht&&!confirm("Gespeicherte Überarbeitung durch neuen Entwurf ersetzen?"))return;const t=S.texte[textKey(kid)];if(t){delete t.bericht;if(!t.leg)delete S.texte[textKey(kid)]}save();render()},
+  regen:async()=>{const kid=kidById(UI.kind);if(S.texte[textKey(kid)]&&S.texte[textKey(kid)].bericht&&!await frage("Gespeicherte Überarbeitung durch neuen Entwurf ersetzen?"))return;const t=S.texte[textKey(kid)];if(t){delete t.bericht;if(!t.leg)delete S.texte[textKey(kid)]}save();render()},
   saveText:()=>{const kid=kidById(UI.kind);S.texte[textKey(kid)]={...(S.texte[textKey(kid)]||{}),bericht:$("#berichtTA").value};save();render();toast("Text gespeichert.",2000)},
   printOne:a=>{const kid=kidById(UI.kind);if(a.dataset.v==="bericht"&&$("#berichtTA")){S.texte[textKey(kid)]={...(S.texte[textKey(kid)]||{}),bericht:$("#berichtTA").value};save()}
     if(a.dataset.v==="leg"){if($("#le-stark"))legCollect(kid);return legDruck([kid])}drucke(berichtSeite(kid))},
-  printAll:a=>{const kids=sortedKids(UI.expJgst);if(!kids.length)return alert("Keine Kinder ausgewählt.");if(a.dataset.v==="leg")return legDruck(kids);drucke(kids.map(berichtSeite).join(""))},
+  printAll:a=>{const kids=sortedKids(UI.expJgst);if(!kids.length)return info("Keine Kinder ausgewählt.");if(a.dataset.v==="leg")return legDruck(kids);drucke(kids.map(berichtSeite).join(""))},
   printNoten:()=>drucke(notenSeite()),
   printASV:()=>drucke(asvBemerkungSeite(UI.expJgst)),
   rasterExport:()=>{const fs=S.meta.faecher.map(f=>f.name).filter(f=>S.raster.some(r=>r.fach===f));download(`Lehrplan_${today()}.csv`,rasterCsv(fs),"text/csv;charset=utf-8");toast("Lehrplan als CSV heruntergeladen – lässt sich in Excel/LibreOffice bearbeiten und wieder einspielen.",4000)},
@@ -5166,15 +5306,15 @@ const ACT = {
     rasterImportDialog(res,"Standardvorlage dieser Datei: LehrplanPLUS Grundschule Bayern – Jahrgangsstufe 1/2 mit Vorschlägen für Kurzbezeichnungen und Teilbereiche, Jahrgangsstufe 3/4 als eigene Fächer (Bezeichnung = gekürzter Lehrplan-Wortlaut) und DaZ 1–4. Fächer, die neu angelegt werden, übernehmen die Sichtbarkeit der Vorlage: Religionslehren, Ethik, DaZ und alle 3/4-Fächer sind zunächst ausgeblendet. Nicht benötigte Fächer einfach abwählen.")},
   rasterImport:async()=>{const f=await pickFile(".csv,.txt,.tsv,text/csv,text/plain");if(!f)return;
     let txt=await f.text();if(txt.includes("\ufffd")){try{txt=new TextDecoder("windows-1252").decode(await f.arrayBuffer())}catch(e){}}
-    let res;try{res=rasterAusCsv(csvParse(txt),UI.fach&&FAECHER.includes(UI.fach)?UI.fach:"Deutsch")}catch(e){return alert(e.message)}
+    let res;try{res=rasterAusCsv(csvParse(txt),UI.fach&&FAECHER.includes(UI.fach)?UI.fach:"Deutsch")}catch(e){return info(e.message)}
     rasterImportDialog(res,`Datei „${esc(f.name)}“.`)},
   addComp:a=>{const f=a.dataset.v;const pre=fachObj(f).prefix||"X";
     let n=1;while(S.raster.find(r=>r.id===`${pre}-${n}`))n++;
     S.raster.push({id:`${pre}-${n}`,fach:f,parent:"",ebene:1,text:"",soll1:5,soll2:7,hj1:true,hj2:true,modus:"beob"});delete UI.rFachZu[f];UI.rSel=`${pre}-${n}`;save();const y=window.scrollY;render();window.scrollTo(0,y)},
-  delComp:a=>{const r=knoten(a.dataset.v);if(!r)return;const unter=nachfahren(r.id),ids=new Set([r.id,...unter.map(x=>x.id)]);const n=S.eintraege.filter(e=>ids.has(e.c)).length;
-    if(!confirm(`${r.id}${unter.length?` mit ${unter.length} Unterbereich${unter.length===1?"":"en"}`:""} löschen?${n?`\n\nDabei werden ${n} Einträge gelöscht. Zum vorübergehenden Ausblenden besser „sichtbar“ abhaken.`:""}`))return;
+  delComp:async a=>{const r=knoten(a.dataset.v);if(!r)return;const unter=nachfahren(r.id),ids=new Set([r.id,...unter.map(x=>x.id)]);const n=S.eintraege.filter(e=>ids.has(e.c)).length;
+    if(!await frage(`${r.id}${unter.length?` mit ${unter.length} Unterbereich${unter.length===1?"":"en"}`:""} löschen?${n?`\n\nDabei werden ${n} Einträge gelöscht. Zum vorübergehenden Ausblenden besser „sichtbar“ abhaken.`:""}`))return;
     S.eintraege=S.eintraege.filter(e=>!ids.has(e.c));S.raster=S.raster.filter(x=>!ids.has(x.id));save();const y=window.scrollY;render();window.scrollTo(0,y)},
-  resetBausteine:()=>{if(confirm("Alle Textbausteine auf den Standard zurücksetzen?")){S.bausteine=defaultBausteine();save();render()}},
+  resetBausteine:async()=>{if(await frage("Alle Textbausteine auf den Standard zurücksetzen?")){S.bausteine=defaultBausteine();save();render()}},
   addKid:()=>{addKid("");save();render()},
   pwZeigen:b=>{const i=document.getElementById(b.dataset.v);if(!i)return;const an=i.type==="password";i.type=an?"text":"password";b.textContent=an?"Verbergen":"Anzeigen";b.setAttribute("aria-label",an?"Passwort verbergen":"Passwort anzeigen");i.focus()},
   profilNeu:()=>{const alt=STORE_KEY;let n;do{n=STORE_BASE+".p"+Array.from(rnd(4),x=>x.toString(16).padStart(2,"0")).join("")}while(profilDa(n));
@@ -5182,43 +5322,59 @@ const ACT = {
   stufenFaecher:()=>{faecherFuerStufen(jgstListe());save();render();toast("Fächer eingeblendet. Feinheiten unter Einstellungen → Fächer &amp; Raster.",5000)},
   addKids:async()=>{const t=await askText("Kinder hinzufügen","Vornamen eingeben, durch Komma oder Zeilenumbruch getrennt. Optional mit Jahrgangsstufe 1–4: „Lena 3, Tim 4“","",true);if(!t)return;
     t.split(/[,\n;]+/).map(s=>s.trim()).filter(Boolean).forEach(s=>{const m=s.match(/^(.*?)\s+([1-4])$/);addKid(m?m[1]:s,m?+m[2]:stdJgst())});save();render()},
-  delKid:a=>{const id=a.dataset.v;if(!confirm(`${id} und alle zugehörigen Einträge, Freitexte und Texte endgültig löschen?`))return;
-    kindLoeschen(id);save();render()},
-  autoGroups:()=>{if(!confirm("Fokustage Montag bis Freitag gleichmäßig neu verteilen?"))return;sortedKids("alle").forEach((k,i)=>k.gruppe="ABCDE"[i%5]);save();render()},
+  delKid:async a=>{const id=a.dataset.v;if(!await frage(`${id} und alle zugehörigen Einträge, Freitexte und Texte endgültig löschen?`,{ja:"Löschen",gefahr:true}))return;
+    await vorherSichern("vor-kind-loeschen",true);kindLoeschen(id);save();render()},
+  autoGroups:async()=>{if(!await frage("Fokustage Montag bis Freitag gleichmäßig neu verteilen?"))return;sortedKids("alle").forEach((k,i)=>k.gruppe="ABCDE"[i%5]);save();render()},
   yearChange:()=>{
-    const js=jgstListe();if(!js.length)return alert("Keine Kinder angelegt.");
+    const js=jgstListe();if(!js.length)return info("Keine Kinder angelegt.");
     const eigene=S.kinder.filter(k=>!k.klasse).map(k=>+k.jgst);const maxEigen=eigene.length?Math.max(...eigene):Math.max(...js);
     const d=dialog(`<form id="ywf"><h2>Schuljahreswechsel</h2><p class="small">Welche Jahrgangsstufe(n) verlassen die Klasse? Ihre Daten werden gelöscht. Alle anderen rücken eine Stufe vor.</p>
      ${js.map(j=>`<label class="row small" style="gap:.4rem"><input type="checkbox" name="yw" value="${j}" ${j===4||j===maxEigen?"checked":""}> Jahrgangsstufe ${j} verlässt die Klasse (${S.kinder.filter(k=>+k.jgst===j).length} Kinder)</label>`).join("")}
      <label class="f" style="margin-top:.8rem">Zur Bestätigung „WECHSEL“ eintippen<input type="text" id="ywOk"></label>
-     <p class="small muted">Vorher Berichte/LEG-Bögen drucken und eine Sicherungskopie herunterladen.${S.kinder.some(k=>begabtListe(k).length)?" Angepasste Lernniveaus (↑) rücken mit vor – bitte anschließend unter Klasse prüfen.":""}</p>
+     <p class="small muted">Vorher Berichte/LEG-Bögen drucken. Eine Sicherung des jetzigen Stands legt LeDoK automatisch an.${S.kinder.some(k=>begabtListe(k).length)?" Angepasste Lernniveaus (↑) rücken mit vor – bitte anschließend unter Klasse prüfen.":""}</p>
      <div class="row"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn danger" type="submit">Wechsel durchführen</button></div></form>`);
-    $("#ywf").onsubmit=e=>{e.preventDefault();if($("#ywOk").value.trim()!=="WECHSEL")return alert("Bitte „WECHSEL“ eintippen.");
+    $("#ywf").onsubmit=async e=>{e.preventDefault();if($("#ywOk").value.trim().toUpperCase()!=="WECHSEL")return info("Bitte „WECHSEL“ eintippen.");
+      const sich=await vorherSichern("vor-schuljahreswechsel");
       const raus=new Set([...document.querySelectorAll("input[name=yw]:checked")].map(x=>+x.value));
       const weg=new Set(S.kinder.filter(k=>raus.has(+k.jgst)).map(k=>k.id));
       weg.forEach(id=>kindLoeschen(id));
       S.kinder.forEach(k=>{k.jgst=Math.min(4,+k.jgst+1);const m=String(k.klasse||"").match(/^(\d)(.*)$/);if(m)k.klasse=Math.min(4,+m[1]+1)+m[2]});
       S.meta.schuljahr=nextSchoolYear(S.meta.schuljahr);S.meta.halbjahr=1;save();d.close();render();
-      toast(`Erledigt. ${weg.size} Kinder gelöscht, ${S.kinder.length} Kinder vorgerückt. Neue Kinder unter „Einstellungen → Klasse“ anlegen.`,6000)};
+      toast(`Erledigt. ${weg.size} Kinder gelöscht, ${S.kinder.length} Kinder vorgerückt. Neue Kinder unter „Einstellungen → Klasse“ anlegen.${sich?` Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`:""}`,8000)};
   },
-  backup:async()=>{const name=await kopieHerunterladen();render();toast(`Kopie ${esc(name)} heruntergeladen. Auf ein anderes Medium verschieben, nicht in eine Cloud.`,6000)},
-  beenden:async()=>{const name=await kopieHerunterladen();closeDlg();$("#print-root").innerHTML="";screenStart("",name)},
+  backup:async()=>{let r;try{r=await kopieHerunterladen()}catch(e){return info("Keine Kopie",e.message)}render();
+    toast(r.ort==="desktop"?`Kopie <b>${esc(r.name)}</b> liegt im Ordner Dokumente/LeDoK-Sicherungen. Für den USB-Stick: Menü „Datei → Sicherungsordner öffnen“.`:`Kopie ${esc(r.name)} heruntergeladen. Auf ein anderes Medium verschieben, nicht in eine Cloud.`,7000)},
+  beenden:async()=>{
+    // Im Browser höchstens eine Kopie pro Tag in „Downloads“; die Desktop-App sichert jedes Mal still in Dokumente/LeDoK-Sicherungen
+    await saveNow();let r=null;const heute=!DESKTOP&&S.meta.lastBackup&&localDay(S.meta.lastBackup)===today();
+    if(!heute){try{r=await kopieHerunterladen()}catch(e){}}
+    if(ST.error&&!r)return toast("<b>Nicht beendet:</b> Deine Daten konnten nicht gespeichert werden. Bitte über den roten Knopf oben eine Kopie herunterladen.",15000);
+    closeDlg();$("#print-root").innerHTML="";screenStart("",r||{heute:!!heute})},
   importBackup:async()=>{
     const f=await pickFile();if(!f)return;let obj;
-    try{obj=JSON.parse(await f.text())}catch(e){return alert("Diese Datei ist keine LeDoK-Sicherung.")}
-    if(obj&&obj.app==="lernstand12-kind"){if(!S)return alert("Das ist eine Übergabedatei für ein einzelnes Kind. Bitte zuerst deine Klasse öffnen und dann unter „Einstellungen → Klasse → Kind importieren“ laden.");return importKindDatei(obj)}
+    try{obj=JSON.parse(await f.text())}catch(e){return info("Diese Datei ist keine LeDoK-Sicherung.")}
+    if(obj&&obj.app==="lernstand12-kind"){if(!S)return info("Das ist eine Übergabedatei für ein einzelnes Kind. Bitte zuerst deine Klasse öffnen und dann unter „Einstellungen → Klasse → Kind importieren“ laden.");return importKindDatei(obj)}
     const pw=await askPassword("Kopie einspielen","Passwort, mit dem diese Kopie erstellt wurde. Es gilt danach auch für die Daten im Browser.");if(pw==null)return;
-    let r;try{r=await openSealed(obj,pw)}catch(e){return alert(e.message==="pw"?"Falsches Passwort für diese Kopie.":"Diese Datei ist keine gültige LeDoK-Datei.")}
-    if((S||readStore())&&!confirm("Die Daten im Browser werden durch den Inhalt der Kopie ersetzt. Fortfahren?"))return;
-    S=migrate(r.state);SESSION={dek:r.dek,pwKey:r.pwKey,salt:r.salt};await saveNow();startApp();toast("Kopie eingespielt.",3000)},
+    let r;try{r=await openSealed(obj,pw)}catch(e){return info(e.message==="pw"?"Falsches Passwort für diese Kopie.":e.message==="neuer"||e.message==="alt"?oeffneFehler(e):"Diese Datei ist keine gültige LeDoK-Datei.")}
+    const cur=readStore();
+    if(S||cur){
+      // Stände vergleichen und den aktuellen Stand vorher sichern – eine ältere Kopie soll neuere Arbeit nicht still überschreiben
+      const alt=cur&&cur.saved,neu=obj.saved,aelter=!!(alt&&neu&&neu<alt);
+      const txt=`Deine aktuellen Daten${alt?` (Stand ${fmtTs(alt)})`:""} werden durch die Kopie${neu?` (Stand ${fmtTs(neu)})`:""} ersetzt.${aelter?"\n\nAchtung: Die Kopie ist ÄLTER als deine aktuellen Daten. Alles, was du seitdem eingetragen hast, fehlt danach.":""}\n\nVorher legt LeDoK automatisch eine Sicherung deines aktuellen Stands an.`;
+      if(!await frage(txt,{titel:"Kopie einspielen",ja:"Ersetzen",gefahr:aelter}))return;
+      let sich=null;try{sich=S?await sicherungAnlegen("vor-einspielen"):(cur?await sicherungAnlegen("vor-einspielen",storeRaw()):null)}catch(e){}
+      if(cur&&!sich&&!await frage("Die Sicherung des aktuellen Stands ist fehlgeschlagen. Trotzdem ersetzen?",{gefahr:true,ja:"Trotzdem ersetzen"}))return;
+    }
+    S=migrate(r.state);SESSION={dek:r.dek,pwKey:r.pwKey,salt:r.salt};standMerken();ST.konflikt=false;await saveNow();startApp();toast("Kopie eingespielt.",3000)},
   startNew:()=>setupDialog(),
   changePw:async()=>{
     const old=await askPassword("Passwort ändern","Aktuelles Passwort");if(old==null)return;
-    try{await openSealed(await sealState(),old)}catch(e){return alert("Das aktuelle Passwort ist falsch.")}
-    const p1=await askPassword("Neues Passwort","Mindestens 8 Zeichen");if(p1==null)return;if(p1.length<8)return alert("Mindestens 8 Zeichen.");
-    const p2=await askPassword("Neues Passwort","Bitte wiederholen");if(p1!==p2)return alert("Die Passwörter stimmen nicht überein.");
-    const salt=rnd(16);SESSION={dek:SESSION.dek,pwKey:await deriveKey(p1,salt),salt};await saveNow();
-    toast("Passwort geändert. Ältere Kopien öffnen weiter mit dem alten Passwort – am besten jetzt eine neue Kopie herunterladen.",6000)},
+    try{await openSealed(await sealState(),old)}catch(e){return info("Das aktuelle Passwort ist falsch.")}
+    const p1=await askPassword("Neues Passwort","Mindestens 8 Zeichen");if(p1==null)return;if(p1.length<8)return info("Mindestens 8 Zeichen.");
+    const p2=await askPassword("Neues Passwort","Bitte wiederholen");if(p1!==p2)return info("Die Passwörter stimmen nicht überein.");
+    // Neuer Datenschlüssel: Wer das alte Passwort und eine alte Kopie hat, kann neue Daten damit nicht mehr öffnen
+    const salt=rnd(16);SESSION={dek:await neuerDatenschluessel(),pwKey:await deriveKey(p1,salt),salt};await saveNow();
+    toast("Passwort geändert. Ältere Kopien öffnen weiter mit dem alten Passwort – am besten jetzt eine neue Kopie anlegen.",6000)},
   csv:()=>{download(`ledok-klasse-${today()}.csv`,csvExport(S.kinder.map(k=>k.id)),"text/csv;charset=utf-8");toast("CSV heruntergeladen (nur Kürzel, unverschlüsselt).",4000)},
   csvImport:()=>importDateiWaehlen(),
   importKind:()=>importDateiWaehlen(),
@@ -5226,8 +5382,8 @@ const ACT = {
     const kid=kidById(UI.kind), art=a.dataset.v, ohneName=$("#ueAnon")&&$("#ueAnon").checked, loeschen=$("#ueDel")&&$("#ueDel").checked;
     if(art==="datei"){
       const p1=await askPassword("Übergabe-Passwort","Lege ein eigenes Passwort nur für diese Datei fest (mind. 8 Zeichen) und gib es der neuen Lehrkraft auf einem anderen Weg weiter, z. B. mündlich.");if(p1==null)return;
-      if(p1.length<8)return alert("Mindestens 8 Zeichen.");
-      const p2=await askPassword("Übergabe-Passwort","Bitte wiederholen");if(p1!==p2)return alert("Die Passwörter stimmen nicht überein.");
+      if(p1.length<8)return info("Mindestens 8 Zeichen.");
+      const p2=await askPassword("Übergabe-Passwort","Bitte wiederholen");if(p1!==p2)return info("Die Passwörter stimmen nicht überein.");
       const sealed=await sealObj("lernstand12-kind",kindPaket(kid),p1);
       download(`uebergabe-${kid.id}-${today()}.lernstand-kind`,JSON.stringify(sealed),"application/json");
     }else if(art==="csv"){
@@ -5236,13 +5392,23 @@ const ACT = {
       download(`uebergabebericht-${kid.id}-${today()}.html`,uebergabeBericht(kid,ohneName),"text/html;charset=utf-8");
     }
     if(loeschen){
-      if(!confirm(`Export erledigt. ${kid.id}${kid.vorname?" ("+kid.vorname+")":""} jetzt mit allen Daten aus dieser Klasse löschen?\n\nBitte vorher prüfen, ob die Datei vollständig heruntergeladen wurde.`))return;
+      if(!await frage(`Export erledigt. ${kid.id}${kid.vorname?" ("+kid.vorname+")":""} jetzt mit allen Daten aus dieser Klasse löschen?\n\nBitte vorher prüfen, ob die Datei vollständig heruntergeladen wurde.`))return;
       kindLoeschen(kid.id);save();UI.kind=null;render();toast("Kind exportiert und aus der Klasse entfernt.",4000);
     }else toast("Export heruntergeladen.",3000);
   },
-  wipeKids:()=>{if(!confirm("Alle Kinder, Einträge, Freitexte und Texte löschen? Raster und Textbausteine bleiben."))return;S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};save();render()},
-  wipeAll:()=>{if(!confirm("Wirklich ALLE Daten in diesem Browser löschen? Das kann nicht rückgängig gemacht werden. Sicherungskopien auf deinen Medien bleiben erhalten."))return;
-    try{localStorage.removeItem(STORE_KEY)}catch(e){}S=null;SESSION=null;closeDlg();screenStart("Alle Daten im Browser gelöscht.")}
+  demoEntfernen:async()=>{
+    if(!await frage("Die Beispielklasse mit allen Kindern, Bewertungen, Notizen und Proben entfernen? Raster und Textbausteine bleiben. Danach legst du deine eigenen Kinder an.",{titel:"Beispiel entfernen",ja:"Entfernen"}))return;
+    const d=defaultState();S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.proben=[];S.meta.schule=d.meta.schule;S.meta.klasse=d.meta.klasse;S.meta.demo=false;
+    protokoll("Beispielklasse entfernt");DV++;save();UI.kind=null;UI.tab="einst";UI.einst="klasse";UI.klasseOffen=true;render();toast("Beispiel entfernt. Lege jetzt deine Kinder an.",5000)},
+  wipeKids:async()=>{if(!await frage("Alle Kinder, Einträge, Freitexte und Texte löschen? Raster und Textbausteine bleiben. Vorher legt LeDoK automatisch eine Sicherung an.",{ja:"Alle löschen",gefahr:true,tippen:"LÖSCHEN"}))return;
+    const sich=await vorherSichern("vor-loeschen");S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.meta.demo=false;save();render();
+    if(sich)toast(`Gelöscht. Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`,8000)},
+  wipeAll:async()=>{
+    // Ohne Passwort erreichbar – deshalb vorher immer die verschlüsselten Daten sichern und „LÖSCHEN“ eintippen lassen
+    if(!await frage(`Alle Daten ${DESKTOP?"auf diesem Rechner":"in diesem Browser"} löschen? Vorher legt LeDoK automatisch eine verschlüsselte Sicherung an. Mit dem bisherigen Passwort lässt sie sich über „Sicherungskopie laden“ zurückholen.`,{titel:"Alles löschen",ja:"Endgültig löschen",gefahr:true,tippen:"LÖSCHEN"}))return;
+    const roh=storeRaw();let sich=null;if(roh){try{sich=await sicherungAnlegen("vor-loeschen",roh)}catch(e){}}
+    if(roh&&!sich&&!await frage("Die Sicherung ist fehlgeschlagen. Trotzdem ohne Sicherung löschen?",{gefahr:true,ja:"Ohne Sicherung löschen"}))return;
+    await storeRemove();S=null;SESSION=null;closeDlg();screenStart(`Alle Daten gelöscht.${sich?` Die Sicherung „${sich.name}“ liegt ${ortText(sich)}.`:""}`)}
 };
 function legCollect(kid){
   const ls=id=>$("#"+id).value.split("\n").map(x=>x.trim()).filter(Boolean);
@@ -5285,13 +5451,14 @@ function importKindDaten(p,ziel){
   const neu={faecher:0,komp:0,eintraege:0,notizen:0,doppelt:0};
   let kid=ziel?kidById(ziel):null;
   if(!kid){kid={id:nextKidId(),vorname:p.kind.vorname||"",nachname:p.kind.nachname||"",geburt:p.kind.geburt||"",jgst:+p.kind.jgst||1,gruppe:leastGroup(),pronomen:p.kind.pronomen||"",klasse:"",faecherNur:(p.kind.faecherNur||[]).filter(f=>S.meta.faecher.some(x=>x.name===f)),begabt:Array.isArray(p.kind.begabt)?p.kind.begabt:[]};S.kinder.push(kid)}
-  const map={};for(const r of p.raster||[])map[r.id]=mapKomp(r,neu,map);
-  for(const e of p.eintraege||[]){
+  const arr=x=>Array.isArray(x)?x:[];
+  const map={};for(const r of arr(p.raster))if(r&&idOk(r.id))map[r.id]=mapKomp(r,neu,map);
+  for(const e of arr(p.eintraege)){if(!e||!idOk(e.c))continue;
     const c=map[e.c]||(ASV_IDS.includes(e.c)?e.c:mapKomp({id:e.c,fach:e.fach,text:e.ctext},neu));map[e.c]=c;
     if(S.eintraege.some(x=>x.k===kid.id&&x.c===c&&x.d===e.d&&x.w===+e.w&&(x.n||"")===(e.n||""))){neu.doppelt++;continue}
     S.eintraege.push({t:Date.now()+Math.random(),d:e.d,k:kid.id,c,w:Math.min(9,+e.w),q:e.q||"b",n:e.n||""});neu.eintraege++;
   }
-  for(const n of p.notizen||[]){
+  for(const n of arr(p.notizen)){if(!n||typeof n.text!=="string")continue;
     if(S.notizen.some(x=>x.k===kid.id&&x.ts===n.ts&&x.text===n.text)){neu.doppelt++;continue}
     S.notizen.push({id:"n"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),k:kid.id,ts:n.ts,kat:n.kat||"Allgemein",text:n.text,edited:n.edited});neu.notizen++;
   }
@@ -5300,10 +5467,12 @@ function importKindDaten(p,ziel){
 }
 async function importKindDatei(obj){
   const pw=await askPassword("Übergabedatei öffnen","Übergabe-Passwort, das du von der abgebenden Lehrkraft bekommen hast.");if(pw==null)return;
-  let p;try{p=await openObj(obj,pw)}catch(e){return alert("Falsches Übergabe-Passwort.")}
+  let p;try{p=await openObj(obj,pw)}catch(e){return info("Falsches Übergabe-Passwort.")}
   importDialog([{quelle:p.kind.id,vorname:p.kind.vorname,jgst:p.kind.jgst,anz:(p.eintraege||[]).length,notizen:(p.notizen||[]).length,paket:p}],
     `Aus ${p.quelle&&p.quelle.klasse?esc(p.quelle.klasse)+" ("+esc(p.quelle.schuljahr)+")":"einer anderen Klasse"}, exportiert am ${fmtTs(p.exportiert)}.`);
 }
+// Excel wertet Zellen mit = + - @ am Anfang als Formel aus – deshalb ein ' davor (beim Einlesen wird es wieder entfernt)
+const csvZelle=v=>{let t=String(v??"");if(/^[=+\-@\t\r]/.test(t))t="'"+t;return `"${t.replace(/"/g,'""')}"`};
 function csvParse(txt){
   txt=txt.replace(/^\ufeff/,"");
   const first=txt.split(/\r?\n/)[0]||"";const nS=first.split(";").length,nT=first.split("\t").length;const d=nS>1||nT>1?(nT>nS?"\t":";"):",";
@@ -5312,7 +5481,7 @@ function csvParse(txt){
     if(q){if(c==='"'){if(txt[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
     else if(c==='"')q=true;else if(c===d){row.push(f);f=""}else if(c==="\n"){row.push(f);rows.push(row);row=[];f=""}else if(c!=="\r")f+=c}
   if(f!==""||row.length){row.push(f);rows.push(row)}
-  return rows.filter(r=>r.some(x=>x.trim()!==""));
+  return rows.filter(r=>r.some(x=>x.trim()!=="")).map(r=>r.map(x=>x.replace(/^'(?=[=+\-@\t\r])/,"")));
 }
 
 /* ---------- Lehrplan (Raster) als CSV ---------- */
@@ -5322,7 +5491,7 @@ function rasterCsv(faecher){
   const rows=[RCSV_HEAD];
   for(const f of faecher)for(const {r} of baum(f,{nurSichtbar:false}))
     rows.push([f,r.id,r.parent||"",EBENEN[ebeneVon(r)],r.text||"",...[1,2,3,4].map(j=>r["soll"+j]??""),r.hj1?"ja":"nein",r.hj2?"ja":"nein",MODUS_CSV[modus(r)]||"",r.aus?"nein":"ja",r.lp||"",r.info||"",...[1,2,3,4].map(j=>r["modus"+j]?MODUS_CSV[r["modus"+j]]:""),hierBew(r)?"ja":""]);
-  return "﻿"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+  return "﻿"+rows.map(r=>r.map(csvZelle).join(";")).join("\r\n");
 }
 function csvModus(v){v=String(v||"").toLowerCase().trim();if(!v)return null;
   if(/erfass|kein/.test(v))return "kein";if(/woche/.test(v))return "woche";if(/nicht|kind/.test(v))return "kind";if(/auswert|auto/.test(v))return "auto";if(/fokus/.test(v))return "fokus";if(/beob/.test(v))return "beob";return null}
@@ -5410,7 +5579,7 @@ function rasterUebernehmen(fach,L,ersetzen,prefix,fm){
   return stat;
 }
 function rasterImportDialog(res,quelle){
-  const fs=Object.keys(res.faecher);if(!fs.length)return alert("In der Datei wurden keine Bereiche gefunden.");
+  const fs=Object.keys(res.faecher);if(!fs.length)return info("In der Datei wurden keine Bereiche gefunden.");
   const mitDaten=new Set(S.eintraege.map(e=>e.c));
   const zeile=f=>{const L=res.faecher[f],ids=new Set(L.nodes.map(n=>n.id)),alt=S.raster.filter(r=>r.fach===f);
     const neu=L.nodes.filter(n=>!S.raster.some(r=>r.id===n.id)).length, gleich=L.nodes.length-neu, fehlt=alt.filter(r=>!ids.has(r.id)), fehltDaten=fehlt.filter(r=>mitDaten.has(r.id)).length;
@@ -5426,7 +5595,7 @@ function rasterImportDialog(res,quelle){
    <p class="small muted">Gleiche Nummer = gleicher Bereich: Bisherige Bewertungen bleiben daran hängen. Soll-Werte, Halbjahre, Erfassung und „sichtbar“ werden nur übernommen, wenn die Datei diese Spalten enthält; sonst bleiben deine Einstellungen. Tipp: Vorher eine Sicherungskopie herunterladen.</p>
    <div class="row"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Einspielen</button></div></form>`,true);
   $("#rif").onsubmit=e=>{e.preventDefault();
-    const gew=[...document.querySelectorAll("input[name=rf]:checked")].map(x=>x.value);if(!gew.length)return alert("Bitte mindestens ein Fach wählen.");
+    const gew=[...document.querySelectorAll("input[name=rf]:checked")].map(x=>x.value);if(!gew.length)return info("Bitte mindestens ein Fach wählen.");
     const ersetzen=document.querySelector("input[name=rm]:checked").value==="ersetzen";
     const sum={neu:0,akt:0,geloescht:0,ausgeblendet:0,uebertragen:0,umbenannt:0};
     for(const f of gew){const st=rasterUebernehmen(f,res.faecher[f],ersetzen,res.prefixe[f],(res.meta||{})[f]);for(const k in sum)sum[k]+=st[k]}
@@ -5442,7 +5611,7 @@ function csvExport(ids){
   for(const n of S.notizen.filter(n=>set.has(n.k))){const k=kidById(n.k);const d=localDay(n.ts),t=isoLocal(n.ts).slice(11);
     zeilen.push([d+"1"+t,["Freitext",d,t,n.k,k?k.jgst:"","","","","","",n.kat,n.text]])}
   zeilen.sort((a,b)=>a[0]<b[0]?-1:1).forEach(z=>rows.push(z[1]));
-  return "\ufeff"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\r\n");
+  return "\ufeff"+rows.map(r=>r.map(csvZelle).join(";")).join("\r\n");
 }
 function csvZuPaketen(rows){
   const h=rows[0].map(x=>x.trim().toLowerCase()), ix=n=>h.indexOf(n.toLowerCase());
@@ -5466,14 +5635,14 @@ async function importDateiWaehlen(){
   const f=await pickFile(".lernstand-kind,.csv,.json,text/csv,application/json");if(!f)return;
   const txt=await f.text();
   if(/\.csv$/i.test(f.name)||!txt.trim().startsWith("{")){
-    let ps;try{ps=csvZuPaketen(csvParse(txt))}catch(e){return alert(e.message)}
-    if(!ps.length)return alert("In der CSV-Datei wurden keine gültigen Zeilen gefunden.");
+    let ps;try{ps=csvZuPaketen(csvParse(txt))}catch(e){return info(e.message)}
+    if(!ps.length)return info("In der CSV-Datei wurden keine gültigen Zeilen gefunden.");
     return importDialog(ps.map(p=>({quelle:p.kind.id,vorname:"",jgst:p.kind.jgst,anz:p.eintraege.length,notizen:p.notizen.length,paket:p})),`CSV-Datei „${esc(f.name)}“ – Kürzel aus der anderen Klasse werden neu vergeben.`);
   }
-  let obj;try{obj=JSON.parse(txt)}catch(e){return alert("Diese Datei kann nicht gelesen werden.")}
+  let obj;try{obj=JSON.parse(txt)}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
   if(obj.app==="lernstand12-kind")return importKindDatei(obj);
-  if(obj.app==="lernstand12")return alert("Das ist eine komplette Sicherung. Sie wird unter „Einstellungen → Daten & Sicherheit → Kopie einspielen“ eingespielt.");
-  alert("Unbekanntes Dateiformat.");
+  if(obj.app==="lernstand12")return info("Das ist eine komplette Sicherung. Sie wird unter „Einstellungen → Daten & Sicherheit → Kopie einspielen“ eingespielt.");
+  info("Unbekanntes Dateiformat.");
 }
 function importDialog(gruppen,info){
   const opts=sel=>`<option value="">als neues Kind anlegen</option>${sortedKids("alle").map(k=>`<option value="${k.id}">zu ${esc(k.id)}${k.vorname?" ("+esc(k.vorname)+")":""} hinzufügen</option>`).join("")}`;
@@ -5487,7 +5656,7 @@ function importDialog(gruppen,info){
   $("#impf").onsubmit=e=>{e.preventDefault();let sum={e:0,n:0,k:0,d:0,neuK:[]};
     gruppen.forEach((g,i)=>{const ziel=$("#imz-"+i).value;g.paket.kind.vorname=$("#imv-"+i).value.trim();g.paket.kind.jgst=+$("#imj-"+i).value;
       const r=importKindDaten(g.paket,ziel||null);if(!ziel)r.kid.jgst=g.paket.kind.jgst;sum.e+=r.neu.eintraege;sum.n+=r.neu.notizen;sum.k+=r.neu.komp;sum.d+=r.neu.doppelt;sum.neuK.push(r.kid.id)});
-    save();d.close();UI.kind=sum.neuK[0];UI.tab="kind";render();
+    datenBereinigen(S);DV++;save();d.close();UI.kind=sum.neuK[0];UI.tab="kind";render();
     toast(`Importiert: ${sum.e} Einträge, ${sum.n} Freitexte${sum.k?`, ${sum.k} neue Kompetenzen (im Raster aktivieren)`:""}${sum.d?`, ${sum.d} Doppelte übersprungen`:""}.`,7000)};
 }
 function uebergabeBericht(kid,ohneName){
@@ -5566,7 +5735,7 @@ const CHG = {
   kompSel:el=>{UI.komp=el.value;if(UI.mode==="lzk")render()},
   fachName:el=>{const fo=S.meta.faecher[+el.dataset.i],old=fo.name,nu=el.value.trim();
     if(!nu||nu===old){el.value=old;return}
-    if(S.meta.faecher.some(f=>f!==fo&&f.name.toLowerCase()===nu.toLowerCase())){alert("Dieses Fach gibt es schon.");el.value=old;return}
+    if(S.meta.faecher.some(f=>f!==fo&&f.name.toLowerCase()===nu.toLowerCase())){info("Dieses Fach gibt es schon.");el.value=old;return}
     fo.name=nu;S.raster.forEach(r=>{if(r.fach===old)r.fach=nu});S.notizen.forEach(n=>{if(n.kat===old)n.kat=nu});
     for(const t of Object.values(S.texte))if(t.leg&&t.leg.faecher&&old in t.leg.faecher){t.leg.faecher[nu]=t.leg.faecher[old];delete t.leg.faecher[old]}
     if(UI.fach===old)UI.fach=nu;if(UI.uFach===old)UI.uFach=nu;if(UI.vFach===old)UI.vFach=nu;save();render()},
@@ -5587,7 +5756,7 @@ const CHG = {
     k.klasse=v;const m=v.match(/^(\d)/);if(m&&+m[1]>=1&&+m[1]<=4)k.jgst=+m[1];save();render()},
   compId:el=>{const i=+el.dataset.i,old=S.raster[i].id,nu=el.value.trim();
     if(!nu||nu===old){el.value=old;return}
-    if(S.raster.some((r,j)=>j!==i&&r.id===nu)||ASV_IDS.includes(nu)){alert("Diese ID gibt es schon.");el.value=old;return}
+    if(S.raster.some((r,j)=>j!==i&&r.id===nu)||ASV_IDS.includes(nu)){info("Diese ID gibt es schon.");el.value=old;return}
     S.raster[i].id=nu;S.raster.forEach(r=>{if(r.parent===old)r.parent=nu});S.eintraege.forEach(e=>{if(e.c===old)e.c=nu});if(UI.komp===old)UI.komp=nu;save();render()},
   sjCheck:el=>{const sj=S.meta.schuljahr;S.meta.sjCheck=S.meta.sjCheck||{};const c=S.meta.sjCheck[sj]=S.meta.sjCheck[sj]||{};if(el.checked)c[el.dataset.v]=true;else delete c[el.dataset.v];save();render()},
   fgFach:el=>{UI.fgFach=el.value;UI.fgEb=null;render()},
@@ -5598,7 +5767,7 @@ const CHG = {
       if(!r.modus||r.modus==="auto"||modus(r)==="auto"){r.modus=v&&modus(v)!=="auto"?modus(v):"beob";[1,2,3,4].forEach(j=>{if(v&&v["modus"+j])r["modus"+j]=v["modus"+j];else delete r["modus"+j]})}
       if(r.hj1==null&&r.hj2==null){r.hj1=true;r.hj2=true}
       nachfahren(r.id).forEach(x=>{delete x.hier});r.hier=true;
-      toast(`„${r.text||r.id}“ wird jetzt als Ganzes bewertet. Bisherige Einträge der Unterbereiche bleiben erhalten und fließen weiter in die Auswertung ein.`,4500)}
+      toast(`„${esc(r.text||r.id)}“ wird jetzt als Ganzes bewertet. Bisherige Einträge der Unterbereiche bleiben erhalten und fließen weiter in die Auswertung ein.`,4500)}
     else{delete r.hier;toast("Die Unterbereiche werden wieder einzeln bewertet.",3000)}
     DV++;save();render()},
   namenSwitch:el=>{UI.showNames=el.checked;render()},
@@ -5628,15 +5797,44 @@ document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.pv&&
     rows.forEach(z=>{if(z.dataset.h==null)z.dataset.h=z.hidden?"1":"0"});
     const hit=new Set();rows.forEach(z=>{if(z.dataset.txt.includes(q)){hit.add(z.dataset.v);z.dataset.pfad.split("|").filter(Boolean).forEach(p=>hit.add(p))}});
     rows.forEach(z=>z.hidden=!hit.has(z.dataset.v));const l=document.querySelector(".rleer");if(l)l.hidden=hit.size>0;return}if(e.target.id==="kSuche"){const q=e.target.value.trim().toLowerCase();document.querySelectorAll(".klist .kitem").forEach(b=>{b.hidden=!!q&&!b.textContent.toLowerCase().includes(q)});document.querySelectorAll(".klist .klb").forEach(h=>{h.hidden=!!q})}if(e.target.dataset.chg==="lzkPrev")CHG.lzkPrev(e.target);if(e.target.id==="kiTA")UI.ki.text=e.target.value});
-document.addEventListener("keydown",e=>{if(e.key==="?"&&S&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)&&!e.target.isContentEditable&&!$("#dlg").open){e.preventDefault();UI.tab="hilfe";render();window.scrollTo(0,0)}});
+document.addEventListener("keydown",e=>{if(e.key==="?"&&S&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)&&!e.target.isContentEditable&&!dlgOffen()){e.preventDefault();UI.tab="hilfe";render();window.scrollTo(0,0)}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="kgpw"){e.preventDefault();ACT.klasseEntsperren();return}if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.pv){e.preventDefault();const ins=[...document.querySelectorAll(`.ptab input[data-pv][data-c="${CSS.escape(e.target.dataset.c)}"]:not([disabled])`)];const n=ins[ins.indexOf(e.target)+1];if(n){n.focus();n.select()}return}});
 document.addEventListener("keydown",e=>{if(e.target.id==="jText"&&e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();ACT.saveJournal()}});
 
 window.addEventListener("scroll",()=>document.body.classList.toggle("scrolled",window.scrollY>40),{passive:true});
+// Formulare ohne eigenes Absenden (ersetzt onsubmit="return false" – Inline-Handler sind per CSP gesperrt)
+document.addEventListener("submit",e=>{if(e.target&&e.target.hasAttribute&&e.target.hasAttribute("data-nosubmit"))e.preventDefault()});
+/* ---------- Bericht und LEG-Bogen beim Tippen übernehmen (ein Kindwechsel verwirft sonst ungespeicherten Text) ---------- */
+let legTimer=null,legKid=null;
+function legFlush(){if(!legTimer)return;clearTimeout(legTimer);legTimer=null;if(S&&legKid&&$("#le-stark"))legCollect(legKid)}
+document.addEventListener("input",e=>{const t=e.target;if(!S||!t)return;const kid=kidById(UI.kind);if(!kid)return;
+  if(t.id==="berichtTA"){S.texte[textKey(kid)]={...(S.texte[textKey(kid)]||{}),bericht:t.value};save()}
+  else if(t.closest&&t.closest(".legedit")){legKid=kid;clearTimeout(legTimer);legTimer=setTimeout(legFlush,400)}
+});
+/* ---------- Desktop-App: Fenster schließen (auch über das X) ---------- */
+// Speichert und legt höchstens einmal am Tag still eine Sicherung in Dokumente/LeDoK-Sicherungen an
+window.ledokSchliessen=async()=>{
+  if(!S)return {ok:true};
+  await saveNow();
+  if(DESKTOP&&!ST.error&&!(S.meta.tagesSicherung&&localDay(S.meta.tagesSicherung)===today())){
+    try{await sicherungAnlegen("tag");S.meta.tagesSicherung=new Date().toISOString();await saveNow()}catch(e){}}
+  return {ok:!ST.error,fehler:ST.error||""};
+};
 /* ---------- Automatische Sperre ---------- */
 let lastActivity=Date.now();
 ["pointerdown","keydown","wheel","touchstart"].forEach(t=>document.addEventListener(t,()=>{lastActivity=Date.now()},{passive:true}));
-async function lock(){if(!S)return;UI.klasseOffen=false;await saveNow();closeDlg();$("#print-root").innerHTML="";screenStart()}
+async function lock(grund){if(!S)return;UI.klasseOffen=false;
+  // Offener Dialog mit Text (z. B. Notiz) wird nicht still verworfen: erst übernehmen, dann speichern
+  const d=$("#dlg");if(d.open&&grund!=="fenster"){const f=d.querySelector("form");if(f&&[...d.querySelectorAll("textarea")].some(t=>t.value.trim())){try{f.requestSubmit()}catch(e){}await new Promise(r=>setTimeout(r,80))}}
+  if(!S)return;await saveNow();
+  let msg=grund==="fenster"?"LeDoK wurde in einem anderen Fenster geöffnet. Dieses Fenster ist gesperrt – arbeite im anderen weiter.":"";
+  if(ST.error||(ST.konflikt&&ST.dirty)){
+    // Speichern ist fehlgeschlagen: nie sperren, ohne die Änderungen vorher als Notfallkopie zu sichern
+    let r=null;try{r=await sicherungAnlegen("notfall")}catch(e){}
+    if(!r&&!ST.konflikt){toast("<b>Nicht gesperrt:</b> Deine Änderungen konnten nicht gespeichert werden. Bitte über den roten Knopf oben eine Kopie herunterladen.",15000);return}
+    if(r)msg+=(msg?" ":"")+`Deine letzten Änderungen konnten nicht normal gespeichert werden und liegen als Notfallkopie „${r.name}“ ${r.ort==="desktop"?"im Ordner Dokumente/LeDoK-Sicherungen":"in deinem Download-Ordner"}. Hole sie über „Sicherungskopie laden“ zurück.`;
+  }
+  closeDlg();$("#print-root").innerHTML="";screenStart(msg)}
 setInterval(()=>{if(S&&Date.now()-lastActivity>IDLE_MIN*60000)lock()},20000);
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&S&&saveTimer)saveNow()});
 window.addEventListener("beforeunload",e=>{if(S&&(saveTimer||ST.error)){saveNow();if(!DESKTOP){e.preventDefault();e.returnValue=""}}});
@@ -5646,7 +5844,7 @@ function loadDemo(){
   let seed=20261016;const rnd=()=>{seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296};
   const namen=[["Anna","sie",2],["Ben","er",2],["Clara","sie",2],["David","er",2],["Emma","sie",2],["Finn","er",2],["Greta","sie",2],["Hannes","er",2],["Ida","sie",2],["Jonas","er",2],["Klara","sie",2],
     ["Leo","er",1],["Mia","sie",1],["Noah","er",1],["Olivia","sie",1],["Paul","er",1],["Romy","sie",1],["Samuel","er",1],["Tilda","sie",1],["Theo","er",1],["Valentina","sie",1],["Yusuf","er",1]];
-  S.meta.schule="Grundschule Beispielstadt";S.meta.klasse="Klasse 1/2b";S.meta.lehrkraft="";
+  S.meta.demo=true;S.meta.schule="Grundschule Beispielstadt";S.meta.klasse="Klasse 1/2b";S.meta.lehrkraft="";
   S.kinder=namen.map(([v,p,j],i)=>({id:"S"+pad(i+1),vorname:v,jgst:j,gruppe:"ABCDE"[i%5],pronomen:p,klasse:"",faecherNur:[]}));
   S.kinder.push({id:"S23",vorname:"Lukas",jgst:2,gruppe:"C",pronomen:"er",klasse:"2c",faecherNur:["Deutsch","Mathematik"]});
   const NN=["Müller","Schmid","Huber","Wagner","Bauer","Maier","Fischer","Weber","Hofmann","Berger","Koch","Richter","Klein","Wolf","Schröder","Neumann","Schwarz","Braun","Zimmermann","Krüger","Hartmann","Lang","Brandl"];

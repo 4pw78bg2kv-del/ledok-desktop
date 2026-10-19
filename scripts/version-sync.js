@@ -11,4 +11,6 @@ if (pkg.version !== m[1]) { pkg.version = m[1]; fs.writeFileSync(pj, JSON.string
 const tag = process.env.GITHUB_REF_NAME;
 if (tag && /^v\d/.test(tag) && tag !== "v" + m[1]) { console.error(`Tag ${tag} passt nicht zu APP_VERSION ${m[1]}.`); process.exit(1); }
 if (!fs.existsSync(path.join(root, "desktop", "ledok-update-key.json"))) console.warn("Hinweis: desktop/ledok-update-key.json fehlt – Updates per Datei sind in diesem Build deaktiviert.");
+// Passt der CSP-Hash nicht zum Skript, startet die App nicht – dann lieber den Build abbrechen
+require("child_process").execFileSync(process.execPath, [path.join(__dirname, "csp-hash.js"), "--pruefen"], { stdio: "inherit" });
 console.log("LeDoK Version " + m[1]);

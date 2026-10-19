@@ -109,12 +109,15 @@ Mit einem Apple-Developer-Konto (99 €/Jahr) bzw. einem Windows-Code-Signing-Ze
 
 | | Windows | macOS |
 |---|---|---|
-| Daten (verschlüsselt) | `%APPDATA%\LeDoK` | `~/Library/Application Support/LeDoK` |
-| Automatische Sicherungen vor jedem Update | `Dokumente\LeDoK-Sicherungen` | `Dokumente/LeDoK-Sicherungen` |
+| Daten (verschlüsselt) | `%APPDATA%\LeDoK\daten` | `~/Library/Application Support/LeDoK/daten` |
+| Automatische Sicherungen (vor Updates, vor dem Löschen, einmal am Tag beim Schließen) | `Dokumente\LeDoK-Sicherungen` | `Dokumente/LeDoK-Sicherungen` |
 | Eingespieltes Update | `%APPDATA%\LeDoK\update` | `~/Library/Application Support/LeDoK/update` |
 
 - Beim Deinstallieren bleiben die Daten erhalten.
 - Die Sicherungen sind normale LeDoK-Kopien (`.lernstand`). Man öffnet sie mit „Kopie einspielen“ und dem Passwort.
+- Von jeder Art Sicherung bleiben die 15 neuesten liegen, ältere löscht die App selbst.
+- Neben der Datendatei liegt eine `.vorher`-Datei mit dem vorletzten Stand.
+- In allen Versionen nach 1.0.0 liegen die Daten in dieser Datei statt im internen Browserspeicher. Die App übernimmt sie beim ersten Speichern automatisch. Danach bitte **nicht mehr auf 1.0.0 zurückgehen**: 1.0.0 findet die Daten nicht und kann neuere Kopien nicht öffnen.
 
 ## 8 · Datenschutz
 
@@ -150,3 +153,5 @@ npm run release 1.0.1 [--tag] [--kanal Beta] [--probe]
 npm run dist:win     # Windows-Installer (unter Linux/macOS wird Wine benötigt)
 npm run dist:mac     # nur auf einem Mac
 ```
+
+Nach jeder Änderung am Skript in `app/LeDoK.html` einmal `node scripts/csp-hash.js` ausführen. Es trägt den Hash des Skripts in die Content-Security-Policy ein; ohne passenden Hash startet die App nicht. Der Build prüft das automatisch.

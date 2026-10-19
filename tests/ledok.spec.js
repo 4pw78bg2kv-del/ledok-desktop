@@ -23,7 +23,10 @@ async function neueKlasse(page, { rolle = "kl", demo = true } = {}) {
   if (rolle === "fl") await page.check('input[name=rolle][value="fl"]');
   await page.fill("#pw1", PW);
   await page.fill("#pw2", PW);
-  if (rolle === "kl" && !demo) await page.uncheck("#demo");
+  if (rolle === "kl") await page.setChecked("#demo", demo);
+  await page.click('#setupForm button[type="submit"]');
+  // Ohne Schulschlüssel fragt der Dialog einmal nach; ein zweites „Starten“ beginnt ohne.
+  await expect(page.locator("#err2")).toContainText("Schulschlüssel");
   await page.click('#setupForm button[type="submit"]');
   // Ohne Schulschlüssel fragt der Dialog einmal nach; ein zweites „Starten“ beginnt ohne.
   await expect(page.locator("#err2")).toContainText("Schulschlüssel");

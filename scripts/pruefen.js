@@ -23,5 +23,8 @@ else {
     fehler.push(`In CHANGELOG.md fehlt ein Abschnitt "## ${v[1]}".`);
 }
 
+try { require("child_process").execFileSync(process.execPath, [path.join(__dirname, "csp-hash.js"), "--pruefen"], { stdio: "pipe" }); }
+catch (e) { fehler.push(String(e.stderr || e.message).trim()); }
+
 if (fehler.length) { console.error("Prüfung fehlgeschlagen:\n- " + fehler.join("\n- ")); process.exit(1); }
 console.log(`Prüfung bestanden: ${skripte.length} Skript(e), Version ${v[1]} vom ${v[2]}.`);

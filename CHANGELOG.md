@@ -9,6 +9,22 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- Bevor LeDoK Daten löscht, eine Sicherungskopie einspielt oder ein neues Schuljahr beginnt, legt es automatisch eine Sicherung an. Zum Löschen tippst du zur Bestätigung „LÖSCHEN“ ein.
+- Die Desktop-App speichert deine Daten in einer eigenen Datei auf dem Rechner. Beim Schließen legt sie einmal am Tag eine Sicherung im Ordner **LeDoK-Sicherungen** an.
+- Die Beispielklasse ist beim Anlegen nicht mehr vorausgewählt. Solange sie da ist, zeigt ein Hinweis oben, wie du sie mit einem Klick wieder entfernst.
+
+**Geändert**
+- Fragen und Hinweise erscheinen in LeDoK-eigenen Fenstern statt in Browser-Meldungen.
+- Gespeicherte Daten sind deutlich kleiner. Ältere LeDoK-Versionen können neue Sicherungskopien deshalb nicht öffnen.
+- Wenn du dein Passwort änderst, verschlüsselt LeDoK die Daten mit einem neuen Schlüssel.
+
+**Behoben**
+- Wenn sich LeDoK automatisch sperrt, geht ein angefangener Text (Notiz, Bericht, LEG) nicht mehr verloren.
+- Ist LeDoK in zwei Fenstern offen, überschreibt ein Fenster nicht mehr still die Arbeit des anderen.
+- Dateien von Kolleginnen und Kollegen (Fachpakete, Rückmeldungen) werden vor dem Übernehmen geprüft. Fehlerhafte Einträge werden übersprungen.
+- Ein fremder Schulschlüssel kann den Schulschlüssel deiner Schule nicht mehr unbemerkt ersetzen.
+
 ## 1.0.0 (Beta)
 
 Erste Testversion für den Einsatz im Kollegium.
