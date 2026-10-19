@@ -1,0 +1,5 @@
+# Immer LF auschecken, auch auf Windows (core.autocrlf): Der CSP-Hash in app/LeDoK.html
+# wird über das Skript mit LF-Zeilenenden berechnet. Mit CRLF bricht der Build ab und die App startet nicht.
+* text=auto eol=lf
+*.png binary
+*.ico binary
