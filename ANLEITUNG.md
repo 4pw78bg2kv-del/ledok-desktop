@@ -115,6 +115,14 @@ Mit einem Apple-Developer-Konto (99 €/Jahr) bzw. einem Windows-Code-Signing-Ze
 - Die Rechtschreibprüfung ist nur auf dem Mac aktiv, weil sie dort im System läuft. Unter Windows würde sie Wörterbücher aus dem Netz laden und bleibt deshalb aus.
 - Updates kommen ausschließlich als Datei, deren Signatur das Programm mit dem eingebauten öffentlichen Schlüssel prüft.
 
+## 9 · Arbeitsweise bei Änderungen
+
+**Eine Quelle.** Die aktuelle Fassung der App liegt nur in diesem Repository unter `app/LeDoK.html`. Bearbeite immer diese Datei und keine Kopie an einem anderen Ort. Das private Repository `LeDoK` wird dafür nicht gebraucht.
+
+**Änderungen notieren.** Trage jede Änderung, die Lehrkräfte bemerken, gleich unter „Unveröffentlicht“ in `CHANGELOG.md` ein. Beim Release wandert der Abschnitt unter die neue Versionsnummer und kommt als Hinweistext ins Update-Paket (Schritt 4, Punkt 2).
+
+**Problemberichte.** Lehrkräfte erstellen über **Version … → Problem melden …** oder **Hilfe → Problem melden …** eine Textdatei `LeDoK-Problembericht-….txt` und schicken sie dir per Mail. Darin stehen ihre Beschreibung, die Version, das Betriebssystem und die letzten Fehlermeldungen. Namen von Kindern werden aus den Fehlermeldungen entfernt, und die Lehrkraft sieht den ganzen Text vor dem Speichern.
+
 ## Für Entwickler
 
 ```bash
