@@ -4848,7 +4848,7 @@ async function problemBericht(beschreibung){
     (beschreibung||"").trim()||"(keine Beschreibung)",
     "",
     "Technische Angaben (ohne Schülerdaten)",
-    `Version: ${APP_VERSION} vom ${APP_DATUM}`,
+    `Version: ${APP_VERSION}${typeof APP_KANAL==="string"&&APP_KANAL?" "+APP_KANAL:""} vom ${APP_DATUM}`,
     `Umgebung: ${di?`Desktop-App für ${os}, Programmversion ${di.shell}${di.aktualisiert?`, Update eingespielt (ausgeliefert war ${di.mitgeliefert})`:""}`:"Browser"}`,
     `Browser-Kennung: ${navigator.userAgent}`,
     `Fenster: ${innerWidth} × ${innerHeight} Pixel, Zoom ${Math.round(devicePixelRatio*100)} %`,

@@ -9,11 +9,15 @@
   "main": "desktop/main.js",
   "scripts": {
     "start": "node scripts/version-sync.js && electron .",
+    "pruefen": "node scripts/pruefen.js",
+    "test": "node scripts/pruefen.js && playwright test",
+    "release": "node scripts/release.js",
     "dist:win": "node scripts/version-sync.js && electron-builder --win --publish never",
     "dist:mac": "node scripts/version-sync.js && electron-builder --mac --publish never",
     "dist:linux": "node scripts/version-sync.js && electron-builder --linux --publish never"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "electron": "38.4.0",
     "electron-builder": "26.0.12"
   },

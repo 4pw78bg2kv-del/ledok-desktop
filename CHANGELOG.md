@@ -9,12 +9,10 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
-## 0.1.0
+## 1.0.0 (Beta)
 
 Erste Testversion für den Einsatz im Kollegium.
 
 **Neu**
+- Neben der Versionsnummer steht „Beta“. So ist sichtbar, dass es sich um eine Testversion handelt.
 - Über „Version …“ unten rechts, im Menü **Hilfe** und in der Hilfe unter „Wenn etwas nicht klappt“ gibt es jetzt **Problem melden …**. Du beschreibst kurz, was passiert ist, und speicherst den Bericht als Datei oder kopierst ihn in eine Mail. Der Bericht enthält Version, Betriebssystem und die letzten Fehlermeldungen, aber keine Schülerdaten. LeDoK selbst versendet nichts.
-
-**Geändert**
-- Die Versionsnummer beginnt jetzt bei 0.1.0. Versionen unter 1.0 sind Testversionen.
