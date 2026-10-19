@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-UD8afwnFoA6YJe5inWfat/nfnb2oAUyPP5b1CCle6Zg='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RTJxkf8lcQBAE9HyFXqRHIXsoYI3FH9oNdJi8hiySFQ='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -492,6 +492,7 @@ table.btree tr.eb1 td{font-weight:650;background:var(--surface2)}
 table.btree tr.eb2 td:first-child{font-weight:600}
 table.btree td.c{font-weight:650;font-variant-numeric:tabular-nums}
 .agg{font-size:.7rem;margin-left:.2rem;color:var(--muted);font-weight:700}
+.flm{display:inline-block;font-size:.62rem;line-height:1.2;margin-left:.25rem;padding:0 .25rem;border-radius:4px;border:1px solid var(--line);color:var(--muted);font-weight:700;vertical-align:super}
 .fpfad{display:block;font-size:.72rem;color:var(--muted);margin-top:.05rem}
 /* Einstellungen */
 .btn.on-set{background:var(--ink);color:var(--surface);border-color:var(--ink)}
@@ -2867,6 +2868,7 @@ function saveNow(){
     if(ST.konflikt)return;
     const jetzt=standLesen();
     if(jetzt&&jetzt!==ST.stand){ST.konflikt=true;ST.error="LeDoK ist noch in einem anderen Fenster geöffnet und hat dort neuer gespeichert. Hier wird nichts mehr gespeichert.";updateStatus();setTimeout(()=>lock("fenster"),0);return}
+    try{await postAblegen()}catch(e){} // Rückmeldung für die Klassenlehrkraft am selben Rechner
     try{const sealed=await sealState();await storeWrite(JSON.stringify(sealed));
       if(!desktopSpeicher()){ST.stand=sealed.saved+"|"+FENSTER_ID;localStorage.setItem(standKey(),ST.stand)}
       ST.dirty=false;ST.error=null;ST.lastSaved=new Date()}
@@ -3325,7 +3327,7 @@ function setupDialog(neuesProfil){
     if(rolle==="kl")setTimeout(()=>toast("Tipp: Oben schaltest du mit <b>Kürzel ⇄ Namen</b> zwischen S01, S02 … und den Vornamen um.",8000),400);
   };
 }
-function startApp(){DV++;closeDlg();syncFaecher();fensterMelden();if(S.meta.rolle==='fl'&&!S.kinder.length){UI.tab='heute'}save();UI.kind=UI.kind&&kidById(UI.kind)?UI.kind:(S.kinder[0]||{}).id||null;lastActivity=Date.now();render()}
+function startApp(){DV++;closeDlg();syncFaecher();fensterMelden();if(S.meta.rolle==='fl'&&!S.kinder.length){UI.tab='heute'}save();UI.kind=UI.kind&&kidById(UI.kind)?UI.kind:(S.kinder[0]||{}).id||null;lastActivity=Date.now();render();setTimeout(()=>postPruefen(true),700)}
 
 function render(){
   if(!S)return;
@@ -3815,7 +3817,7 @@ uebersicht(){
     cols=ASV.map(a=>({id:a.id,label:a.id,title:a.text}));idsDuenn=ASV_IDS;
     cell=(k,c)=>{const s=stand(k.id,c.id);
       if(!s.n)return `<td class="c muted" data-act="hist" data-k="${k.id}" data-c="${c.id}">·</td>`;
-      return `<td class="c ${zk(s.v,7)}" data-act="hist" data-k="${k.id}" data-c="${c.id}" title="${esc(c.title)} · ${s.n} Einträge">${fmt(s.v)}<span class="tr">${s.n>=2?trendPfeil(s.trend):""}</span></td>`};
+      return `<td class="c ${zk(s.v,7)}" data-act="hist" data-k="${k.id}" data-c="${c.id}" title="${esc(c.title)} · ${s.n} Einträge">${fmt(s.v)}${flMark(k.id,c.id)}<span class="tr">${s.n>=2?trendPfeil(s.trend):""}</span></td>`};
   }else{
     const alle=kompsFach(UI.uFach,false), ebs=[...new Set(alle.map(ebeneVon))].filter(e=>e<=2).sort();
     if(!ebs.includes(UI.uEbene))UI.uEbene=ebs.includes(2)?2:ebs[0];
@@ -3824,7 +3826,7 @@ uebersicht(){
     idsDuenn=cols.map(c=>c.id);
     cell=(k,c)=>{const s=evalNode(k.id,c.id);
       if(s.v==null)return `<td class="c muted" data-act="hist" data-k="${k.id}" data-c="${esc(c.id)}">·</td>`;
-      return `<td class="c ${zk(s.v,s.soll)}" data-act="hist" data-k="${k.id}" data-c="${esc(c.id)}" title="${esc(c.title)} · ${s.n} Einträge${s.agg?" (aus Unterbereichen)":""} · Soll ${fmt(s.soll)}">${fmt(s.v)}<span class="tr">${s.n>=2?trendPfeil(s.trend):""}</span></td>`};
+      return `<td class="c ${zk(s.v,s.soll)}" data-act="hist" data-k="${k.id}" data-c="${esc(c.id)}" title="${esc(c.title)} · ${s.n} Einträge${s.agg?" (aus Unterbereichen)":""} · Soll ${fmt(s.soll)}">${fmt(s.v)}${flMark(k.id,c.id)}<span class="tr">${s.n>=2?trendPfeil(s.trend):""}</span></td>`};
     cols=[...cols,{id:"_FW",label:"Ø Fach",title:"Fachwert"}];
     const base=cell;
     cell=(k,c)=>{if(c.id!=="_FW")return base(k,c);const fw=fachwert(k,UI.uFach);return fw?`<td class="c ${zk(fw.v,fw.soll)}" data-act="goKind" data-k="${k.id}">${fmt(fw.v)}${mitNoten(k)&&fachObj(UI.uFach).benotet?` <span class="small muted">(${note(fw.v)})</span>`:""}</td>`:`<td class="num">·</td>`};
@@ -4311,7 +4313,7 @@ function baumCard(kid){
      ${open?`<div class="tw"><table class="btree"><tr><th>Bereich</th><th class="num">Wert</th><th>Stufe</th><th class="num">Trend</th><th class="num">Soll</th><th class="num">Einträge</th></tr>
      ${baum(f).map(({r,depth})=>{const s=evalNode(kid.id,r.id),b=band(s.v),eb=ebeneVon(r);
        return `<tr class="eb${eb}"><td style="padding-left:${.5+depth*1.25}rem"><span class="ebb e${eb}" title="${EBENEN[eb]}">${EB_KURZ[eb]}</span> ${esc(r.text||"(ohne Bezeichnung)")} <span class="muted small">${esc(r.id)}</span></td>
-        <td class="num c ${zellKlasse(s.v,s.soll,s.minN)}" data-act="hist" data-k="${kid.id}" data-c="${esc(r.id)}" style="cursor:pointer">${fmt(s.v)}${s.agg?'<span class="agg" title="aus Unterbereichen berechnet">Σ</span>':""}</td>
+        <td class="num c ${zellKlasse(s.v,s.soll,s.minN)}" data-act="hist" data-k="${kid.id}" data-c="${esc(r.id)}" style="cursor:pointer">${fmt(s.v)}${s.agg?'<span class="agg" title="aus Unterbereichen berechnet">Σ</span>':""}${flMark(kid.id,r.id)}</td>
         <td>${s.v!=null?`<span class="dot" style="background:var(--b${b})"></span>${BAND_LABEL[b]}`:""}</td><td class="num">${trendPfeil(s.trend)}</td><td class="num small">${fmt(s.soll)}</td><td class="num small muted">${s.n||""}</td></tr>`}).join("")}</table></div>`:""}</div>`}).join("")}</div>`;
 }
 
@@ -4699,6 +4701,7 @@ function flKarte(a){
   const ks=flKinder(a),st=flStatus(a);
   return `<div class="card flcard"><div class="row" style="align-items:baseline;flex-wrap:wrap"><h3 style="margin:0">${esc(a.name)}</h3><span class="muted">${esc(a.faecher.join(", "))}${a.asv?(a.faecher.length?" + ":"")+"Arbeits-/Sozialverhalten":""}</span><span class="spacer"></span><span class="badge ${st.c}">${st.t}</span></div>
    <div class="flmeta small"><span><b>${ks.length}</b> Kinder ${a.alle?"(alle mit dem Fach – passt sich an)":"(Auswahl)"}</span><span>Paket: ${a.version?`Version ${a.version} vom ${datStr(a.gesendet)}`:"noch nicht erstellt"}</span><span>Rückmeldung: ${a.zurueck?`${datStr(a.zurueck)} · ${a.nRueck||0} Bewertungen`:"noch keine"}</span></div>
+   ${POST_OFFEN.has(a.id)?`<p class="small" style="margin:.2rem 0"><button class="btn primary small" data-act="postOeffnen" data-v="${a.id}">Neue Rückmeldung auf diesem Rechner ansehen …</button></p>`:""}
    ${st.t==="Neues Paket nötig"?`<p class="small" style="margin:.2rem 0;color:var(--warn)">Kinderliste oder Raster haben sich seit dem letzten Paket geändert – erstelle ein neues Fachpaket.</p>`:""}
    <div class="row" style="flex-wrap:wrap"><button class="btn primary small" data-act="flPaket" data-v="${a.id}">Fachpaket erstellen …</button><button class="btn small" data-act="rueckImport">Rückmeldung einlesen …</button><button class="btn ghost small" data-act="flEdit" data-v="${a.id}">Bearbeiten</button><span class="spacer"></span><button class="btn ghost small danger" data-act="flDel" data-v="${a.id}">Entfernen</button></div></div>`;
 }
@@ -4748,7 +4751,7 @@ function fachpaketDaten(a,ks){
     eintraege:a.verlauf?S.eintraege.filter(e=>ids.has(e.k)&&gehoert(e.c)&&e.vp!==a.id).map(e=>({t:e.t,d:e.d,k:e.k,c:e.c,w:e.w,q:e.q,n:e.n||""})):[],
     rkey:a.rkey};
 }
-function rueckDialog(a,d){
+function rueckDialog(a,d,o={}){
   const key=e=>e.k+"|"+e.c+"|"+e.d+"|"+e.t;
   const am=new Map(S.eintraege.filter(e=>e.vp===a.id).map(e=>[key(e),e]));
   let fremd=0;const neu=[],nm=new Map();
@@ -4761,17 +4764,21 @@ function rueckDialog(a,d){
   const notesNeu=notesAlle.filter(n=>!S.notizen.some(m=>m.id===n.id&&m.vp===a.id));
   const nKids=new Set(neu.map(e=>e.k)).size, aelter=a.zurueckCreated&&d.created<a.zurueckCreated;
   const dl=dialog(`<h2>Rückmeldung einlesen</h2><p><b>${esc(d.fl||a.name)}</b> · ${esc((d.faecher||a.faecher).join(", ")||"Arbeits-/Sozialverhalten")} · erstellt am ${new Date(d.created).toLocaleString("de-DE")}</p>
+   ${o.post?`<p class="note small">${esc(d.fl||a.name)} hat diese Rückmeldung <b>auf diesem Rechner</b> für dich bereitgelegt. Du kannst sie jetzt übernehmen oder später unter „Fachlehrkräfte“.</p>`:""}
    ${aelter?`<p class="note small">Achtung: Diese Rückmeldung ist <b>älter</b> als die zuletzt eingelesene (${new Date(a.zurueckCreated).toLocaleString("de-DE")}).</p>`:""}
    <ul class="small"><li>${neu.length} Bewertungen für ${nKids} Kinder: <b>${plus} neu</b>, ${geaendert} geändert, ${weg} von der Fachlehrkraft gelöscht</li><li>${notesNeu.length} neue Notizen</li>${fremd?`<li class="muted">${fremd} Bewertungen zu Kindern, die nicht mehr in deiner Klasse sind – werden übersprungen</li>`:""}</ul>
    <p class="small muted">Die Bewertungen erscheinen bei dir mit dem Vermerk „${esc(a.name)}“ und fließen in Übersicht, Berichte und LEG ein. Frühere Rückmeldungen dieser Fachlehrkraft werden ersetzt – deine eigenen Bewertungen bleiben unberührt.</p>
-   <div class="row"><span class="spacer"></span><button class="btn" data-act="closeDlg">Abbrechen</button><button class="btn primary" id="rueckOk">Übernehmen</button></div>`);
+   <div class="row"><span class="spacer"></span><button class="btn" data-act="closeDlg">${o.post?"Später":"Abbrechen"}</button><button class="btn primary" id="rueckOk">Übernehmen</button></div>`);
   $("#rueckOk").onclick=()=>{
+    if(o.post)try{localStorage.setItem(quittKey(a.id),d.created)}catch(e){}
+    const p=POST_OFFEN.get(a.id);if(p&&p.created<=d.created)POST_OFFEN.delete(a.id);
     S.eintraege=S.eintraege.filter(e=>e.vp!==a.id).concat(neu.map(e=>Object.assign({},e,{von:a.name,vp:a.id})));
     S.notizen=S.notizen.filter(n=>n.vp!==a.id).concat(notesAlle.map(n=>Object.assign({},n,{von:a.name,vp:a.id})));
     datenBereinigen(S);
     a.zurueck=new Date().toISOString();a.zurueckCreated=d.created;a.nRueck=neu.length;
-    protokoll(`Rückmeldung von ${a.name} eingelesen: ${plus} neu, ${geaendert} geändert, ${weg} entfernt, ${notesNeu.length} Notizen`);
+    protokoll(`Rückmeldung von ${a.name} ${o.post?"vom selben Rechner übernommen":"eingelesen"}: ${plus} neu, ${geaendert} geändert, ${weg} entfernt, ${notesNeu.length} Notizen`);
     DV++;save();dl.close();render();toast(`Rückmeldung von ${esc(a.name)} übernommen.`,4000)};
+  return dl;
 }
 
 /* ---------- Fachlehrkraft: Fachpakete und Rückmeldungen ---------- */
@@ -4780,7 +4787,7 @@ const paketNeu=P=>{const ids=paketIds(P);return S.eintraege.filter(e=>ids.has(e.
 function paketKarte(P){
   const n=paketNeu(P),t=tageSeit(P.export);
   return `<div class="card flcard"><div class="row" style="align-items:baseline;flex-wrap:wrap"><h3 style="margin:0">${esc(P.faecher.join(", ")||"Arbeits-/Sozialverhalten")}${P.asv&&P.faecher.length?" + ASV":""}</h3><span class="muted">${esc(klTxt(P.klasse))}${P.kl?" · "+esc(P.kl):""}</span><span class="spacer"></span>${n?`<span class="badge warn">${n} neu seit letzter Rückmeldung</span>`:`<span class="badge ok">zurückgemeldet</span>`}</div>
-   <div class="flmeta small"><span><b>${paketIds(P).size}</b> Kinder</span><span>Paket Version ${P.version} · eingelesen ${datStr(P.importiert)}</span><span>Letzte Rückmeldung: ${P.export?`${datStr(P.export)}${t!=null?` (vor ${t} ${t===1?"Tag":"Tagen"})`:""}`:"noch keine"}</span></div>
+   <div class="flmeta small"><span><b>${paketIds(P).size}</b> Kinder</span><span>Paket Version ${P.version} · eingelesen ${datStr(P.importiert)}</span><span>Letzte Rückmeldung: ${P.export?`${datStr(P.export)}${t!=null?` (vor ${t} ${t===1?"Tag":"Tagen"})`:""}`:"noch keine"}</span>${P.postCreated?`<span title="Nutzt die Klassenlehrkraft ein eigenes LeDoK an diesem Rechner, bietet es ihr deine Bewertungen beim Öffnen an. Versiegelt wie die Rückmeldungsdatei – nur ihr LeDoK kann sie öffnen.">Auf diesem Rechner bereitgelegt: ${datStr(P.postCreated)}</span>`:""}</div>
    <div class="row" style="flex-wrap:wrap"><button class="btn primary small" data-act="rueckExport" data-v="${P.pid}">Rückmeldung erstellen</button><span class="spacer"></span><button class="btn ghost small danger" data-act="paketDel" data-v="${P.pid}">Klasse entfernen …</button></div></div>`;
 }
 async function fachpaketUebernehmen(d){
@@ -4827,6 +4834,76 @@ function rueckmeldungDaten(P){
     eintraege:S.eintraege.filter(e=>inv[e.k]&&!e.ext&&comps.has(e.c)).map(e=>({t:e.t,d:e.d,k:inv[e.k],c:e.c,w:e.w,q:e.q,n:e.n||""})),
     notizen:S.notizen.filter(n=>inv[n.k]&&!n.ext).map(n=>({id:n.id,k:inv[n.k],ts:n.ts,kat:n.kat,text:n.text}))};
 }
+/* ---------- Rückmeldung am selben Rechner ----------
+   Das LeDoK der Fachlehrkraft legt die Rückmeldung beim Speichern zusätzlich in einem lokalen Briefkasten ab –
+   genauso versiegelt wie die Rückmeldungsdatei (Schlüssel aus dem Fachpaket), also nur für das LeDoK der Klassenlehrkraft lesbar.
+   Kein LeDoK öffnet dabei die Daten eines anderen. Die Klassenlehrkraft bestätigt die Übernahme wie beim Einlesen der Datei. */
+const POST_BASE="ledok.post.",postKey=pid=>POST_BASE+pid,quittKey=pid=>POST_BASE+pid+".ok";
+function postLesen(pid){const key=postKey(pid);delete STORE_DESKTOP[key];try{const r=storeRaw(key);return r?JSON.parse(r):null}catch(e){return null}}
+async function postSchreiben(pid,text){
+  const key=postKey(pid);
+  if(desktopSpeicher()){try{const r=await window.ledokDesktop.datenSpeichern(key,text);if(r&&r.ok){STORE_DESKTOP[key]=text;try{localStorage.removeItem(key)}catch(e){}return}}catch(e){}}
+  localStorage.setItem(key,text); // Browser oder ältere Desktop-App
+}
+async function postEntfernen(pid){try{await storeRemove(postKey(pid))}catch(e){}try{localStorage.removeItem(quittKey(pid))}catch(e){}}
+async function postAblegen(){
+  if(!S||!S.meta.pakete||!S.meta.pakete.length)return;
+  for(const P of S.meta.pakete){
+    if(!P.rkey||!idOk(P.pid))continue;
+    // Hat die Klassenlehrkraft am selben Rechner übernommen, zählt das wie eine abgegebene Rückmeldung
+    let q=null;try{q=localStorage.getItem(quittKey(P.pid))}catch(e){}
+    // +1: Einträge aus derselben Millisekunde wie das Bereitlegen waren schon dabei
+    if(q&&!isNaN(Date.parse(q))&&Date.parse(q)+1>(P.exportT||0)){P.exportT=Date.parse(q)+1;P.export=q}
+    const d=rueckmeldungDaten(P),sig=hashStr(JSON.stringify([d.fl,d.eintraege,d.notizen]));
+    if(sig===P.postSig)continue;
+    const file=await versiegeln("ledok-rueckmeldung",d,{rawKey:P.rkey});file.pid=P.pid;
+    await postSchreiben(P.pid,JSON.stringify(file));
+    if(!P.postSig)protokoll(`Rückmeldung für ${klTxt(P.klasse)} wird ab jetzt auch auf diesem Rechner für die Klassenlehrkraft bereitgelegt`);
+    P.postSig=sig;P.postCreated=d.created;
+  }
+}
+let POST_OFFEN=new Map(); // Fachlehrkraft-ID → entsiegelte, noch nicht übernommene Rückmeldung
+const POST_GESEHEN=new Set();
+async function postPruefen(zeigen){
+  const s=S;if(!s||!Array.isArray(s.meta.fachlehrer)||!s.meta.fachlehrer.length){POST_OFFEN=new Map();return}
+  const m=new Map();
+  for(const a of s.meta.fachlehrer){
+    if(!a.id||!a.rkey)continue;
+    const obj=postLesen(a.id);if(!obj||obj.app!=="ledok-rueckmeldung"||obj.pid!==a.id)continue;
+    let d;try{d=(await entsiegeln(obj,{rawKey:a.rkey})).data}catch(e){continue}
+    if(!d||d.klassenId!==s.meta.klassenId||typeof d.created!=="string"||(a.zurueckCreated&&d.created<=a.zurueckCreated))continue;
+    m.set(a.id,d);
+  }
+  if(S!==s)return;
+  POST_OFFEN=m;if(!m.size)return;
+  render();if(zeigen)postNaechste();
+}
+function postNaechste(){
+  if(!S||$("#dlg").open)return;
+  for(const [id,d] of POST_OFFEN){if(POST_GESEHEN.has(id+"|"+d.created))continue;return postOeffnen(id)}
+}
+function postOeffnen(id){
+  const a=S.meta.fachlehrer.find(x=>x.id===id),d=POST_OFFEN.get(id);if(!a||!d)return;
+  POST_GESEHEN.add(id+"|"+d.created);
+  const dl=rueckDialog(a,d,{post:true});
+  dl.addEventListener("close",()=>setTimeout(postNaechste,50),{once:true});
+}
+/* Kleine Markierung an Werten, in denen Bewertungen einer Fachlehrkraft stecken (auch in übergeordneten Bereichen) */
+const FLM={dv:-1,S:null,m:null};
+function flMarken(){
+  if(FLM.dv===DV&&FLM.S===S)return FLM.m;
+  const m=new Map();
+  for(const e of S.eintraege){
+    if(!e.von||e.ext)continue;
+    let c=e.c;for(let i=0;c&&i<12;i++){const key=e.k+"|"+c;let x=m.get(key);if(!x)m.set(key,x=new Set());x.add(e.von);const r=cache().byId.get(c);c=r&&r.parent&&r.parent!==c?r.parent:null}
+  }
+  FLM.dv=DV;FLM.S=S;FLM.m=m;return m;
+}
+const flKurz=n=>{const w=String(n||"").trim().split(/\s+/).filter(x=>!/^(frau|herr|fr\.?|hr\.?)$/i.test(x));return (w[w.length-1]||String(n||"")).slice(0,2)||"FL"};
+function flMark(k,c){
+  const x=flMarken().get(k+"|"+c);if(!x)return "";const l=[...x];
+  return `<span class="flm" title="Enthält Bewertungen von ${esc(l.join(", "))}">${esc(flKurz(l[0]))}${l.length>1?"+":""}</span>`;
+}
 function flWillkommen(){
   return `<div class="card stack" style="max-width:720px"><h2 style="margin:0">Willkommen, Fachlehrkraft</h2>
    <p>Deine Klassen bekommst du als <b>Fachpaket</b> von der jeweiligen Klassenlehrkraft – mit Kinderliste, Raster und allen Einstellungen. Du musst nichts selbst einrichten.</p>
@@ -4841,13 +4918,13 @@ function teamCard(){
   }
   const L=S.meta.fachlehrer;if(!L.length)return "";
   return `<div class="card hcard"><div class="hh"><h3>Fachlehrkräfte</h3><button class="btn ghost small" data-act="rueckImport" title="Rückmeldung einlesen">＋ Rückmeldung</button></div><div class="hlist">${L.map(a=>{const st=flStatus(a);
-    return `<button class="hrow hbtn wrow" data-act="tab" data-v="team"><span class="wk">${esc(a.name)}</span><span class="small wn ${st.c==="warn"?"warnc":"muted"}">${st.t}</span><span class="small wf">${esc(a.faecher.join(", "))}${a.asv?(a.faecher.length?" + ":"")+"ASV":""} · Rückmeldung: ${a.zurueck?datStr(a.zurueck):"noch keine"}</span></button>`}).join("")}</div></div>`;
+    return `<button class="hrow hbtn wrow" ${POST_OFFEN.has(a.id)?`data-act="postOeffnen" data-v="${a.id}"`:`data-act="tab" data-v="team"`}><span class="wk">${esc(a.name)}</span><span class="small wn ${POST_OFFEN.has(a.id)||st.c==="warn"?"warnc":"muted"}">${POST_OFFEN.has(a.id)?"Neue Rückmeldung":st.t}</span><span class="small wf">${esc(a.faecher.join(", "))}${a.asv?(a.faecher.length?" + ":"")+"ASV":""} · Rückmeldung: ${a.zurueck?datStr(a.zurueck):"noch keine"}</span></button>`}).join("")}</div></div>`;
 }
 const ROLLEN_VIEWS={
   team(){
     const L=S.meta.fachlehrer;
     return `<div class="stack"><div class="row" style="align-items:center;flex-wrap:wrap"><h2 style="margin:0">Fachlehrkräfte</h2><span class="spacer"></span><button class="btn" data-act="rueckImport">Rückmeldung einlesen …</button><button class="btn primary" data-act="flEdit" data-v="">＋ Fachlehrkraft</button></div>
-    <div class="note small"><b>So funktioniert’s:</b> 1. Fachlehrkraft anlegen und festlegen, welche Fächer und Kinder sie übernimmt. 2. „Fachpaket erstellen“ – verschlüsselte Datei per USB-Stick oder Dienst-Mail weitergeben, das Paket-Passwort persönlich. 3. Die Fachlehrkraft bewertet in ihrem LeDoK und gibt eine Rückmeldungsdatei zurück. 4. „Rückmeldung einlesen“ – die Bewertungen erscheinen bei dir mit ihrem Namen. Klassenliste, Raster und Einstellungen bestimmst du; Änderungen gibst du mit einem neuen Paket weiter.</div>
+    <div class="note small"><b>So funktioniert’s:</b> 1. Fachlehrkraft anlegen und festlegen, welche Fächer und Kinder sie übernimmt. 2. „Fachpaket erstellen“ – verschlüsselte Datei per USB-Stick oder Dienst-Mail weitergeben, das Paket-Passwort persönlich. 3. Die Fachlehrkraft bewertet in ihrem LeDoK und gibt eine Rückmeldungsdatei zurück. 4. „Rückmeldung einlesen“ – die Bewertungen erscheinen bei dir mit ihrem Namen und einem kleinen Kürzel an den Werten. Arbeitet die Fachlehrkraft mit eigenem LeDoK am selben Rechner, bietet dein LeDoK ihre Rückmeldung beim Öffnen von selbst an. Klassenliste, Raster und Einstellungen bestimmst du; Änderungen gibst du mit einem neuen Paket weiter.</div>
     ${L.length?L.map(flKarte).join(""):`<div class="card muted">Noch keine Fachlehrkraft angelegt.</div>`}</div>`;
   },
   pakete(){
@@ -4893,6 +4970,7 @@ const ROLLEN_ACT={
     download(name,JSON.stringify(file),"application/octet-stream");
     a.version=d.version;a.gesendet=d.created;a.sig=flSig(a);protokoll(`Fachpaket Version ${a.version} für ${a.name} erstellt (${ks.length} Kinder)`);save();render();
     toast(`Fachpaket „${esc(name)}“ heruntergeladen – per USB-Stick oder Dienst-Mail an ${esc(a.name)}, das Passwort persönlich.`,7000)},
+  postOeffnen:b=>postOeffnen(b.dataset.v),
   rueckImport:async()=>{
     const f=await pickFile(".ledok,.json");if(!f)return;let obj;
     try{obj=JSON.parse(await f.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
@@ -4925,6 +5003,8 @@ const ROLLEN_ACT={
     if(!await frage(`${klTxt(P.klasse)} (${P.faecher.join(", ")}) mit ${ids.size} Kindern und allen Bewertungen aus diesem LeDoK entfernen?${n?`\n\nAchtung: ${n} Einträge sind noch nicht zurückgemeldet!`:""}`))return;
     S.kinder=S.kinder.filter(k=>!ids.has(k.id));S.eintraege=S.eintraege.filter(e=>!ids.has(e.k));S.notizen=S.notizen.filter(x=>!ids.has(x.k));
     S.meta.pakete=S.meta.pakete.filter(p=>p!==P);
+    // Bereitgelegte Rückmeldung nur wegräumen, wenn die Klassenlehrkraft sie schon übernommen hat
+    {let q=null;try{q=localStorage.getItem(quittKey(P.pid))}catch(e){}if(P.postCreated&&q&&q>=P.postCreated)postEntfernen(P.pid)}
     for(const f of P.faecher)if(!S.meta.pakete.some(p=>p.faecher.includes(f))){const fo=S.meta.faecher.find(x=>x.name===f);if(fo)fo.aktiv=false}
     protokoll(`Klasse ${P.klasse} (${P.faecher.join(", ")}) entfernt`);DV++;syncFaecher();save();render()},
 };
@@ -5725,7 +5805,7 @@ function showHist(k,c){
   const s=node?evalNode(k,c):stand(k,c);
   dialog(`<h2>${kidLabel(kid)} · ${esc(c)}</h2><p class="small muted">${node?`${EBENEN[ebeneVon(node)]}: `:""}${esc(comp?comp.text:"")} · Stand ${fmt(s.v)}${s.agg?" (aus den Unterbereichen berechnet)":" (Mittel der letzten 3)"}${node?" · Soll "+fmt(s.soll):""}</p>
   <div class="tw" style="max-height:50vh"><table><tr><th>Datum</th>${multi?"<th>Bereich</th>":""}<th class="num">Wert</th><th>Quelle</th><th>Notiz</th><th></th></tr>
-  ${es.map(e=>`<tr><td>${fmtDate(e.d)}</td>${multi?`<td class="small" title="${esc((compById(e.c)||{}).text||"")}">${esc(e.c)}</td>`:""}<td class="num"><b>${e.w}</b></td><td class="small">${QUELLE[e.q]||""}${e.von?` · <b>${esc(e.von)}</b>`:""}${e.ext?" · Klassenlehrkraft":""}</td><td class="small">${esc(e.n||"")}</td><td><button class="btn ghost danger small" data-act="delEntry" data-t="${e.t}" data-k="${k}" data-c="${esc(c)}">✕</button></td></tr>`).join("")||`<tr><td colspan="${multi?6:5}" class="muted">Keine Einträge</td></tr>`}</table></div>
+  ${es.map(e=>`<tr><td>${fmtDate(e.d)}</td>${multi?`<td class="small" title="${esc((compById(e.c)||{}).text||"")}">${esc(e.c)}</td>`:""}<td class="num"><b>${e.w}</b></td><td class="small">${QUELLE[e.q]||""}${e.von?` · <span class="flm">${esc(flKurz(e.von))}</span> <b>${esc(e.von)}</b>`:""}${e.ext?" · Klassenlehrkraft":""}</td><td class="small">${esc(e.n||"")}</td><td><button class="btn ghost danger small" data-act="delEntry" data-t="${e.t}" data-k="${k}" data-c="${esc(c)}">✕</button></td></tr>`).join("")||`<tr><td colspan="${multi?6:5}" class="muted">Keine Einträge</td></tr>`}</table></div>
   <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" data-act="closeDlg">Schließen</button></div>`,multi);
 }
 
