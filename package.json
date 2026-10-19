@@ -14,8 +14,8 @@
     "dist:linux": "node scripts/version-sync.js && electron-builder --linux --publish never"
   },
   "devDependencies": {
-    "electron": "38.4.0",
-    "electron-builder": "26.0.12"
+    "electron": "44.9.0",
+    "electron-builder": "26.17.0"
   },
   "build": {
     "appId": "com.deep-moments.ledok",
@@ -83,6 +83,15 @@
       "category": "Education",
       "artifactName": "LeDoK-${version}.${ext}"
     },
-    "publish": null
+    "publish": null,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": false
+    }
   }
 }
