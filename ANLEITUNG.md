@@ -86,9 +86,16 @@ Weil die Apps (noch) nicht mit einem gekauften Zertifikat signiert sind, warnen 
 
 **macOS**
 1. Die `.dmg` öffnen und LeDoK in **Programme** ziehen.
-2. LeDoK per **Rechtsklick → Öffnen** starten und bestätigen.
-3. Erscheint stattdessen „kann nicht geöffnet werden“: **Systemeinstellungen → Datenschutz & Sicherheit → ganz unten „Dennoch öffnen“**.
+2. LeDoK einmal normal starten. macOS meldet, dass die App nicht geöffnet werden kann – mit **Fertig** schließen.
+3. **Systemeinstellungen → Datenschutz & Sicherheit**, ganz nach unten scrollen und bei „LeDoK“ auf **Dennoch öffnen** klicken, dann mit dem Mac-Passwort bestätigen. Ab jetzt startet LeDoK normal.
+   - Ab macOS 15 (Sequoia) ist das der einzige Weg. Auf älteren Macs geht auch **Rechtsklick → Öffnen**.
 4. Nur falls macOS meldet, die App sei „beschädigt“: im Terminal einmalig `xattr -cr /Applications/LeDoK.app` ausführen.
+
+**Verteilung an Kolleginnen und Kollegen**
+- Den Installer nicht als Mail-Anhang schicken: Viele Dienst-Mailsysteme blockieren `.exe`-Dateien. Besser per USB-Stick oder Schulcloud-Link.
+- Auf verwalteten Schulgeräten vorher mit der Schul-IT klären, ob Programme installiert werden dürfen.
+- Den **Schulschlüssel** (`.ledok-schule`) gleich mitgeben. Nur damit kann der LeDoK-Admin bei vergessenem Passwort helfen.
+- Teilen sich mehrere Lehrkräfte ein Benutzerkonto am Rechner, legt jede auf dem Startbildschirm über **„Andere Lehrkraft an diesem Rechner? Eigenes LeDoK anlegen …“** ihr eigenes, getrennt verschlüsseltes LeDoK an.
 
 Mit einem Apple-Developer-Konto (99 €/Jahr) bzw. einem Windows-Code-Signing-Zertifikat fallen diese Warnungen weg. Das lässt sich später in `build.yml` ergänzen.
 
