@@ -219,6 +219,8 @@ test("Rückmeldung einer Fachlehrkraft am selben Rechner kommt mit Bestätigung 
   await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
   await page.evaluate(() => saveNow());
   expect(await page.evaluate(() => paketNeu(S.meta.pakete[0]))).toBe(0);
+});
+
 test("Desktop: gefundenes Update wird erst nach Zustimmung eingespielt", async ({ page }) => {
   // Nachgebaute Schnittstelle der Desktop-App: Im Update-Ordner liegt eine neuere, gültige Datei.
   await page.addInitScript(() => {
