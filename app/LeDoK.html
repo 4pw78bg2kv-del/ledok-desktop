@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RTJxkf8lcQBAE9HyFXqRHIXsoYI3FH9oNdJi8hiySFQ='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Wss4eZl3oKhIExGinb/z/y+LfR0YF7gk+EGfB42gD2A='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -87,6 +87,7 @@ code.fp{font-size:1rem;font-weight:700;letter-spacing:.05em}
 .supbox{border:1px solid var(--line);border-radius:8px;padding:.55rem .75rem;margin:.4rem 0 .6rem;background:var(--surface2)}
 #verTag{position:fixed;right:.6rem;bottom:.45rem;z-index:40;font:inherit;font-size:.72rem;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.12rem .55rem;cursor:pointer;opacity:.85}
 #verTag:hover{opacity:1;color:var(--ink)}
+#verTag.neu{opacity:1;color:var(--ink);border-color:var(--warn);background:var(--near);font-weight:600}
 @media print{#verTag{display:none}}
 .supbox.an{border-color:var(--warn);background:var(--near)}
 .adm-h{border-top:2px dashed var(--line)}
@@ -3305,7 +3306,7 @@ function setupDialog(neuesProfil){
     <div class="row"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Starten</button></div></form>`,true);
   $("#pw1").focus();
   d.querySelectorAll("input[name=rolle]").forEach(r=>r.onchange=()=>{const fl=d.querySelector("input[name=rolle]:checked").value==="fl";$("#demoRow").hidden=fl;$("#jgRow").hidden=fl});
-  $("#skWahl").onclick=async()=>{const k=await schulKeyLesen();if(!k)return;sk=k;$("#skInfo").innerHTML=`<span class="badge ok">✓ ${esc(k.name)}</span> Fingerabdruck <code>${esc(k.fp)}</code>${k.support?` · <b>Hersteller-Support eingeschaltet</b> (${esc(supportTxt(k.support))})`:""}`};
+  $("#skWahl").onclick=async()=>{const k=await schulKeyLesen();if(!k)return;sk=k;$("#skInfo").innerHTML=`<span class="badge ok">✓ ${esc(k.name)}</span> Fingerabdruck <code>${esc(k.fp)}</code>${k.support?` · <b>Hersteller-Support eingeschaltet</b> (${esc(supportTxt(k.support))})`:""}${k.online?" · <b>Online nach Updates suchen eingeschaltet</b>":""}`};
   $("#setupForm").onsubmit=async e=>{
     e.preventDefault();
     const p1=$("#pw1").value,p2=$("#pw2").value,rolle=d.querySelector("input[name=rolle]:checked").value,demo=rolle==="kl"&&$("#demo").checked;
@@ -3321,13 +3322,14 @@ function setupDialog(neuesProfil){
     else{S.meta.jgStufen=jg;faecherFuerStufen(jg);if(demo){loadDemo();faecherFuerStufen([...new Set([1,2,...jg])])}}
     protokoll(`Neu angelegt als ${ROLLEN[rolle]}${sk?` mit Schulschlüssel „${sk.name}“`:""}`);
     if(sk&&sk.support)protokoll(`Hersteller-Support eingeschaltet: ${supportTxt(sk.support)} (${sk.support.fp})`);
+    if(sk&&sk.online)protokoll("Online nach Updates suchen eingeschaltet");
     standMerken();ST.konflikt=false;await saveNow();if(ST.error)return $("#err2").textContent=ST.error;
     if(neuesProfil)profilMerken(STORE_KEY,($("#profilName").value||"").trim());
     d.close();startApp();
     if(rolle==="kl")setTimeout(()=>toast("Tipp: Oben schaltest du mit <b>Kürzel ⇄ Namen</b> zwischen S01, S02 … und den Vornamen um.",8000),400);
   };
 }
-function startApp(){DV++;closeDlg();syncFaecher();fensterMelden();if(S.meta.rolle==='fl'&&!S.kinder.length){UI.tab='heute'}save();UI.kind=UI.kind&&kidById(UI.kind)?UI.kind:(S.kinder[0]||{}).id||null;lastActivity=Date.now();render();setTimeout(()=>postPruefen(true),700)}
+function startApp(){DV++;closeDlg();syncFaecher();fensterMelden();setTimeout(()=>updateAutoPruefen(true),2000);if(S.meta.rolle==='fl'&&!S.kinder.length){UI.tab='heute'}save();UI.kind=UI.kind&&kidById(UI.kind)?UI.kind:(S.kinder[0]||{}).id||null;lastActivity=Date.now();render();setTimeout(()=>postPruefen(true),700)}
 
 function render(){
   if(!S)return;
@@ -3993,7 +3995,7 @@ daten(){
    <div class="row"><button class="btn danger" data-act="wipeKids">Schülerdaten löschen …</button><button class="btn danger" data-act="wipeAll">${profile().length>1?"Dieses LeDoK löschen …":`Alles ${DESKTOP?"auf diesem Rechner":"im Browser"} löschen …`}</button></div></div>
   </div>
   <div class="card small"><h3 style="margin-top:0">So schützt diese Datei die Daten</h3><ul>
-   <li>Keine Netzwerkverbindungen: ${window.ledokDesktop?"Das Programm sperrt jeden Datenverkehr nach außen sowie Kamera, Mikrofon und Standort.":"Die Datei enthält eine Sicherheitsrichtlinie, die dem Browser jeden Datenverkehr nach außen verbietet."} Es funktioniert ohne Internet.</li>
+   <li>Keine Netzwerkverbindungen: ${window.ledokDesktop?`Das Programm sperrt jeden Datenverkehr nach außen sowie Kamera, Mikrofon und Standort.${onlineFrei()?" Einzige Ausnahme, von deiner Schule eingeschaltet: Höchstens zweimal am Tag fragt das Programm bei GitHub nach einer neuen LeDoK-Version und lädt die signierte Update-Datei. Daten von dir oder deinen Kindern werden dabei nicht übertragen.":""}`:"Die Datei enthält eine Sicherheitsrichtlinie, die dem Browser jeden Datenverkehr nach außen verbietet."} Es funktioniert ohne Internet.</li>
    <li>Verschlüsselung mit AES-256-GCM; der Schlüssel wird aus deinem Passwort abgeleitet (PBKDF2, 250.000 Runden). Gespeichert wird nur verschlüsselt – ${AM_RECHNER} und in den Sicherungskopien.</li>
    <li>Kürzel-Modus für den Bildschirm im Klassenzimmer, CSV-Export nur mit Kürzeln.</li>
    <li>Freitexte liegen verschlüsselt im selben Speicher. Der KI-Export ersetzt bekannte Namen durch Kürzel und verlangt eine Prüfung, bevor er das Herunterladen oder Kopieren zulässt.</li>
@@ -4448,7 +4450,7 @@ const ECDSA={name:"ECDSA",namedCurve:"P-256"}, ECSIGN={name:"ECDSA",hash:"SHA-25
 // Update-Pakete: gleiche Berechnung in desktop/update.js (Hauptprozess der Desktop-App)
 const updPayload=u=>JSON.stringify(["ledok-update",1,u.version,u.datum,u.sha256,u.hinweise||""]);
 async function updFp(pub){const h=hexStr(await crypto.subtle.digest("SHA-256",enc.encode(pub.x+"."+pub.y))).toUpperCase().slice(0,12);return h.match(/.{4}/g).join("-")}
-const skPayload=o=>enc.encode(JSON.stringify([o.sid,o.name,o.pub.n,o.pub.e,o.msalt,o.ek.iv,o.ek.ct,o.ver||1,o.support?[o.support.name,o.support.kontakt||"",o.support.fp,o.support.pub.n,o.support.pub.e,o.support.seit]:null]));
+const skPayload=o=>enc.encode(JSON.stringify([o.sid,o.name,o.pub.n,o.pub.e,o.msalt,o.ek.iv,o.ek.ct,o.ver||1,o.support?[o.support.name,o.support.kontakt||"",o.support.fp,o.support.pub.n,o.support.pub.e,o.support.seit]:null,...(o.online?[["online",o.online.seit]]:[])]));
 async function skSignieren(o,master){
   const mk=await deriveKey(master,unb64(o.msalt),MASTER_IT);let p;
   try{p=await aesDec(mk,o.esk)}catch(e){throw new Error("master")}
@@ -4459,6 +4461,7 @@ async function skPruefen(o){
   if(!o.spub)return !o.support;
   try{const pub=await crypto.subtle.importKey("jwk",o.spub,ECDSA,false,["verify"]);return await crypto.subtle.verify(ECSIGN,pub,unb64(o.sig||""),skPayload(o))}catch(e){return false}
 }
+const onlineTxt=on=>on?`eingeschaltet seit ${datStr(on.seit)}`:"ausgeschaltet";
 const supportTxt=sp=>sp?`${sp.name}${sp.kontakt?" ("+sp.kontakt+")":""}`:"";
 const klTxt=k=>/klasse/i.test(k||"")?k:"Klasse "+(k||"");
 const datStr=iso=>iso?new Date(iso).toLocaleDateString("de-DE"):"–";
@@ -4476,13 +4479,14 @@ async function schulKeyLesen(){
   const fp=await fingerabdruck(o.pub,o.spub);
   if(!fpPasst(fp,o.fp)){info("Der Schulschlüssel ist beschädigt oder verändert (Fingerabdruck stimmt nicht).");return null}
   if(!await skPruefen(o)){info("Der Schulschlüssel ist verändert worden – die Signatur der Schule stimmt nicht. Bitte die Originaldatei vom LeDoK-Admin verwenden.");return null}
-  return {sid:o.sid,name:o.name,fp:o.fp,pub:o.pub,msalt:o.msalt,ek:o.ek,esk:o.esk,spub:o.spub,sig:o.sig,ver:o.ver||1,support:o.support||null,created:o.created};
+  return {sid:o.sid,name:o.name,fp:o.fp,pub:o.pub,msalt:o.msalt,ek:o.ek,esk:o.esk,spub:o.spub,sig:o.sig,ver:o.ver||1,support:o.support||null,online:o.online||null,created:o.created};
 }
 function schulKeyCard(){
   const sk=S.meta.schulKey, pr=(S.meta.protokoll||[]);
   return `<div class="card"><h3 style="margin-top:0">Schulschlüssel (Masterkennwort der Schule)</h3>
   ${sk?`<p class="small"><span class="badge ok">✓ hinterlegt</span> <b>${esc(sk.name)}</b> · Fingerabdruck <code>${esc(sk.fp)}</code>${sk.ver?` · Version ${sk.ver}`:""}</p>
    <div class="supbox ${sk.support?"an":""}"><b>Hersteller-Support: ${sk.support?"eingeschaltet":"ausgeschaltet"}</b><br><span class="small">${sk.support?`Deine Schule hat ${esc(supportTxt(sk.support))} seit ${datStr(sk.support.seit)} freigegeben (Fingerabdruck <code>${esc(sk.support.fp)}</code>). Der Hersteller kann bei vergessenem Passwort helfen – nur mit Daten, die ihm übergeben werden; einen Fernzugriff gibt es nicht. Jede Wiederherstellung über LeDoK steht im Protokoll. Ein- und ausschalten kann nur der LeDoK-Admin deiner Schule.`:"Nur der LeDoK-Admin deiner Schule kann den Zugang wiederherstellen."}</span></div>
+   <div class="supbox ${sk.online?"an":""}"><b>Online nach Updates suchen: ${sk.online?"eingeschaltet":"ausgeschaltet"}</b><br><span class="small">${sk.online?`Deine Schule hat seit ${datStr(sk.online.seit)} erlaubt, dass die Desktop-App höchstens zweimal am Tag bei GitHub nach einer neuen LeDoK-Version fragt. Dabei werden nur die Versionsnummer abgefragt und die signierte Update-Datei geladen – keine Daten von dir oder deinen Kindern. Eingespielt wird erst, wenn du zustimmst.`:"LeDoK sucht neue Versionen nur in Ordnern auf diesem Rechner (Downloads, Schulserver, Stick) und stellt keine Verbindung ins Internet her."} Ein- und ausschalten kann nur der LeDoK-Admin deiner Schule.</span></div>
    <p class="small muted">Alles, was LeDoK ab jetzt verschlüsselt – Daten ${AM_RECHNER}, Sicherungskopien, Übergabedateien und Fachpakete –, kann der LeDoK-Admin deiner Schule mit dem Masterkennwort wieder öffnen, falls du dein Passwort vergisst. Im Alltag sieht er nichts; jede Wiederherstellung über LeDoK steht unten im Protokoll. Ältere Kopien ohne Schulschlüssel sind nicht erfasst – lade jetzt eine neue Kopie herunter.</p>
    <div class="row"><button class="btn small" data-act="schulKeyEin">Anderen Schulschlüssel einlesen …</button><span class="spacer"></span><button class="btn ghost small danger" data-act="schulKeyAus">Entfernen</button></div>`
   :`<p class="small"><span class="badge warn">nicht hinterlegt</span> Vergisst du dein Passwort, sind die Daten verloren.</p>
@@ -4518,6 +4522,9 @@ function screenAdmin(msg=""){
    <details class="adm"><summary><b>4 · Hersteller-Support</b> <span class="small muted">freiwillig, jederzeit abschaltbar</span></summary>
     <p class="small">Eingeschaltet kann zusätzlich der Hersteller von LeDoK bei vergessenem Passwort helfen – aber nur mit einer Datei, die ihm übergeben wird, oder am Gerät der Lehrkraft. Einen Fernzugriff gibt es nicht. Die Freigabe ist mit dem Masterkennwort signiert, alle Lehrkräfte sehen sie unter „Daten &amp; Sicherheit“, und jede Wiederherstellung durch den Hersteller über LeDoK steht im Protokoll der Datei. Ausschalten wirkt nur für neu gespeicherte Daten: Bereits erstellte Kopien bleiben für den Support lesbar.</p>
     <button class="btn" data-act="adminSupport">Schulschlüssel-Datei wählen …</button><div id="supOut"></div></details>
+   <details class="adm"><summary><b>5 · Online nach Updates suchen</b> <span class="small muted">freiwillig, jederzeit abschaltbar</span></summary>
+    <p class="small">Eingeschaltet fragt die Desktop-App höchstens zweimal am Tag bei GitHub nach, ob es eine neue LeDoK-Version gibt, und lädt die signierte Update-Datei herunter. Das ist die einzige Internetverbindung von LeDoK: Es werden keine Daten der Lehrkräfte oder Kinder übertragen, und eingespielt wird nur nach Zustimmung der Lehrkraft. Ausgeschaltet sucht LeDoK nur in Ordnern auf dem Rechner (Downloads, Schulserver, Stick). Die Freigabe ist mit dem Masterkennwort signiert, alle Lehrkräfte sehen sie unter „Daten &amp; Sicherheit“ und im Protokoll.</p>
+    <button class="btn" data-act="adminOnline">Schulschlüssel-Datei wählen …</button><div id="onOut"></div></details>
    ${location.hash==="#hersteller"?`<details class="adm adm-h" open><summary><b>Hersteller · Support-Schlüssel</b></summary>
     <p class="small">Nur für den Hersteller. Erzeugt das Schlüsselpaar für den Support: Die <b>öffentliche</b> Datei (<code>.ledok-support</code>) gibst du Schulen, die Support wünschen. Die <b>private</b> Datei bleibt ausschließlich bei dir, geschützt mit deiner Passphrase.</p>
     <label class="f">Name<input type="text" id="hsName" placeholder="z. B. LeDoK-Support Dominik Kraus"></label>
@@ -4631,6 +4638,27 @@ const ADMIN_ACT={
     const datei=`Schulschluessel-${slug(sk.name)}-v${sk.ver}.ledok-schule`;
     download(datei,JSON.stringify(sk),"application/json");
     $("#supOut").innerHTML=`<div class="note small" style="margin-top:.8rem"><b>Hersteller-Support ${txt}.</b> Neue Datei: <b>${esc(datei)}</b> (Version ${sk.ver}, Fingerabdruck unverändert <code>${esc(sk.fp)}</code>).<br>Gib die Datei an alle Lehrkräfte weiter. Sie lesen sie unter „Einstellungen → Daten &amp; Sicherheit → Anderen Schulschlüssel einlesen“ ein. Erst danach gilt die Änderung für ihre neu gespeicherten Daten.${txt==="ausgeschaltet"?" Bereits erstellte Sicherungskopien bleiben für den Support lesbar – die Lehrkräfte sollten danach neue Kopien anlegen und alte vernichten.":""}</div>`;
+  },
+  adminOnline:async()=>{
+    const f=await pickFile(".ledok-schule,.json");if(!f)return;let sk;
+    try{sk=JSON.parse(await f.text())}catch(e){return info("Diese Datei kann nicht gelesen werden.")}
+    if(!sk||sk.app!=="ledok-schule")return info("Das ist keine Schulschlüssel-Datei.");
+    if(!sk.spub||!sk.esk)return info("Dieser Schulschlüssel stammt aus einer älteren LeDoK-Version und kann noch nicht signieren. Bitte einen neuen Schulschlüssel erstellen und an die Lehrkräfte verteilen.");
+    if(!fpPasst(await fingerabdruck(sk.pub,sk.spub),sk.fp)||!await skPruefen(sk))return info("Diese Schulschlüssel-Datei ist verändert worden.");
+    const m=await askPassword("Masterkennwort",`Schulschlüssel „${sk.name}“ · Fingerabdruck ${sk.fp}`);if(m==null)return;
+    try{await schulPrivat(sk,m)}catch(e){return info("Das Masterkennwort passt nicht zu diesem Schulschlüssel.")}
+    let txt;
+    if(sk.online){
+      if(!await frage(`Online nach Updates suchen ist eingeschaltet (seit ${datStr(sk.online.seit)}).\n\nAusschalten? Danach sucht LeDoK nur noch in Ordnern auf dem Rechner.`))return;
+      delete sk.online;txt="ausgeschaltet";
+    }else{
+      if(!await frage("Online nach Updates suchen einschalten?\n\nDie Desktop-App fragt dann höchstens zweimal am Tag bei GitHub nach einer neuen Version und lädt die signierte Update-Datei. Es werden keine Daten von Lehrkräften oder Kindern übertragen. Eingespielt wird nur nach Zustimmung der Lehrkraft. Alle Lehrkräfte sehen das. Du kannst es jederzeit wieder ausschalten."))return;
+      sk.online={seit:new Date().toISOString()};txt="eingeschaltet";
+    }
+    sk.ver=(sk.ver||1)+1;await skSignieren(sk,m);
+    const datei=`Schulschluessel-${slug(sk.name)}-v${sk.ver}.ledok-schule`;
+    download(datei,JSON.stringify(sk),"application/json");
+    $("#onOut").innerHTML=`<div class="note small" style="margin-top:.8rem"><b>Online nach Updates suchen ${txt}.</b> Neue Datei: <b>${esc(datei)}</b> (Version ${sk.ver}, Fingerabdruck unverändert <code>${esc(sk.fp)}</code>).<br>Gib die Datei an alle Lehrkräfte weiter. Sie lesen sie unter „Einstellungen → Daten &amp; Sicherheit → Anderen Schulschlüssel einlesen“ ein. Erst danach gilt die Änderung auf ihrem Rechner.</div>`;
   },
   updateKeyNeu:async()=>{
     const p1=$("#huPw1").value,p2=$("#huPw2").value,err=$("#huErr");
@@ -4879,7 +4907,8 @@ async function postPruefen(zeigen){
   render();if(zeigen)postNaechste();
 }
 function postNaechste(){
-  if(!S||$("#dlg").open)return;
+  if(!S)return;
+  if($("#dlg").open){clearTimeout(updWarten);updWarten=setTimeout(()=>updateAutoPruefen(),30000);return}
   for(const [id,d] of POST_OFFEN){if(POST_GESEHEN.has(id+"|"+d.created))continue;return postOeffnen(id)}
 }
 function postOeffnen(id){
@@ -4947,10 +4976,11 @@ const ROLLEN_ACT={
       if(!await frage(`Achtung: Das ist der Schlüssel einer ANDEREN Schule („${sk.name}“) als bisher („${alt.name}“).\n\nÜbernimm ihn nur, wenn du wirklich die Schule gewechselt hast und der Fingerabdruck ${sk.fp} mit dem Aushang deines neuen LeDoK-Admins übereinstimmt.`,{titel:"Andere Schule",ja:"Übernehmen",gefahr:true,tippen:sk.fp.slice(0,4)}))return;
     }
     if(alt&&alt.sid===sk.sid&&(sk.ver||1)<(alt.ver||1)&&!await frage(`Diese Datei ist älter (Version ${sk.ver||1}) als dein hinterlegter Schulschlüssel (Version ${alt.ver||1}). Trotzdem übernehmen?`))return;
-    if(!await frage(`Schulschlüssel „${sk.name}“ übernehmen?\n\nFingerabdruck: ${sk.fp}\nVergleiche ihn mit dem Aushang deines LeDoK-Admins.\n\nHersteller-Support: ${sk.support?"EINGESCHALTET – "+supportTxt(sk.support)+" ("+sk.support.fp+")":"ausgeschaltet"}`))return;
+    if(!await frage(`Schulschlüssel „${sk.name}“ übernehmen?\n\nFingerabdruck: ${sk.fp}\nVergleiche ihn mit dem Aushang deines LeDoK-Admins.\n\nHersteller-Support: ${sk.support?"EINGESCHALTET – "+supportTxt(sk.support)+" ("+sk.support.fp+")":"ausgeschaltet"}\nOnline nach Updates suchen: ${sk.online?"EINGESCHALTET":"ausgeschaltet"}`))return;
     S.meta.schulKey=sk;protokoll(`Schulschlüssel „${sk.name}“ (${sk.fp}, Version ${sk.ver||1}) eingelesen`);
     const vorher=!!(alt&&alt.support),nachher=!!sk.support;
     if(nachher&&(!vorher||alt.support.fp!==sk.support.fp))protokoll(`Hersteller-Support eingeschaltet: ${supportTxt(sk.support)} (${sk.support.fp})`);
+    if(!!(alt&&alt.online)!==!!sk.online)protokoll(`Online nach Updates suchen ${sk.online?"eingeschaltet":"ausgeschaltet"}`);
     if(vorher&&!nachher){protokoll("Hersteller-Support ausgeschaltet");setTimeout(()=>info("Hersteller-Support ausgeschaltet","Ab jetzt gespeicherte Daten kann nur noch der LeDoK-Admin deiner Schule wiederherstellen. Ältere Sicherungskopien bleiben für den Support lesbar – lege jetzt eine neue Kopie an und vernichte die alten."),300)}
     await saveNow();render();
     toast("Schulschlüssel hinterlegt. Lade jetzt eine neue Sicherungskopie herunter – sie ist dann ebenfalls geschützt.",6000)},
@@ -5021,7 +5051,45 @@ async function verTag(){
   let el=document.getElementById("verTag");
   if(!el){el=document.createElement("button");el.id="verTag";el.type="button";el.title="Version und Updates";el.onclick=()=>ueberDialog();document.body.appendChild(el)}
   if(DESKTOP&&!DESKTOP_INFO){try{DESKTOP_INFO=await DESKTOP.info()}catch(e){DESKTOP_INFO=null}}
-  el.textContent=`Version ${APP_VERSION}${APP_KANAL?" "+APP_KANAL:""}`;
+  const neu=UPD_GEFUNDEN&&verCmp(UPD_GEFUNDEN.version,APP_VERSION)>0;
+  el.classList.toggle("neu",!!neu);
+  el.textContent=neu?`Update ${UPD_GEFUNDEN.version} verfügbar`:`Version ${APP_VERSION}${APP_KANAL?" "+APP_KANAL:""}`;
+}
+// Automatische Suche nach neueren, signierten Update-Dateien (nur Desktop-App).
+// Immer: Ordner auf dem Rechner (Downloads und der gewählte Update-Ordner). Online bei GitHub nur, wenn der Schulschlüssel es erlaubt.
+// Eingespielt wird nie ohne Zustimmung der Lehrkraft.
+let UPD_GEFUNDEN=null,updWarten=null;const UPD_GEFRAGT={};
+const onlineFrei=()=>!!(S&&S.meta.schulKey&&S.meta.schulKey.online);
+async function updateAutoPruefen(online=false){
+  if(!DESKTOP||!DESKTOP.updateSuchen)return;
+  let r=null;
+  try{r=await DESKTOP.updateSuchen()}catch(e){r=null}
+  if((!r||!r.gefunden)&&online&&onlineFrei()){try{r=await DESKTOP.updateOnlineSuchen(false)}catch(e){r=null}}
+  UPD_GEFUNDEN=r&&r.ok&&r.gefunden&&verCmp(r.version,APP_VERSION)>0?r:null;
+  verTag();
+  if(!UPD_GEFUNDEN||UPD_GEFRAGT[UPD_GEFUNDEN.version])return;
+  // Nicht während der Anmeldung oder mitten in einem anderen Fenster fragen
+  if(!S)return;
+  if($("#dlg").open){clearTimeout(updWarten);updWarten=setTimeout(()=>updateAutoPruefen(),30000);return}
+  UPD_GEFRAGT[UPD_GEFUNDEN.version]=true;
+  updateAnbieten(UPD_GEFUNDEN);
+}
+function updateBestaetigen(r,titel,quelle){
+  return new Promise(res=>{
+    const d2=dialog(`<h2>${titel}</h2>
+     ${quelle?`<p class="small">${quelle}</p>`:""}
+     <p class="small">Signiert vom Hersteller (Schlüssel <code>${esc(r.fp)}</code>) am ${esc(datStr(r.datum))}. Die Signatur ist gültig.</p>
+     ${r.hinweise?`<div class="note small" style="white-space:pre-wrap">${esc(r.hinweise)}</div>`:""}
+     <p class="small">Vorher wird automatisch eine Sicherung deiner (verschlüsselten) Daten angelegt. LeDoK startet danach neu; melde dich wie gewohnt an.</p>
+     <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" id="u2n">${quelle?"Später":"Abbrechen"}</button><button class="btn primary" type="button" id="u2j">Jetzt aktualisieren</button></div>`);
+    $("#u2n").onclick=()=>{d2.close();res(false)};$("#u2j").onclick=()=>{d2.close();res(true)};d2.oncancel=()=>res(false)});
+}
+async function updateAnbieten(r){
+  const quelle=r.online?`Von GitHub heruntergeladen (<code>${esc(r.datei)}</code>). Installiert ist Version ${esc(APP_VERSION)}.`:`Gefunden in <code>${esc(r.ort)}</code> (<code>${esc(r.datei)}</code>). Installiert ist Version ${esc(APP_VERSION)}.`;
+  if(!await updateBestaetigen(r,`Update ${esc(r.version)} verfügbar – jetzt einspielen?`,quelle))return;
+  if(S)await saveNow();
+  const r2=await DESKTOP.updateGefundenInstallieren(storeRaw()||"");
+  if(!r2.ok)return ueberDialog(`<b>Update nicht möglich:</b> ${esc(r2.fehler)}`);
 }
 async function ueberDialog(msg=""){
   const di=DESKTOP?(DESKTOP_INFO=await DESKTOP.info()):null;
@@ -5035,8 +5103,12 @@ async function ueberDialog(msg=""){
    ${msg?`<div class="note small">${msg}</div>`:""}
    <table class="small" style="width:100%;border-collapse:collapse"><tbody>${zeilen.join("")}</tbody></table>
    ${di?`<h3 style="margin:1rem 0 .3rem">Update einspielen</h3>
-     <p class="small">Neue Versionen kommen als Datei <code>LeDoK-x.y.z.ledok-update</code> – per Stick, Mail oder Schulserver. LeDoK prüft die Signatur des Herstellers, sichert vorher deine Daten und startet danach neu. Eine Internetverbindung ist nicht nötig, deine Daten bleiben unverändert auf diesem Rechner.</p>
-     <div class="row"><button class="btn primary" type="button" id="updWahl" ${di.updateKey?"":"disabled"}>Update-Datei wählen …</button>${di.aktualisiert?`<button class="btn ghost" type="button" id="updReset">Zur ausgelieferten Version ${esc(di.mitgeliefert)} zurück</button>`:""}<button class="btn ghost" type="button" id="updOrdner">Sicherungen anzeigen</button></div>`
+     <p class="small">Neue Versionen kommen als Datei <code>LeDoK-x.y.z.ledok-update</code> – per Stick, Mail oder Schulserver. Liegt sie im Download-Ordner oder im Update-Ordner, findet LeDoK sie selbst. LeDoK prüft die Signatur des Herstellers, sichert vorher deine Daten und startet danach neu. Eine Internetverbindung ist nicht nötig, deine Daten bleiben unverändert auf diesem Rechner.</p>
+     ${UPD_GEFUNDEN?`<div class="supbox an"><b>Update ${esc(UPD_GEFUNDEN.version)} verfügbar</b> <span class="small">(${UPD_GEFUNDEN.online?"von GitHub":"in "+esc(UPD_GEFUNDEN.ort)})</span> <button class="btn primary small" type="button" id="updJetzt">Jetzt einspielen …</button></div>`:""}
+     <div class="row"><button class="btn primary" type="button" id="updWahl" ${di.updateKey?"":"disabled"}>Update-Datei wählen …</button>${di.aktualisiert?`<button class="btn ghost" type="button" id="updReset">Zur ausgelieferten Version ${esc(di.mitgeliefert)} zurück</button>`:""}<button class="btn ghost" type="button" id="updOrdner">Sicherungen anzeigen</button></div>
+     <h3 style="margin:1rem 0 .3rem">Automatisch suchen</h3>
+     <p class="small">LeDoK sucht beim Start, nach der Anmeldung und stündlich im Download-Ordner${di.updateSuchordner?` und in <code>${esc(di.updateSuchordner)}</code>`:""} nach einer neueren Update-Datei und fragt dich, bevor es sie einspielt. ${onlineFrei()?"Deine Schule hat außerdem die <b>Online-Suche</b> eingeschaltet: Höchstens zweimal am Tag fragt LeDoK bei GitHub nach einer neuen Version.":"Eine Internetverbindung stellt LeDoK dafür nicht her."}</p>
+     <div class="row"><button class="btn" type="button" id="updSuchen" ${di.updateKey?"":"disabled"}>Jetzt suchen</button><button class="btn ghost" type="button" id="updOrdnerWahl">${di.updateSuchordner?"Anderen Update-Ordner wählen …":"Update-Ordner wählen …"}</button>${di.updateSuchordner?`<button class="btn ghost" type="button" id="updOrdnerWeg">Update-Ordner entfernen</button>`:""}</div>`
    :`<h3 style="margin:1rem 0 .3rem">Aktualisieren</h3>
      <p class="small">Im Browser aktualisierst du LeDoK, indem du die alte Datei <b>LeDoK.html</b> durch die neue ersetzt – gleicher Ordner, gleicher Dateiname. Deine Daten bleiben im Browser erhalten. Lade vorher sicherheitshalber eine Sicherungskopie herunter.</p>`}
    <div class="row" style="margin-top:1rem"><button class="btn ghost" type="button" id="uePm">Problem melden …</button><span class="spacer"></span><button class="btn" type="button" id="ueZu">Schließen</button></div>`);
@@ -5049,14 +5121,7 @@ async function ueberDialog(msg=""){
     try{r=await DESKTOP.updatePruefen(txt)}catch(e){r={ok:false,fehler:String(e&&e.message||e)}}
     if(!r.ok)return ueberDialog(`<b>Update nicht möglich:</b> ${esc(r.fehler)}`);
     if(verCmp(r.version,APP_VERSION)<=0)return ueberDialog(`Die Datei enthält Version <b>${esc(r.version)}</b>. Installiert ist bereits ${esc(APP_VERSION)} – nichts zu tun.`);
-    const ok=await new Promise(res=>{
-      const d2=dialog(`<h2>Update auf Version ${esc(r.version)}</h2>
-       <p class="small">Signiert vom Hersteller (Schlüssel <code>${esc(r.fp)}</code>) am ${esc(datStr(r.datum))}. Die Signatur ist gültig.</p>
-       ${r.hinweise?`<div class="note small" style="white-space:pre-wrap">${esc(r.hinweise)}</div>`:""}
-       <p class="small">Vorher wird automatisch eine Sicherung deiner (verschlüsselten) Daten angelegt. LeDoK startet danach neu; melde dich wie gewohnt an.</p>
-       <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" id="u2n">Abbrechen</button><button class="btn primary" type="button" id="u2j">Jetzt aktualisieren</button></div>`);
-      $("#u2n").onclick=()=>{d2.close();res(false)};$("#u2j").onclick=()=>{d2.close();res(true)};d2.oncancel=()=>res(false)});
-    if(!ok)return;
+    if(!await updateBestaetigen(r,`Update auf Version ${esc(r.version)}`))return;
     if(S)await saveNow();
     const r2=await DESKTOP.updateInstallieren(txt,storeRaw()||"");
     if(!r2.ok)return ueberDialog(`<b>Update nicht möglich:</b> ${esc(r2.fehler)}`);
@@ -5065,6 +5130,16 @@ async function ueberDialog(msg=""){
     if(!await frage(`Das eingespielte Update entfernen und zur ausgelieferten Version ${di.mitgeliefert} zurückkehren? Deine Daten bleiben erhalten. LeDoK startet neu.`))return;
     if(S)await saveNow();await DESKTOP.updateZuruecksetzen(storeRaw()||"")};
   $("#updOrdner").onclick=()=>DESKTOP.sicherungenOeffnen();
+  const jetzt=$("#updJetzt");if(jetzt)jetzt.onclick=()=>{d.close();updateAnbieten(UPD_GEFUNDEN)};
+  const such=$("#updSuchen");if(such)such.onclick=async()=>{
+    such.disabled=true;such.textContent="Suche …";
+    let r=null;try{r=await DESKTOP.updateSuchen()}catch(e){r={ok:false,fehler:String(e&&e.message||e)}}
+    if(r&&r.ok&&!r.gefunden&&onlineFrei()){try{r=await DESKTOP.updateOnlineSuchen(true)}catch(e){r={ok:false,fehler:String(e&&e.message||e)}}}
+    UPD_GEFUNDEN=r&&r.ok&&r.gefunden&&verCmp(r.version,APP_VERSION)>0?r:null;verTag();
+    if(UPD_GEFUNDEN){d.close();UPD_GEFRAGT[UPD_GEFUNDEN.version]=true;return updateAnbieten(UPD_GEFUNDEN)}
+    ueberDialog(r&&!r.ok?`<b>Suche nicht möglich:</b> ${esc(r.fehler)}`:`Keine neuere Version gefunden. Installiert ist ${esc(APP_VERSION)}.`)};
+  const ow=$("#updOrdnerWahl");if(ow)ow.onclick=async()=>{const r=await DESKTOP.updateOrdnerWaehlen();if(r&&r.ok){await updateAutoPruefen();ueberDialog(`Update-Ordner gespeichert: <code>${esc(r.ordner)}</code>`)}};
+  const ox=$("#updOrdnerWeg");if(ox)ox.onclick=async()=>{await DESKTOP.updateOrdnerEntfernen();ueberDialog("Update-Ordner entfernt. LeDoK sucht jetzt nur noch im Download-Ordner.")};
 }
 /* ---------- Problem melden ---------- */
 // Sammelt technische Angaben für eine Fehlermeldung an den Hersteller – ohne Schülerdaten.
@@ -5958,6 +6033,7 @@ function loadDemo(){
 Object.assign(ACT,ADMIN_ACT,ROLLEN_ACT);Object.assign(VIEWS,ROLLEN_VIEWS);
 (function init(){
   verTag();
+  if(DESKTOP&&DESKTOP.updateSuchen){setTimeout(()=>updateAutoPruefen(),3000);setInterval(()=>updateAutoPruefen(true),3600*1000)}
   if(!window.isSecureContext||!window.crypto||!crypto.subtle){
     $("#app").innerHTML=`<div class="lock"><div class="card"><div class="lockhead">${LOGO_SVG}<div><h1>LeDoK</h1></div></div><p class="note warn">Dieser Browser stellt hier keine Verschlüsselung bereit. Bitte die Datei lokal (Doppelklick) in einem aktuellen Firefox, Chrome oder Edge öffnen.</p></div></div>`;return}
   profilStart();

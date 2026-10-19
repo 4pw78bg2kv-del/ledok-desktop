@@ -219,4 +219,32 @@ test("Rückmeldung einer Fachlehrkraft am selben Rechner kommt mit Bestätigung 
   await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
   await page.evaluate(() => saveNow());
   expect(await page.evaluate(() => paketNeu(S.meta.pakete[0]))).toBe(0);
+test("Desktop: gefundenes Update wird erst nach Zustimmung eingespielt", async ({ page }) => {
+  // Nachgebaute Schnittstelle der Desktop-App: Im Update-Ordner liegt eine neuere, gültige Datei.
+  await page.addInitScript(() => {
+    const daten = {};
+    window.__upd = { installiert: 0 };
+    window.ledokDesktop = {
+      info: async () => ({ shell: "1.0.0", os: "win32", version: "1.0.0", mitgeliefert: "1.0.0", aktualisiert: false, updateKey: "CE5F-1656-01AF", updateSuchordner: "S:\\LeDoK" }),
+      datenLaden: (k) => daten[k] || null,
+      datenSpeichern: async (k, t) => { daten[k] = t; return { ok: true }; },
+      datenLoeschen: async (k) => { delete daten[k]; return { ok: true }; },
+      sicherung: async () => ({ ok: true, datei: "x.lernstand" }),
+      sicherungenOeffnen: async () => "",
+      updateSuchen: async () => ({ ok: true, gefunden: true, version: "9.9.9", datum: "2026-10-19T10:00:00Z", hinweise: "Neu: Testfunktion", fp: "CE5F-1656-01AF", datei: "LeDoK-9.9.9.ledok-update", ort: "S:\\LeDoK" }),
+      updateOnlineSuchen: async () => { throw new Error("darf ohne Freigabe der Schule nicht aufgerufen werden"); },
+      updateGefundenInstallieren: async () => { window.__upd.installiert++; return { ok: true, version: "9.9.9" }; },
+    };
+  });
+  await neueKlasse(page, { demo: false });
+  await expect(page.locator("#verTag")).toContainText("Update 9.9.9 verfügbar");
+  const dlg = page.locator("#dlg");
+  await expect(dlg).toContainText("Update 9.9.9 verfügbar – jetzt einspielen?", { timeout: 10000 });
+  await expect(dlg).toContainText("Neu: Testfunktion");
+  await page.click("#u2n");
+  expect(await page.evaluate(() => window.__upd.installiert)).toBe(0);
+  await page.click("#verTag");
+  await page.click("#updJetzt");
+  await page.click("#u2j");
+  await expect.poll(() => page.evaluate(() => window.__upd.installiert)).toBe(1);
 });
