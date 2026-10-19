@@ -10,6 +10,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 ## Unveröffentlicht
 
 **Neu**
+- Arbeiten Klassenlehrkraft und Fachlehrkraft am selben Rechner mit je einem eigenen LeDoK, braucht es für die Rückmeldung keinen USB-Stick mehr. Das LeDoK der Fachlehrkraft legt ihre Bewertungen verschlüsselt bereit, und dein LeDoK bietet sie beim Öffnen zum Übernehmen an. Deine eigenen Bewertungen bleiben unberührt.
+- Werte, in denen Bewertungen einer Fachlehrkraft stecken, tragen ein kleines Kürzel mit ihrem Namen.
 - Bevor LeDoK Daten löscht, eine Sicherungskopie einspielt oder ein neues Schuljahr beginnt, legt es automatisch eine Sicherung an. Zum Löschen tippst du zur Bestätigung „LÖSCHEN“ ein.
 - Die Desktop-App speichert deine Daten in einer eigenen Datei auf dem Rechner. Beim Schließen legt sie einmal am Tag eine Sicherung im Ordner **LeDoK-Sicherungen** an.
 - Die Beispielklasse ist beim Anlegen nicht mehr vorausgewählt. Solange sie da ist, zeigt ein Hinweis oben, wie du sie mit einem Klick wieder entfernst.

@@ -159,7 +159,9 @@ app.whenReady().then(() => {
   handle("ledok:datenSpeichern", (e, key, text) => {
     try {
       const f = datenDatei(key), o = JSON.parse(text);
-      if (!o || o.app !== "lernstand12" || !o.ct) return { ok: false, fehler: "ungültige Daten" };
+      // Rückmeldungen für die Klassenlehrkraft am selben Rechner (versiegelt) liegen unter eigenem Schlüssel
+      const erwartet = String(key).startsWith("ledok.post.") ? "ledok-rueckmeldung" : "lernstand12";
+      if (!o || o.app !== erwartet || !o.ct) return { ok: false, fehler: "ungültige Daten" };
       fs.mkdirSync(path.dirname(f), { recursive: true });
       if (fs.existsSync(f)) fs.copyFileSync(f, f + ".vorher"); // vorheriger Stand als Rückfall
       schreibeAtomar(f, text);

@@ -152,3 +152,71 @@ test("Versionsdialog und Problembericht ohne Schülernamen", async ({ page }) =>
   const text = await page.textContent("#pmVorschau");
   if (name) expect(text).not.toContain(name);
 });
+
+test("Rückmeldung einer Fachlehrkraft am selben Rechner kommt mit Bestätigung an", async ({ page }) => {
+  // Klassenlehrkraft legt eine Fachlehrkraft an; das Fachpaket wird hier direkt übergeben statt per Datei
+  await neueKlasse(page);
+  const paket = await page.evaluate(() => {
+    const fach = S.raster[0].fach;
+    const a = { name: "Frau Huber", faecher: [fach], asv: false, alle: true, kinder: [], namen: true, verlauf: false, id: neueId(), rkey: b64(rnd(32)), version: 0 };
+    S.meta.fachlehrer.push(a);
+    const d = fachpaketDaten(a, flKinder(a));
+    a.version = d.version; save();
+    return d;
+  });
+  await page.evaluate(() => lock());
+
+  // Fachlehrkraft im eigenen LeDoK auf demselben Rechner
+  await page.click('[data-act="profilNeu"]');
+  await page.fill("#profilName", "Frau Huber");
+  await page.check('input[name=rolle][value="fl"]');
+  await page.fill("#pw1", PW + "2");
+  await page.fill("#pw2", PW + "2");
+  await page.click('#setupForm button[type="submit"]');
+  await page.click('#setupForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  await page.evaluate((d) => fachpaketUebernehmen(d), paket);
+  await page.click('dialog[open] [data-act="closeDlg"]');
+  await page.evaluate(async () => {
+    const k = S.kinder[0], c = S.raster.find((r) => nimmtTeil(k, r.fach) && !kinderVon(r.id).length);
+    addEntry(k.id, c.id, 7, "b"); await saveNow();
+  });
+  const post = await page.evaluate((pid) => localStorage.getItem("ledok.post." + pid), paket.pid);
+  expect(post).toBeTruthy();
+  expect(post).not.toContain('"eintraege"');
+  await page.evaluate(() => lock());
+
+  // Klassenlehrkraft öffnet ihr LeDoK: die Rückmeldung wird angeboten und erst nach „Übernehmen“ eingetragen
+  await page.selectOption("#profilWahl", { index: 0 });
+  await page.fill("#pw", PW);
+  await page.click('#openForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  const dlg = page.locator("dialog[open]");
+  await expect(dlg).toContainText("auf diesem Rechner", { timeout: 15000 });
+  const vorher = await page.evaluate(() => S.eintraege.length);
+  await page.click("#rueckOk");
+  const neu = await page.evaluate(() => S.eintraege.filter((e) => e.von === "Frau Huber"));
+  expect(neu.length).toBe(1);
+  expect(neu[0].w).toBe(7);
+  expect(await page.evaluate(() => S.eintraege.length)).toBe(vorher + 1);
+  expect(await page.evaluate((e) => flMark(e.k, e.c), neu[0])).toContain(">Hu<");
+  expect(await page.evaluate((pid) => localStorage.getItem("ledok.post." + pid + ".ok"), paket.pid)).toBeTruthy();
+  await page.evaluate(() => lock());
+
+  // Beim nächsten Öffnen fragt LeDoK nicht noch einmal
+  await page.selectOption("#profilWahl", { index: 0 });
+  await page.fill("#pw", PW);
+  await page.click('#openForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  await page.waitForTimeout(1500);
+  await expect(page.locator("dialog[open]")).toHaveCount(0);
+  await page.evaluate(() => lock());
+
+  // Die Fachlehrkraft sieht ihre Bewertungen danach als zurückgemeldet
+  await page.selectOption("#profilWahl", { index: 1 });
+  await page.fill("#pw", PW + "2");
+  await page.click('#openForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  await page.evaluate(() => saveNow());
+  expect(await page.evaluate(() => paketNeu(S.meta.pakete[0]))).toBe(0);
+});
