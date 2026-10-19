@@ -3649,6 +3649,7 @@ hilfe(){
    <details><summary>Ein Fach fehlt überall</summary><p class="small">Unter Fächer &amp; Raster → Fächer verwalten einblenden. Die Daten bleiben beim Ausblenden erhalten.</p></details>
    <details><summary>Mehrere Geräte</summary><p class="small">Nicht gleichzeitig arbeiten. Am anderen Gerät die letzte Sicherungskopie laden und dort weitermachen.</p></details>
    <details><summary>Hinweis „keine Verschlüsselung“</summary><p class="small">Datei per Doppelklick lokal in aktuellem Firefox, Chrome oder Edge öffnen – nicht aus einer Vorschau oder dem Mailprogramm.</p></details>
+   <details><summary>Etwas anderes funktioniert nicht</summary><p class="small">Erstelle einen Problembericht und schicke ihn an den Hersteller. Er enthält deine Beschreibung und technische Angaben, aber keine Schülerdaten.</p><button class="btn small" data-act="problemMelden">Problem melden …</button></details>
   </section>
 
   </div></div>`;
@@ -4840,8 +4841,9 @@ async function ueberDialog(msg=""){
      <div class="row"><button class="btn primary" type="button" id="updWahl" ${di.updateKey?"":"disabled"}>Update-Datei wählen …</button>${di.aktualisiert?`<button class="btn ghost" type="button" id="updReset">Zur ausgelieferten Version ${esc(di.mitgeliefert)} zurück</button>`:""}<button class="btn ghost" type="button" id="updOrdner">Sicherungen anzeigen</button></div>`
    :`<h3 style="margin:1rem 0 .3rem">Aktualisieren</h3>
      <p class="small">Im Browser aktualisierst du LeDoK, indem du die alte Datei <b>LeDoK.html</b> durch die neue ersetzt – gleicher Ordner, gleicher Dateiname. Deine Daten bleiben im Browser erhalten. Lade vorher sicherheitshalber eine Sicherungskopie herunter.</p>`}
-   <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" id="ueZu">Schließen</button></div>`);
+   <div class="row" style="margin-top:1rem"><button class="btn ghost" type="button" id="uePm">Problem melden …</button><span class="spacer"></span><button class="btn" type="button" id="ueZu">Schließen</button></div>`);
   $("#ueZu").onclick=()=>d.close();
+  $("#uePm").onclick=()=>problemMelden();
   if(!di)return;
   const wahl=$("#updWahl");if(wahl)wahl.onclick=async()=>{
     const f=await pickFile(".ledok-update");if(!f)return;
@@ -4865,6 +4867,70 @@ async function ueberDialog(msg=""){
     if(!confirm(`Das eingespielte Update entfernen und zur ausgelieferten Version ${di.mitgeliefert} zurückkehren? Deine Daten bleiben erhalten. LeDoK startet neu.`))return;
     if(S)await saveNow();await DESKTOP.updateZuruecksetzen(localStorage.getItem(STORE_KEY)||"")};
   $("#updOrdner").onclick=()=>DESKTOP.sicherungenOeffnen();
+}
+/* ---------- Problem melden ---------- */
+// Sammelt technische Angaben für eine Fehlermeldung an den Hersteller – ohne Schülerdaten.
+// Die Lehrkraft sieht den vollständigen Text, bevor sie ihn kopiert oder speichert.
+const FEHLER_LOG=[];
+function fehlerMerken(art,text){
+  FEHLER_LOG.push({z:new Date(),art,text:String(text||"").slice(0,300)});
+  if(FEHLER_LOG.length>20)FEHLER_LOG.shift();
+}
+window.addEventListener("error",e=>fehlerMerken("Fehler",`${e.message||"unbekannt"}${e.lineno?` (Zeile ${e.lineno})`:""}`));
+window.addEventListener("unhandledrejection",e=>fehlerMerken("Fehler",e.reason&&e.reason.message||e.reason));
+// Namen und zitierte Inhalte aus Fehlertexten entfernen, damit nichts Personenbezogenes im Bericht landet
+function ohneNamen(t){
+  t=String(t).replace(/"[^"]*"|'[^']*'|„[^“]*“/g,"…");
+  for(const k of (S&&S.kinder)||[])for(const n of [k.vorname,k.nachname])if(n&&n.length>1)t=t.split(n).join(k.id);
+  return t;
+}
+async function problemBericht(beschreibung){
+  const di=DESKTOP?await DESKTOP.info().catch(()=>null):null;
+  const os=di?(di.os==="darwin"?"macOS":di.os==="win32"?"Windows":"Linux"):"";
+  const zeit=d=>d.toLocaleString("de-DE");
+  const rolle=!S?"nicht angemeldet":istFL()?"Fachlehrkraft":"Klassenlehrkraft";
+  return [
+    "LeDoK – Problembericht",
+    `Erstellt: ${zeit(new Date())}`,
+    "",
+    "Was ist passiert?",
+    (beschreibung||"").trim()||"(keine Beschreibung)",
+    "",
+    "Technische Angaben (ohne Schülerdaten)",
+    `Version: ${APP_VERSION}${typeof APP_KANAL==="string"&&APP_KANAL?" "+APP_KANAL:""} vom ${APP_DATUM}`,
+    `Umgebung: ${di?`Desktop-App für ${os}, Programmversion ${di.shell}${di.aktualisiert?`, Update eingespielt (ausgeliefert war ${di.mitgeliefert})`:""}`:"Browser"}`,
+    `Browser-Kennung: ${navigator.userAgent}`,
+    `Fenster: ${innerWidth} × ${innerHeight} Pixel, Zoom ${Math.round(devicePixelRatio*100)} %`,
+    `Rolle: ${rolle}`,
+    `Ansicht: ${S?UI.tab:"Startbildschirm"}`,
+    S?`Umfang: ${S.kinder.length} Kinder, ${S.eintraege.length} Einträge`:"",
+    "",
+    "Letzte Fehlermeldungen",
+    ...(FEHLER_LOG.length?FEHLER_LOG.map(f=>`${zeit(f.z)} · ${ohneNamen(f.text)}`):["keine"]),
+  ].filter((z,i,a)=>z!==""||a[i-1]!=="").join("\n");
+}
+function problemMelden(){
+  const d=dialog(`<h2>Problem melden</h2>
+   <p class="small">Beschreibe kurz, was du tun wolltest und was stattdessen passiert ist. LeDoK ergänzt technische Angaben wie Version und Betriebssystem. <b>Namen von Kindern und Noten gehören nicht in den Bericht.</b></p>
+   <textarea id="pmText" rows="4" placeholder="Zum Beispiel: Ich wollte im Tab Erfassen eine Bewertung speichern. Nach dem Klick auf 5 ist nichts passiert."></textarea>
+   <details style="margin-top:.6rem"><summary class="small">Bericht ansehen, so wie er gespeichert wird</summary><pre id="pmVorschau" class="small" style="white-space:pre-wrap;max-height:16rem;overflow:auto"></pre></details>
+   <p class="small muted">Schicke die Datei oder den kopierten Text per Mail an dominik@deep-moments.com. LeDoK selbst versendet nichts.</p>
+   <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" id="pmZu">Schließen</button><button class="btn" type="button" id="pmKopie">Text kopieren</button><button class="btn primary" type="button" id="pmDatei">Als Datei speichern</button></div>`,true);
+  const text=()=>problemBericht($("#pmText").value);
+  const vorschau=async()=>{$("#pmVorschau").textContent=await text()};
+  $("#pmText").oninput=vorschau;vorschau();$("#pmText").focus();
+  $("#pmZu").onclick=()=>d.close();
+  $("#pmKopie").onclick=async()=>{
+    const t=await text();
+    try{await navigator.clipboard.writeText(t)}
+    catch(e){const h=document.createElement("textarea");h.value=t;d.appendChild(h);h.select();document.execCommand("copy");h.remove()}
+    toast("Bericht kopiert. Füge ihn in eine Mail ein.",3000);
+  };
+  $("#pmDatei").onclick=async()=>{
+    const z=new Date(),p=n=>String(n).padStart(2,"0");
+    download(`LeDoK-Problembericht-${z.getFullYear()}-${p(z.getMonth()+1)}-${p(z.getDate())}-${p(z.getHours())}${p(z.getMinutes())}.txt`,await text(),"text/plain;charset=utf-8");
+    toast("Bericht gespeichert. Hänge die Datei an eine Mail an.",3000);
+  };
 }
 /* ---------- Dialoge ---------- */
 function dialog(html,breit){const d=$("#dlg");d.style.width=breit?"min(760px, calc(100% - 2rem))":"";d.innerHTML=html;d.showModal();return d}
@@ -4924,6 +4990,7 @@ function addEntry(k,c,w,q,n=""){DV++;
 }
 const ACT = {
   hJump:a=>{const el=document.getElementById(a.dataset.v);if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.add("hflash");setTimeout(()=>el.classList.remove("hflash"),1200)}},
+  problemMelden:()=>problemMelden(),
   hilfeDruck:()=>drucke(`<div class="hilfe-druck">${VIEWS.hilfe().replace(/<button[^>]*>.*?<\/button>/g,"").replace(/<details>/g,"<details open>")}</div>`),
   tab:a=>{const v=a.dataset.v;if(v==="einst"){UI.tab="einst";UI.einst=einstTabs().some(e=>e[0]===UI.einst)?UI.einst:einstTabs()[0][0]}else if(EINST.some(e=>e[0]===v)){UI.tab="einst";UI.einst=v}else UI.tab=v;render();window.scrollTo(0,0)},
   mode:a=>{UI.mode=a.dataset.v;render()},

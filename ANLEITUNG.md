@@ -122,11 +122,30 @@ Mit einem Apple-Developer-Konto (99 €/Jahr) bzw. einem Windows-Code-Signing-Ze
 - Die Rechtschreibprüfung ist nur auf dem Mac aktiv, weil sie dort im System läuft. Unter Windows würde sie Wörterbücher aus dem Netz laden und bleibt deshalb aus.
 - Updates kommen ausschließlich als Datei, deren Signatur das Programm mit dem eingebauten öffentlichen Schlüssel prüft.
 
+## 9 · Arbeitsweise bei Änderungen
+
+**Eine Quelle.** Die aktuelle Fassung der App liegt nur in diesem Repository unter `app/LeDoK.html`. Bearbeite immer diese Datei und keine Kopie an einem anderen Ort. Das private Repository `LeDoK` wird dafür nicht gebraucht.
+
+**Änderungen notieren.** Trage jede Änderung, die Lehrkräfte bemerken, gleich unter „Unveröffentlicht“ in `CHANGELOG.md` ein. Beim Release wandert der Abschnitt unter die neue Versionsnummer und kommt als Hinweistext ins Update-Paket (Schritt 4, Punkt 2).
+
+**Automatische Tests.** Bei jedem Hochladen prüft GitHub unter **Actions → Tests** die App: Das Skript muss fehlerfrei lesbar sein, Version und Datum müssen gültig sein, und in `CHANGELOG.md` muss es einen Abschnitt zur aktuellen Version geben. Außerdem klickt ein Testbrowser die wichtigsten Abläufe durch, vom Anlegen einer Klasse über Erfassen und Entsperren bis zum Problembericht. Ein grüner Haken heißt bestanden. Bei einem roten Kreuz bekommst du eine Mail, und unter dem Lauf liegt ein „testbericht“ mit Details. Lokal startest du die Tests mit `npm test`.
+
+**Neue Version mit einem Befehl.** `npm run release 1.0.1` erledigt die Handarbeit für ein Release:
+- setzt `APP_VERSION` und `APP_DATUM` (heute) in `app/LeDoK.html` und in `package.json`,
+- macht aus „Unveröffentlicht“ in `CHANGELOG.md` den Abschnitt der neuen Version und zeigt dir den Text für das Hinweisfeld des Update-Pakets,
+- führt die Tests aus und legt nur bei Erfolg einen Commit „Version 1.0.1“ an.
+
+Mit `--tag` setzt der Befehl zusätzlich den Tag `v1.0.1` für neue Installer. Das brauchst du nur, wenn sich die Hülle geändert hat, und der Befehl weist dich darauf hin. `--kanal Beta` setzt den Zusatz neben der Versionsnummer, und `--kanal ""` entfernt ihn für die finale Version. `--probe` zeigt nur an, was passieren würde. Hochladen und das Update-Paket erzeugen machst du danach wie gewohnt.
+
+**Problemberichte.** Lehrkräfte erstellen über **Version … → Problem melden …** oder **Hilfe → Problem melden …** eine Textdatei `LeDoK-Problembericht-….txt` und schicken sie dir per Mail. Darin stehen ihre Beschreibung, die Version, das Betriebssystem und die letzten Fehlermeldungen. Namen von Kindern werden aus den Fehlermeldungen entfernt, und die Lehrkraft sieht den ganzen Text vor dem Speichern.
+
 ## Für Entwickler
 
 ```bash
 npm ci
 npm start            # App lokal starten
+npm test             # Prüfung und Oberflächentests (einmalig vorher: npx playwright install chromium)
+npm run release 1.0.1 [--tag] [--kanal Beta] [--probe]
 npm run dist:win     # Windows-Installer (unter Linux/macOS wird Wine benötigt)
 npm run dist:mac     # nur auf einem Mac
 ```
