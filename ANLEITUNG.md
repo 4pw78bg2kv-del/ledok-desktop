@@ -109,7 +109,7 @@ Mit einem Apple-Developer-Konto (99 €/Jahr) bzw. einem Windows-Code-Signing-Ze
 - Die Sicherungen sind normale LeDoK-Kopien (`.lernstand`). Man öffnet sie mit „Kopie einspielen“ und dem Passwort.
 - Von jeder Art Sicherung bleiben die 15 neuesten liegen, ältere löscht die App selbst.
 - Neben der Datendatei liegt eine `.vorher`-Datei mit dem vorletzten Stand.
-- Ab Version 1.1 liegen die Daten in dieser Datei statt im internen Browserspeicher. Die App übernimmt sie beim ersten Speichern automatisch. Danach bitte **nicht mehr auf 1.0.0 zurückgehen**: 1.0.0 findet die Daten nicht und kann neuere Kopien nicht öffnen.
+- In allen Versionen nach 1.0.0 liegen die Daten in dieser Datei statt im internen Browserspeicher. Die App übernimmt sie beim ersten Speichern automatisch. Danach bitte **nicht mehr auf 1.0.0 zurückgehen**: 1.0.0 findet die Daten nicht und kann neuere Kopien nicht öffnen.
 
 ## 8 · Datenschutz
 
