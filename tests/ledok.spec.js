@@ -25,7 +25,7 @@ async function neueKlasse(page, { rolle = "kl", demo = true } = {}) {
   await page.fill("#pw2", PW);
   if (rolle === "kl") await page.setChecked("#demo", demo);
   await page.click('#setupForm button[type="submit"]');
-  // Ohne Schulschlüssel fragt LeDoK einmal nach; zweiter Klick startet trotzdem
+  // Ohne Schulschlüssel fragt der Dialog einmal nach; ein zweites „Starten“ beginnt ohne.
   await expect(page.locator("#err2")).toContainText("Schulschlüssel");
   await page.click('#setupForm button[type="submit"]');
   await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
