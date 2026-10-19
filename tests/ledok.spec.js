@@ -104,6 +104,36 @@ test("Daten bleiben verschlüsselt erhalten und öffnen nur mit dem Passwort", a
   expect(await page.evaluate(() => S.kinder.length)).toBe(kinder);
 });
 
+test("Zweites LeDoK am selben Rechner löschen lässt das erste erhalten", async ({ page }) => {
+  await neueKlasse(page);
+  await page.evaluate(() => lock());
+  await page.click('[data-act="profilNeu"]');
+  await page.fill("#profilName", "Frau Huber");
+  await page.fill("#pw1", PW + "2");
+  await page.fill("#pw2", PW + "2");
+  await page.setChecked("#demo", false);
+  await page.click('#setupForm button[type="submit"]');
+  await page.click('#setupForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  await page.evaluate(() => lock());
+  await expect(page.locator("#profilWahl option")).toHaveCount(2);
+
+  await page.click("details.weitere summary");
+  await expect(page.locator('details.weitere [data-act="wipeAll"]')).toHaveText("Dieses LeDoK löschen …");
+  await page.click('details.weitere [data-act="wipeAll"]');
+  await expect(page.locator("dialog[open]")).toContainText("Frau Huber");
+  await page.fill("#msgTipp", "LÖSCHEN");
+  await page.click("#msgJa");
+  await expect(page.locator("#err")).toContainText("wurde gelöscht", { timeout: 30000 });
+
+  // Das erste LeDoK ist weiter da und öffnet mit seinem Passwort
+  await expect(page.locator("#profilWahl")).toHaveCount(0);
+  await page.fill("#pw", PW);
+  await page.click('#openForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  expect(await page.evaluate(() => S.kinder.length)).toBeGreaterThan(0);
+});
+
 test("Fachlehrkraft startet ohne Klasse", async ({ page }) => {
   await neueKlasse(page, { rolle: "fl" });
   expect(await page.evaluate(() => [S.meta.rolle, S.kinder.length])).toEqual(["fl", 0]);
