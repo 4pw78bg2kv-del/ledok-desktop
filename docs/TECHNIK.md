@@ -1,6 +1,6 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 20.10.2026 · `main` nach PR #14 · App-Version 1.0.0 Beta (mit unveröffentlichten Änderungen)
+Stand: 20.10.2026 · `main` nach PR #20 · App-Version 1.0.0 Beta (mit unveröffentlichten Änderungen)
 
 Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung, Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
@@ -57,7 +57,7 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 
 | Pfad | Inhalt |
 |---|---|
-| `app/LeDoK.html` | die App (ca. 5.970 Zeilen, davon eine Zeile `LP_VORLAGE` mit dem Lehrplan). Einzige Quelle. |
+| `app/LeDoK.html` | die App (ca. 6.400 Zeilen, davon eine Zeile `LP_VORLAGE` mit dem Lehrplan). Einzige Quelle. |
 | `desktop/main.js` | Electron-Hauptprozess: Fenster, Menü, Protokoll, Netzsperre, IPC, Sicherungen, Update |
 | `desktop/update.js` | Prüfung von `.ledok-update`-Dateien; gleiche Berechnung wie `updPayload`/`updFp` in der App |
 | `desktop/preload.js` | stellt `window.ledokDesktop` bereit (feste, schmale Schnittstelle) |
@@ -69,6 +69,7 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 | `scripts/release.js` | `npm run release x.y.z`: Version, Datum, CHANGELOG, Tests, Commit, optional Tag |
 | `tests/ledok.spec.js`, `playwright.config.js` | Oberflächentests (Playwright, Chromium) |
 | `.github/workflows/tests.yml` | Tests bei jedem Push und Pull Request |
+| `.github/dependabot.yml` | Dependabot: monatliche Aktualisierungsvorschläge für GitHub Actions und npm-Werkzeuge |
 | `.github/workflows/build.yml` | baut Windows- und Mac-Installer, bei Tag `v*` als Release-Entwurf |
 | `.gitattributes` | erzwingt LF, damit der CSP-Hash auf Windows stimmt |
 | `.gitignore` | schließt u. a. `*.ledok-updatekey` und `*-PRIVAT*` aus |
@@ -81,22 +82,22 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 
 | Zeilen (ca.) | Abschnitt |
 |---|---|
-| 1–605 | `<head>`, CSP-Meta, CSS (helles und dunkles Farbschema über `:root`-Variablen, Druck-CSS) |
-| 606 | `<script>` (genau ein Skriptblock; sein Hash steht in der CSP) |
-| 607–644 | Konstanten: `STORE_BASE`, `PROFIL_KEY`, ASV-Merkmale, Skala, `QUELLE` |
-| 645 | `LP_VORLAGE`: LehrplanPLUS 1/2, 3/4 und DaZ 1–4, ca. 3.700 Texte |
-| 2618–2756 | Migration des alten flachen Rasters, LEG-Abschnitte (`LEG_ABSCHNITTE`, `legMigration`), Briefkopf (`DEFAULT_KOPF`), `defaultState()` |
-| 2782–2955 | Kryptografie, Speicher, Profile, Sicherungen |
-| 2956–3012 | `migrate()`, `datenBereinigen()` |
-| 3013–3139 | Berechnungen: Kompetenzbaum, `evalNode`, Fachwert, Note, Lernniveau, Jahrgangsstufen |
-| 3140–3327 | Textgenerierung (Bericht, LEG), Druckseiten mit Briefkopf (`kopf`, `fuss`), Platzhalter, Dokument-Vorschau, Logo verkleinern |
-| 3328–3730 | UI-Zustand, Startbildschirm, Einrichtung, `render()`, Einstellungen, Raster-Teilansichten |
-| 3731–4574 | `VIEWS` (Hilfe, Heute, Erfassen, Übersicht, Kind, Sammelexport, Einstellungsseiten), Proben, Diagramme, LEG-Editor, KI-Export |
-| 4575–5116 | Rollen: Schulschlüssel, LeDoK-Admin, Hersteller-Bereich, Fachpakete, Rückmeldungen, Rückmeldung am selben Rechner |
-| 5117–5236 | Version und Updates, Problem melden |
-| 5237–5312 | Dialoge: `dialog`, `askText`, `frage`, `info`, `askPassword`, `pickFile`, `askFile` |
-| 5313–5926 | `ACT` (Aktionen), Übergabe/Import/CSV, Lehrplan-CSV |
-| 5927–6086 | Ereignisse, Vorschau beim Tippen, automatische Sperre, Beispieldaten, Start |
+| 1–620 | `<head>`, CSP-Meta, CSS (helles und dunkles Farbschema über `:root`-Variablen, Druck-CSS) |
+| 621 | `<script>` (genau ein Skriptblock; sein Hash steht in der CSP) |
+| 622–659 | Konstanten: `STORE_BASE`, `PROFIL_KEY`, ASV-Merkmale, Skala, `QUELLE` |
+| 660 | `LP_VORLAGE`: LehrplanPLUS 1/2, 3/4 und DaZ 1–4, ca. 3.700 Texte |
+| 2633–2792 | Migration des alten flachen Rasters, LEG-Abschnitte und -Vorlagen, Briefkopf, Einladung, `defaultState()` |
+| 2818–2991 | Kryptografie, Speicher, Profile, Sicherungen |
+| 2992–3061 | `migrate()`, `fpBereinigen()`, `datenBereinigen()` |
+| 3062–3188 | Berechnungen: Kompetenzbaum, `evalNode`, Fachwert, Note, Lernniveau, Jahrgangsstufen |
+| 3189–3476 | Textgenerierung (Bericht, LEG), Druckseiten (LEG, Bericht, Förderplan, Einladung, Terminliste), Briefkopf, Platzhalter, Druckvorschau `drucke()` |
+| 3477–3881 | UI-Zustand, Startbildschirm, Einrichtung, `render()`, Einstellungen, Raster-Teilansichten |
+| 3882–4741 | `VIEWS` (Hilfe, Heute, Erfassen, Übersicht, Kind, Sammelexport, Einstellungsseiten), Proben, Diagramme, LEG-Editor, KI-Export |
+| 4742–5310 | Rollen: Schulschlüssel, LeDoK-Admin, Hersteller-Bereich, Fachpakete, Rückmeldungen, Rückmeldung am selben Rechner |
+| 5311–5475 | Version und Updates, Problem melden |
+| 5476–5579 | Dialoge: `dialog`, `askText`, `frage`, `info`, `askPassword`, `pickFile`, `askFile`; Schnellsuche |
+| 5580–6238 | `ACT` (Aktionen), Übergabe/Import/CSV, Lehrplan-CSV |
+| 6239–6411 | Ereignisse, Speichern beim Tippen (Förderplan, Dokumente, Bericht/LEG), automatische Sperre, Beispieldaten, Start |
 
 Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen mit Kommentaren der Form `/* ---------- Name ---------- */`, nach denen du suchen kannst.
 
@@ -107,6 +108,8 @@ Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen 
 - Inline-Handler (`onclick=` im HTML) sind durch die CSP gesperrt. Handler werden nach dem Rendern in JS gesetzt.
 - Alle Texte aus Daten laufen durch `esc()`.
 - `UI` hält den flüchtigen Zustand (aktiver Reiter, Filter, Namen-Schalter). Er wird nicht gespeichert.
+- **Schnellsuche** (Strg/⌘+K, Knopf ⌕): `sucheQuellen()` sammelt Bereiche, Einstellungsseiten, Kinder, beobachtbare Themen und zwei Aktionen; `sucheTreffer()` filtert und sortiert (höchstens 12), `sucheOeffnen()` zeigt das Ergebnis in `#dlg`. Im Kürzel-Modus wird nur nach Kürzeln gesucht.
+- **Druck:** Jeder Druck läuft über `drucke(html)`. Es zeigt zuerst eine Vorschau in `#dlg`; erst „Drucken …“ schreibt das HTML in `#print-root` und ruft `window.print()`. Nach `afterprint` wird `#print-root` geleert.
 - Darstellung hell/dunkel: pro Gerät in `localStorage` (`themeLesen`), nicht in den Daten.
 
 ### Berechnungen
@@ -135,7 +138,7 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
@@ -145,7 +148,9 @@ S = {
                  q: "b"|"l"|"f", n /*Notiz*/, p? /*Probe*/, vp? /*Fachlehrkraft-ID*/, von?, ext? } ],
   notizen:   [ { id, k, ts, kat, text, vp?, von?, ext? } ],
   bausteine: { asv: {SV1: {2|5|7|9: {b, l}, ziel}}, fach: {...}, phrasen: {...}, notizen: [] },
-  texte:     { "S01|2026/27|1": { bericht, leg } },
+  texte:     { "S01|2026/27|1": { bericht, leg, termin: {d, z, ok} } },
+  foerderplaene: { S01: { zeitraum, anlass, beteiligt, geaendert,
+                 ziele: [ { id, text, massnahmen, wer, bis, stand: "offen"|"teilweise"|"erreicht" } ] } },
   proben:    [ { id, name, datum, fach, jg, art: "punkte"|…, items[], werte{}, fehlt{} } ]
 }
 ```
@@ -157,6 +162,9 @@ S = {
 
 - `S.meta.leg`: Aufbau des LEG-Bogens als Folge von Abschnitten, `bloecke: [{typ, an, titel?, id?, text?, linien?}]`, dazu `selbst[]` (Sätze der Selbsteinschätzung). `typ` ist einer aus `LEG_ABSCHNITTE`: `pers`, `stark`, `ueben`, `faecher`, `selbst`, `ziele`, `vereinb`, `frei`, `unterschrift`, `verlauf`. Nur `frei` darf mehrfach vorkommen; es hat eine `id`, einen `text` mit Platzhaltern und 0–6 Schreiblinien. `legMigration()` überführt ältere `titel`/`zeigen`-Einstellungen ohne Verlust, sortiert ungültige oder doppelte Abschnitte aus und ergänzt fehlende Standardabschnitte. Platzhalter (`PLATZHALTER`, gefüllt von `platzhalterFuellen`): `{Vorname}`, `{Name}`, `{Klasse}`, `{Jgst}`, `{Schule}`, `{Schuljahr}`, `{Halbjahr}`, `{Lehrkraft}`, `{Datum}`, `{Stärken}`, `{Übungsfelder}`, `{Ziele}`.
 - `S.meta.legVorlagen`: weitere LEG-Vorlagen `[{id, name, jgst[], bloecke[], selbst[]}]`. `S.meta.leg` bleibt die Standardvorlage (in der Oberfläche „Standard“, intern `id` `"std"`). `legFuer(kid)` nimmt die erste Vorlage, deren `jgst` die Jahrgangsstufe des Kindes enthält, sonst die Standardvorlage; eine Jahrgangsstufe gehört immer nur zu einer Vorlage. `legSeite(kid, L)`, `legBlock`, `legAn` und `legTitel` bekommen die Vorlage als Parameter. Im Druckdialog kann man eine andere Vorlage wählen. `legVorlageBereinigen()` baut auf `legMigration()` auf und prüft zusätzlich `id`, `name` (höchstens 60 Zeichen) und `jgst` (1–4).
+- `S.texte[…].termin`: Gesprächstermin aus dem LEG-Planer, `d` = Datum (JJJJ-MM-TT), `z` = Uhrzeit, `ok` = geführt. Er hängt am Schlüssel Kind|Schuljahr|Halbjahr, gilt also je Halbjahr, wird mit dem Kind gelöscht und reist in der Übergabedatei mit. „Auf Entwurf zurücksetzen“ bei Bericht und LEG lässt den Termin stehen. Platzhalter `{Termin}` (Wochentag, Datum, Uhrzeit) gilt in Freitext-Abschnitten und in der Einladung.
+- `S.meta.einladung`: Elternbrief zum LEG `{titel, text, rueck}`; `rueck` hängt einen Rückmeldeabschnitt an. `migrate()` ergänzt fehlende Felder aus `DEFAULT_EINLADUNG()`. Druckseiten: `einladungSeite(kid)`, `terminSeite(kids)`; Oberfläche: `legPlanerCard()` im Sammelexport.
+- `S.foerderplaene`: Förderpläne nach Kind-ID (Kind → Förderplan, Sammeldruck im Export). `fpBereinigen()` säubert sie beim Laden und Einlesen (gültige IDs, Datum `bis` nur im Format JJJJ-MM-TT, Stand aus `FP_STAND`). `kindLoeschen()`, das Umbenennen ungültiger Kürzel in `datenBereinigen()` und „Schülerdaten löschen“ ziehen die Pläne mit. Die Übergabedatei eines Kindes (`kindPaket`) enthält keinen Förderplan.
 - `S.meta.kopf`: Briefkopf `{logo, anschrift, fuss, leg, bericht, liste}`. `logo` ist eine Data-URL, die nur gerendert wird, wenn sie auf `LOGO_RE` passt (PNG, JPEG oder WebP in Base64). Beim Einlesen verkleinert `logoVerkleinern()` das Bild auf höchstens 600 × 240 px und speichert es als PNG. Die drei Schalter legen fest, für welche Druckart der Briefkopf gilt.
 
 ### Migration
@@ -449,6 +457,12 @@ npm run dist:win | dist:mac | dist:linux
 | Dokumente: weitere LEG-Vorlage gilt für gewählte Jahrgangsstufen | `legFuer`, Übernahme einer Jgst., Löschen |
 | Dokumente: Vorlage als Datei exportieren und … einlesen | Rundlauf mit Briefkopf, keine Schülernamen in der Datei, fremde Datei abgelehnt |
 | Dokumente: LEG-Vorlagen aus Dateien werden bereinigt | `legVorlageBereinigen`, `kopfBereinigen` |
+| Schnellsuche: Strg+K findet Kinder, Themen und Einstellungen | Treffer, Sprung, ohne Treffer |
+| Druckvorschau erscheint vor dem Drucken | Abbrechen ohne Druck, Drucken mit richtiger Seitenzahl |
+| Förderplan: anlegen, aus dem LEG-Bogen füllen, drucken und mit dem Kind löschen | `fpAusLeg`, Druck, `kindLoeschen` |
+| Förderplan: Daten aus Dateien werden bereinigt | `fpBereinigen` |
+| LEG-Planer: Termine vergeben, Einladungen und Terminliste drucken | fortlaufend vergeben, „geführt“, LEG-Datum, Zurücksetzen behält den Termin, leeres Datum entfernt ihn |
+| Dokumente: Einladungstext anpassen mit Vorschau | `S.meta.einladung`, Vorschau „Einladung“ |
 
 CI: `.github/workflows/tests.yml` bei jedem Push und Pull Request; bei Fehlern liegt ein Artefakt „testbericht“ am Lauf.
 
