@@ -9,6 +9,9 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- **Dienste:** Unter **Listen → Dienste** verteilst du Klassendienste wie Tafeldienst, Austeildienst oder Blumendienst reihum an alle Kinder, jede Woche, alle zwei Wochen oder jeden Schultag. LeDoK rechnet selbst aus, wer dran ist, und lässt die Dienste nach jedem Durchlauf weiterrücken, damit jedes Kind mal jeden Dienst hat. Du kannst die Reihenfolge auslosen, einzelne Kinder pausieren lassen und für eine Runde Kinder tauschen. **Aushang drucken** druckt den Plan in großer Schrift für die Klasse. Auf **Heute** zeigt die Karte **Dienste**, wer dran ist, und nennt für fehlende Kinder eine Vertretung.
+
 ## 1.1.3 (Beta)
 
 **Neu**
