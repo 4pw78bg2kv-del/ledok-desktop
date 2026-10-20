@@ -1,6 +1,6 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 20.10.2026 · `main` nach PR #13 · App-Version 1.0.0 Beta (mit unveröffentlichten Änderungen)
+Stand: 20.10.2026 · `main` nach PR #14 · App-Version 1.0.0 Beta (mit unveröffentlichten Änderungen)
 
 Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung, Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
@@ -135,7 +135,7 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, kopf{}, faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
@@ -156,6 +156,7 @@ S = {
 - `S.meta.protokoll`: höchstens 60 Einträge `{ts, text}`, für die Lehrkraft sichtbar unter Daten & Sicherheit.
 
 - `S.meta.leg`: Aufbau des LEG-Bogens als Folge von Abschnitten, `bloecke: [{typ, an, titel?, id?, text?, linien?}]`, dazu `selbst[]` (Sätze der Selbsteinschätzung). `typ` ist einer aus `LEG_ABSCHNITTE`: `pers`, `stark`, `ueben`, `faecher`, `selbst`, `ziele`, `vereinb`, `frei`, `unterschrift`, `verlauf`. Nur `frei` darf mehrfach vorkommen; es hat eine `id`, einen `text` mit Platzhaltern und 0–6 Schreiblinien. `legMigration()` überführt ältere `titel`/`zeigen`-Einstellungen ohne Verlust, sortiert ungültige oder doppelte Abschnitte aus und ergänzt fehlende Standardabschnitte. Platzhalter (`PLATZHALTER`, gefüllt von `platzhalterFuellen`): `{Vorname}`, `{Name}`, `{Klasse}`, `{Jgst}`, `{Schule}`, `{Schuljahr}`, `{Halbjahr}`, `{Lehrkraft}`, `{Datum}`, `{Stärken}`, `{Übungsfelder}`, `{Ziele}`.
+- `S.meta.legVorlagen`: weitere LEG-Vorlagen `[{id, name, jgst[], bloecke[], selbst[]}]`. `S.meta.leg` bleibt die Standardvorlage (in der Oberfläche „Standard“, intern `id` `"std"`). `legFuer(kid)` nimmt die erste Vorlage, deren `jgst` die Jahrgangsstufe des Kindes enthält, sonst die Standardvorlage; eine Jahrgangsstufe gehört immer nur zu einer Vorlage. `legSeite(kid, L)`, `legBlock`, `legAn` und `legTitel` bekommen die Vorlage als Parameter. Im Druckdialog kann man eine andere Vorlage wählen. `legVorlageBereinigen()` baut auf `legMigration()` auf und prüft zusätzlich `id`, `name` (höchstens 60 Zeichen) und `jgst` (1–4).
 - `S.meta.kopf`: Briefkopf `{logo, anschrift, fuss, leg, bericht, liste}`. `logo` ist eine Data-URL, die nur gerendert wird, wenn sie auf `LOGO_RE` passt (PNG, JPEG oder WebP in Base64). Beim Einlesen verkleinert `logoVerkleinern()` das Bild auf höchstens 600 × 240 px und speichert es als PNG. Die drei Schalter legen fest, für welche Druckart der Briefkopf gilt.
 
 ### Migration
@@ -278,8 +279,11 @@ Private Dateien und Passphrasen gehören **nie** ins Repository.
 | `ledok-support`, `ledok-support-privat` | `.ledok-support`, `.ledok-support-privat` | Support-Schlüssel | privat: Passphrase |
 | `ledok-update-key`, `ledok-updatekey-privat` | `.json`, `.ledok-updatekey` | Update-Schlüssel | privat: Passphrase |
 | `ledok-update` | `.ledok-update` | Update-Paket (siehe Kapitel 10) | – (signiert) |
+| `ledok-vorlage` | `.ledok-vorlage` | LEG-Vorlage `{v: 1, name, schule, erstellt, leg: {bloecke, selbst}, kopf?}`, ohne Schülerdaten | – (JSON, nicht signiert) |
 
-Unverschlüsselt sind nur: Klassen-CSV (nur Kürzel), Lehrplan-CSV, KI-Export, Problembericht (`.txt`) und Druck/PDF.
+Unverschlüsselt sind nur: Klassen-CSV (nur Kürzel), Lehrplan-CSV, LEG-Vorlage (ohne Schülerdaten), KI-Export, Problembericht (`.txt`) und Druck/PDF.
+
+Eine importierte `.ledok-vorlage` (höchstens 3 MB) läuft durch `vorlageEinlesen()`. Das prüft `app`, hängt bei doppeltem Namen „(2)“, „(3)“ … an und bereinigt Abschnitte und Briefkopf mit `legVorlageBereinigen()` und `kopfBereinigen()`. Ein Logo, das nicht auf `LOGO_RE` passt, wird verworfen. Die neue Vorlage gilt zunächst für keine Jahrgangsstufe. Ob ein mitgelieferter Briefkopf den eigenen ersetzt, entscheidet die Lehrkraft.
 
 ## 8 · Rollen und Datenaustausch
 
@@ -442,6 +446,9 @@ npm run dist:win | dist:mac | dist:linux
 | Dokumente: LEG-Abschnitte ausschalten, verschieben und Freitext … | Reihenfolge, Schalter, Platzhalter werden gefüllt |
 | Dokumente: ältere LEG-Einstellungen werden übernommen | `legMigration()` |
 | Druck: alle Dokumente der Beispielklasse … | keine `undefined`/`NaN`/Platzhalter-Reste, Seitenzahl, PDF entsteht |
+| Dokumente: weitere LEG-Vorlage gilt für gewählte Jahrgangsstufen | `legFuer`, Übernahme einer Jgst., Löschen |
+| Dokumente: Vorlage als Datei exportieren und … einlesen | Rundlauf mit Briefkopf, keine Schülernamen in der Datei, fremde Datei abgelehnt |
+| Dokumente: LEG-Vorlagen aus Dateien werden bereinigt | `legVorlageBereinigen`, `kopfBereinigen` |
 
 CI: `.github/workflows/tests.yml` bei jedem Push und Pull Request; bei Fehlern liegt ein Artefakt „testbericht“ am Lauf.
 
@@ -473,6 +480,7 @@ connect-src 'none'; form-action 'none'; base-uri 'none'
 
 ## 15 · Offene Punkte
 
+- **Signierte Schulvorlagen:** `.ledok-vorlage` wird nicht mit dem Schulschlüssel signiert. Das wäre nötig, wenn eine „Vorlage der Schule“ verbindlich gekennzeichnet werden soll.
 - **Automatische Update-Suche** (PR #11, Entwurf), siehe Kapitel 10.
 - **Import fremder Klassenlisten (CSV):** vorgeschlagen, nicht umgesetzt. Der vorhandene `csvParse()` erkennt bereits Trennzeichen, Anführungszeichen und BOM.
 - **Code-Signing:** Apple-Developer-Konto bzw. Windows-Zertifikat, damit die Warnungen beim ersten Start entfallen. Ergänzung in `build.yml`.
