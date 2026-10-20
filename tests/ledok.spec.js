@@ -250,3 +250,135 @@ test("Desktop: gefundenes Update wird erst nach Zustimmung eingespielt", async (
   await page.click("#u2j");
   await expect.poll(() => page.evaluate(() => window.__upd.installiert)).toBe(1);
 });
+
+// ---------- Dokumente: Briefkopf, LEG-Abschnitte und Druck ----------
+// Kleinstes gültiges PNG (1 × 1 Pixel)
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+
+async function zuDokumente(page) {
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="dokumente"]');
+  await expect(page.locator("#dokPrev")).toBeVisible();
+}
+
+test("Dokumente: Briefkopf und Fußzeile erscheinen auf LEG-Bogen und Bericht", async ({ page }) => {
+  await neueKlasse(page);
+  await zuDokumente(page);
+  const [wahl] = await Promise.all([page.waitForEvent("filechooser"), page.click('[data-act="kopfLogo"]')]);
+  await wahl.setFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG });
+  await expect(page.locator(".dok-logo")).toBeVisible();
+  await page.fill("#kopfAnschrift", "Schulstraße 1\n12345 Musterstadt");
+  await page.fill('[data-bind="meta.kopf.fuss"]', "Vertraulich");
+  const vorschau = page.locator("#dokPrev");
+  await expect(vorschau.locator("img.bk-logo")).toBeVisible();
+  await expect(vorschau.locator(".bk-txt")).toContainText("12345 Musterstadt");
+  await expect(vorschau.locator(".pfuss")).toHaveText("Vertraulich");
+
+  await page.click('[data-act="dokArt"][data-v="bericht"]');
+  await expect(vorschau.locator("img.bk-logo")).toBeVisible();
+  await expect(vorschau).toContainText("Bericht – Entwurf");
+
+  // Listen bekommen den Briefkopf erst, wenn er dafür eingeschaltet ist
+  expect(await page.evaluate(() => notenSeite())).not.toContain('class="bk"');
+  await page.check('[data-bind="meta.kopf.liste"]');
+  expect(await page.evaluate(() => notenSeite())).toContain('class="bk"');
+
+  // Alles bleibt nach dem Speichern erhalten
+  await page.evaluate(() => saveNow());
+  await page.reload();
+  await page.fill("#pw", PW);
+  await page.click('#openForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  const kopf = await page.evaluate(() => S.meta.kopf);
+  expect(kopf.logo).toMatch(/^data:image\/png;base64,/);
+  expect(kopf.anschrift).toBe("Schulstraße 1\n12345 Musterstadt");
+  expect(kopf.fuss).toBe("Vertraulich");
+  expect(kopf.liste).toBe(true);
+});
+
+test("Dokumente: LEG-Abschnitte ausschalten, verschieben und Freitext mit Platzhaltern", async ({ page }) => {
+  await neueKlasse(page);
+  await zuDokumente(page);
+  const vorschau = page.locator("#dokPrev");
+  await expect(vorschau).toContainText("So weit bist du in den Fächern");
+  await page.uncheck('[aria-label="Fächertabelle zeigen"]');
+  await expect(vorschau).not.toContainText("So weit bist du in den Fächern");
+
+  await page.click('[data-act="legFrei"]');
+  const frei = page.locator(".dabs").last();
+  await frei.locator('input[type="text"]').fill("Termin");
+  await frei.locator("textarea").fill("Liebe Eltern von {Vorname}, wir sprechen über {Stärken}. {Unbekannt}");
+  const kuerzel = await page.evaluate(() => sortedKids("alle")[0].id);
+  await expect(vorschau).toContainText(`Liebe Eltern von ${kuerzel}, wir sprechen über`);
+  await expect(vorschau).toContainText("{Unbekannt}");
+  await expect(vorschau.locator("h4", { hasText: "Termin" })).toBeVisible();
+
+  // Zweimal nach oben: steht dann vor den Unterschriften
+  const freiZeile = page.locator(".dabs", { has: page.locator('[aria-label="Text des Abschnitts"]') });
+  for (let i = 0; i < 2; i++) await freiZeile.locator('[data-v="hoch"]').click();
+  const typen = await page.evaluate(() => S.meta.leg.bloecke.map((b) => b.typ));
+  expect(typen.slice(-3)).toEqual(["frei", "unterschrift", "verlauf"]);
+  const text = await vorschau.textContent();
+  expect(text.indexOf("Liebe Eltern")).toBeLessThan(text.indexOf("Erziehungsberechtigte"));
+
+  // Im LEG-Editor des Kindes ist die ausgeschaltete Fächertabelle verschwunden
+  await page.click('nav.tabs [data-v="kind"]');
+  await page.click('[data-act="expTab"][data-v="leg"]');
+  await expect(page.locator("[data-lefach]")).toHaveCount(0);
+  await expect(page.locator(".preview")).toContainText("Liebe Eltern von");
+
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="dokumente"]');
+  await page.click('[data-act="legTitelReset"]');
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => S.meta.leg.bloecke.map((b) => b.typ))).toEqual(await page.evaluate(() => LEG_STANDARD));
+});
+
+test("Dokumente: ältere LEG-Einstellungen werden übernommen", async ({ page }) => {
+  await neueKlasse(page, { demo: false });
+  const L = await page.evaluate(() =>
+    legMigration({ titel: { stark: "Super!", ziele: "" }, zeigen: { faecher: false, verlauf: true }, selbst: ["Ich lese gern."] })
+  );
+  const b = Object.fromEntries(L.bloecke.map((x) => [x.typ, x]));
+  expect(L.bloecke.map((x) => x.typ)).toEqual(["pers", "stark", "ueben", "faecher", "selbst", "ziele", "vereinb", "unterschrift", "verlauf"]);
+  expect(b.stark.titel).toBe("Super!");
+  expect(b.ziele.titel).toBe("");
+  expect(b.ueben.titel).toBe("Daran arbeitest du noch");
+  expect(b.faecher.an).toBe(false);
+  expect(b.verlauf.an).toBe(true);
+  expect(L.selbst).toEqual(["Ich lese gern."]);
+  expect(L.titel).toBeUndefined();
+  // Ungültige Abschnitte und Werte werden aussortiert
+  const M = await page.evaluate(() => legMigration({ bloecke: [{ typ: "xss" }, { typ: "frei", text: 5, linien: 99 }, { typ: "stark" }, { typ: "stark" }] }));
+  expect(M.bloecke.filter((x) => x.typ === "stark")).toHaveLength(1);
+  expect(M.bloecke.find((x) => x.typ === "frei")).toMatchObject({ text: "", linien: 6 });
+  expect(M.bloecke.some((x) => x.typ === "xss")).toBe(false);
+});
+
+test("Druck: alle Dokumente der Beispielklasse sind vollständig und ergeben ein PDF", async ({ page }) => {
+  await neueKlasse(page);
+  const { html, kinder } = await page.evaluate(() => {
+    S.meta.schule = "Grundschule Musterstadt";
+    Object.assign(S.meta.kopf, { anschrift: "Schulstraße 1", fuss: "Vertraulich", leg: true, bericht: true, liste: true });
+    S.meta.leg.bloecke.push({ typ: "frei", an: true, titel: "Termin", text: "{Vorname} ({Jgst}) · {Schuljahr} · {Ziele}", linien: 2, id: neueId() });
+    S.meta.leg.bloecke.find((b) => b.typ === "verlauf").an = true;
+    UI.fgFach = S.raster[0].fach; UI.fgEb = 2;
+    const ks = sortedKids("alle");
+    return {
+      kinder: ks.length,
+      html: ks.map(legSeite).join("") + ks.map(berichtSeite).join("") + notenSeite() + asvBemerkungSeite("alle") + foerderSeite(),
+    };
+  });
+  expect(kinder).toBeGreaterThan(0);
+  expect(html).not.toMatch(/undefined|NaN|\[object /);
+  expect(html).not.toMatch(/\{(Vorname|Name|Jgst|Schuljahr|Ziele|Fach|Liste|Kompetenz)\}/);
+  // LEG mit Lernverlauf: zwei Seiten je Kind, dazu ein Bericht je Kind und drei Listen
+  expect((html.match(/<section class="page/g) || []).length).toBe(kinder * 3 + 3);
+  expect((html.match(/class="pfuss"/g) || []).length).toBe(kinder * 3 + 3);
+
+  await page.evaluate((h) => { document.querySelector("#print-root").innerHTML = h; }, html);
+  await page.emulateMedia({ media: "print" });
+  const pdf = await page.pdf({ format: "A4" });
+  const seiten = (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) || []).length;
+  expect(seiten).toBeGreaterThanOrEqual(kinder * 3 + 3);
+});
