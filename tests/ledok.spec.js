@@ -478,6 +478,55 @@ test("Dokumente: LEG-Vorlagen aus Dateien werden bereinigt", async ({ page }) =>
   expect(r).toMatchObject({ logo: "", anschrift: "A" });
 });
 
+test("Förderplan: anlegen, aus dem LEG-Bogen füllen, drucken und mit dem Kind löschen", async ({ page }) => {
+  await neueKlasse(page);
+  await page.evaluate(() => { window.print = () => { window.__druck = document.querySelector("#print-root").innerHTML; }; });
+  await page.click('nav.tabs [data-v="kind"]');
+  await page.click('[data-act="expTab"][data-v="foerder"]');
+  await page.click('[data-act="fpNeu"]');
+  const kid = await page.evaluate(() => UI.kind);
+  await page.fill('[data-fp="zeitraum"]', "2. Halbjahr");
+  await page.fill('[data-fp="text"][data-i="0"]', "Liest kurze Texte flüssig vor.");
+  await page.fill('[data-fp="massnahmen"][data-i="0"]', "Lesepatenschaft");
+  await page.selectOption('[data-fp="stand"][data-i="0"]', "teilweise");
+  const f = await page.evaluate((k) => S.foerderplaene[k], kid);
+  expect(f.zeitraum).toBe("2. Halbjahr");
+  expect(f.ziele[0]).toMatchObject({ text: "Liest kurze Texte flüssig vor.", massnahmen: "Lesepatenschaft", stand: "teilweise" });
+  await expect(page.locator(".preview")).toContainText("Lesepatenschaft");
+
+  // LEG-Ziele kommen dazu, ohne vorhandene zu doppeln
+  await page.evaluate((k) => { const kd = kidById(k); const t = S.texte[textKey(kd)] = S.texte[textKey(kd)] || {}; t.leg = { ...(t.leg || {}), ziele: ["Schreibt Wörter lautgetreu.", "Liest kurze Texte flüssig vor."] }; }, kid);
+  const vorher = await page.evaluate((k) => legInhalt(kidById(k)).ziele, kid);
+  await page.click('[data-act="fpAusLeg"]');
+  const ziele = await page.evaluate((k) => S.foerderplaene[k].ziele.map((z) => z.text), kid);
+  expect(vorher).toHaveLength(2);
+  for (const z of vorher) expect(ziele.filter((t) => t === z)).toHaveLength(1);
+
+  await page.click('[data-act="printOne"][data-v="foerder"]');
+  await expect.poll(() => page.evaluate(() => window.__druck || "")).toContain("Förderplan");
+  expect(await page.evaluate(() => window.__druck)).toContain("Lesepatenschaft");
+
+  // Sammeldruck unter Export enthält nur Kinder mit Plan
+  const n = await page.evaluate(() => { window.__druck = ""; ACT.printFoerderAlle(); return document.querySelectorAll("#print-root section.page").length; });
+  expect(n).toBe(1);
+
+  await page.evaluate((k) => kindLoeschen(k), kid);
+  expect(await page.evaluate((k) => k in S.foerderplaene, kid)).toBe(false);
+});
+
+test("Förderplan: Daten aus Dateien werden bereinigt", async ({ page }) => {
+  await neueKlasse(page, { demo: false });
+  const r = await page.evaluate(() => fpBereinigen({
+    "<x>": { ziele: [] },
+    a1: { zeitraum: 5, anlass: "A", ziele: [{ id: "<b>", text: "Z", stand: "kaputt", bis: "morgen" }, "quatsch"] },
+  }));
+  expect(Object.keys(r)).toEqual(["a1"]);
+  expect(r.a1.zeitraum).toBe("");
+  expect(r.a1.ziele).toHaveLength(1);
+  expect(r.a1.ziele[0]).toMatchObject({ text: "Z", stand: "offen", bis: "" });
+  expect(r.a1.ziele[0].id).toMatch(/^[0-9a-f]{16}$/);
+});
+
 test("LEG-Planer: Termine vergeben, Einladungen und Terminliste drucken", async ({ page }) => {
   await neueKlasse(page);
   await page.click('nav.tabs [data-v="export"]');
