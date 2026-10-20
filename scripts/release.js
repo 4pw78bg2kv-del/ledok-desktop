@@ -71,6 +71,8 @@ if (probe) { console.log("Probelauf: nichts geändert."); process.exit(0); }
 
 fs.writeFileSync(HTML, html);
 fs.writeFileSync(CL, cl);
+// Die Versionszeile steht im App-Skript, also ändert sich dessen CSP-Hash mit
+execFileSync(process.execPath, [path.join(__dirname, "csp-hash.js")], { cwd: root, stdio: "inherit" });
 execFileSync(process.execPath, [path.join(__dirname, "version-sync.js")], { cwd: root, stdio: "inherit" });
 
 const rueckgaengig = () => { try { git("checkout", "--", "app/LeDoK.html", "CHANGELOG.md", "package.json"); } catch (e) {} };
