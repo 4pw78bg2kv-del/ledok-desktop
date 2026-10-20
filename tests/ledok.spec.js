@@ -730,3 +730,200 @@ test("Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausb
   await page.click("#tagesbalkenAn");
   await expect(balken).toBeVisible();
 });
+
+async function askAntwort(page, text) {
+  await page.fill("#atx", text);
+  await page.click('#atf button[type="submit"]');
+}
+
+test("Sammelliste: Geld einsammeln, Zahlungsbriefe mit GiroCode und Kassenbuch @handy", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="listeNeu"][data-v="geld"]');
+  await askAntwort(page, "Kopiergeld");
+  await askAntwort(page, "3,50");
+  const l = await page.evaluate(() => listeVon(UI.liste));
+  expect(l).toMatchObject({ titel: "Kopiergeld", betrag: 350, kasse: true });
+  const [a, b, c] = await page.evaluate(() => sortedKids("alle").slice(0, 3).map((k) => k.id));
+  await page.click(`[data-act="lZahl"][data-k="${a}"][data-w="bar"]`);
+  await page.click(`[data-act="lZahl"][data-k="${b}"][data-w="ue"]`);
+  await page.click(`[data-act="lZahl"][data-k="${c}"][data-w="frei"]`);
+  await page.fill(`[data-chg="lBetrag"][data-k="${b}"]`, "4");
+  await page.locator(`[data-chg="lBetrag"][data-k="${b}"]`).dispatchEvent("change");
+  const stand = await page.evaluate(() => { const s = listeStand(listeVon(UI.liste)); return { ok: s.ok, n: s.n, ein: s.ein }; });
+  expect(stand.ok).toBe(3);
+  expect(stand.ein).toBe(750);
+  await expect(page.locator(".lwrap")).toContainText("eingenommen 7,50 €");
+  // Die Einnahmen stehen im Kassenbuch, der Saldo läuft mit
+  const zeile = await page.evaluate(() => kassenbuch().find((x) => x.text === "Sammelliste: Kopiergeld"));
+  expect(zeile.b).toBe(750);
+
+  // Zahlungsbriefe nur für Kinder, die noch offen sind, jeweils mit GiroCode
+  await page.click('[data-act="printZahlbrief"]');
+  const seiten = page.locator(".druckprev section.page");
+  await expect(seiten).toHaveCount(stand.n - 3);
+  await expect(page.locator(".druckprev svg.qr")).toHaveCount(stand.n - 3);
+  const html = await page.locator(".druckprev").innerHTML();
+  expect(html).not.toMatch(/undefined|NaN|\{(Vorname|Zweck|Betrag|Frist|Lehrkraft)\}/);
+  expect(html).toContain("3,50 €");
+  await page.click('#dlg [data-act="closeDlg"]');
+  const epc = await page.evaluate(() => epcText(350, "Kopiergeld, 3a, Ben (S01)").split("\n"));
+  expect(epc.slice(0, 4)).toEqual(["BCD", "002", "1", "SCT"]);
+  expect(epc[6]).toBe("DE02120300000000202051");
+  expect(epc[7]).toBe("EUR3.50");
+  expect(epc[10]).toBe("Kopiergeld, 3a, Ben (S01)");
+
+  // Verlässt ein Kind die Klasse, bleibt sein Geld in der Summe
+  await page.evaluate((k) => kindLoeschen(k), a);
+  const nachher = await page.evaluate(() => { const l = S.listen.find((x) => x.titel === "Kopiergeld"); return { ein: listeStand(l).ein, alt: l.alt }; });
+  expect(nachher).toEqual({ ein: 750, alt: 350 });
+});
+
+test("Sammelliste: Liste zum Abhaken und offene Listen auf „Heute“", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="listeNeu"][data-v="haken"]');
+  await askAntwort(page, "Zeugnis unterschrieben");
+  const k = await page.evaluate(() => sortedKids("alle")[0].id);
+  await page.check(`[data-chg="lHaken"][data-k="${k}"]`);
+  const l = await page.evaluate(() => listeVon(UI.liste));
+  expect(l.betrag).toBe(0);
+  expect(l.st[k]).toMatchObject({ w: "ok", b: 0 });
+  expect(await page.evaluate(() => kassenbuch().some((x) => x.text.includes("Zeugnis")))).toBe(false);
+  await page.click('nav.tabs [data-v="heute"]');
+  await expect(page.locator(".hcard", { hasText: "Offene Listen" })).toContainText("Zeugnis unterschrieben");
+  await page.click('[data-act="goListe"]:has-text("Zeugnis unterschrieben")');
+  await expect(page.locator(".lwrap h3")).toHaveText("Zeugnis unterschrieben");
+});
+
+test("Klassenkasse: Bankverbindung prüfen, Beträge lesen und Buchungen mit Saldo", async ({ page }) => {
+  await neueKlasse(page);
+  const r = await page.evaluate(() => ({
+    cent: ["8,50", "8.5", "1.234,50 €", "12", "0,05", "abc", "-3", "1,234"].map(centAus),
+    iban: ["DE02 1203 0000 0000 2020 51", "de02120300000000202051", "DE02120300000000202052", "DE0212030000000020205", "AT611904300234573201"].map(ibanOk),
+    euro: [euro(123450), euro(-1890), euro(5)],
+  }));
+  expect(r.cent).toEqual([850, 850, 123450, 1200, 5, null, null, null]);
+  expect(r.iban).toEqual([true, true, false, false, true]);
+  expect(r.euro).toEqual(["1.234,50 €", "−18,90 €", "0,05 €"]);
+
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="kasse"]');
+  const saldo = () => page.evaluate(() => { const z = kassenbuch(); return z.length ? z[z.length - 1].saldo : 0; });
+  const vorher = await saldo();
+  await page.fill("#bD", "2026-10-20");
+  await page.fill("#bT", "Bastelmaterial");
+  await page.fill("#bB", "12,40");
+  await page.selectOption("#bA", "aus");
+  await page.click('[data-act="buchungNeu"]');
+  expect(await saldo()).toBe(vorher - 1240);
+  await expect(page.locator("main")).toContainText("Bastelmaterial");
+  // Eine ungültige IBAN wird angezeigt, der Zahlungsbrief kommt dann ohne GiroCode
+  await page.evaluate(() => { S.kasse.konto.iban = "DE00123"; });
+  expect(await page.evaluate(() => kontoOk())).toBe(false);
+  const brief = await page.evaluate(() => zahlbriefSeite(S.listen.find((l) => l.betrag > 0), sortedKids("alle")[0]));
+  expect(brief).not.toContain("<svg");
+});
+
+test("Fehltage: auf „Heute“ eintragen, Fokustag ohne fehlende Kinder, Übersicht und Datenprüfung", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00")); // ein Dienstag
+  await neueKlasse(page);
+  await page.click('nav.tabs button[data-v="heute"]');
+  const k = await page.evaluate(() => S.kinder.filter((k) => k.gruppe === "B" && !fehltagVon(k.id, today())).sort((a, b) => a.id.localeCompare(b.id))[0].id);
+  const fokus = page.locator(".hcard", { hasText: "Fokustag Dienstag" }).locator(".badge");
+  const vorher = await fokus.textContent();
+  await page.click(`#anwesenheit [data-k="${k}"]`);
+  await expect(page.locator(`#anwesenheit [data-k="${k}"]`)).toHaveClass(/fehlt/);
+  expect(await page.evaluate((k) => fehltagVon(k, today()), k)).toMatchObject({ ganz: true, ent: true });
+  const [, fertig, von] = /(\d+) von (\d+)/.exec(vorher);
+  await expect(fokus).toHaveText(`${fertig} von ${+von - 1} fertig`);
+
+  // Zweiter Klick: teilweise und unentschuldigt
+  await page.click(`#anwesenheit [data-k="${k}"]`);
+  await page.fill("#ftStd", "2");
+  await page.uncheck("#ftEnt");
+  await page.click('#ftf button[type="submit"]');
+  const summe = await page.evaluate((k) => fehlSumme(k), k);
+  expect(summe).toMatchObject({ n: 1, tage: 0, teil: 1, std: 2, stdU: 2 });
+
+  // Übersicht unter Listen → Fehltage
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="fehltage"]');
+  await expect(page.locator(".ftab")).toBeVisible();
+  // „Doch anwesend“ entfernt den Eintrag wieder
+  await page.evaluate((k) => fehltDialog(k, today()), k);
+  await page.click("#ftWeg");
+  expect(await page.evaluate((k) => fehltagVon(k, today()), k)).toBeNull();
+
+  // Datenprüfung findet Fehltage ohne Kind
+  await page.evaluate(() => { S.fehltage.push({ k: "X99", d: "2026-10-19", ganz: true, ent: true, std: 0, n: "", sj: S.meta.schuljahr, hj: 1 }); });
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="daten"]');
+  await page.click('[data-act="datenPruefen"]');
+  await expect(page.locator("dialog[open]")).toContainText("1 Fehltage zu Kindern");
+  await page.click("#msgJa");
+  await expect.poll(() => page.evaluate(() => S.fehltage.some((f) => f.k === "X99"))).toBe(false);
+});
+
+test("Stundenplan: Fächer erkennen, „Heute“ zeigt den Tag und führt zur Beobachtung", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00")); // ein Dienstag
+  await neueKlasse(page);
+  const r = await page.evaluate(() => ["Mathe", "mathematik", "Deu", "Religion", "", "Ma"].map(spFach));
+  expect(r.slice(0, 3)).toEqual(["Mathematik", "Mathematik", "Deutsch"]);
+  expect(r[3]).toBeNull();
+  expect(r[4]).toBeNull();
+  await page.click('nav.tabs button[data-v="heute"]');
+  const karte = page.locator("#stundenplanHeute");
+  await expect(karte).toContainText("Stundenplan Dienstag");
+  const fach = await karte.locator('[data-act="goFach"]').first().getAttribute("data-v");
+  await karte.locator('[data-act="goFach"]').first().click();
+  expect(await page.evaluate(() => ({ tab: UI.tab, mode: UI.mode, fach: UI.fach }))).toEqual({ tab: "erfassen", mode: "beob", fach });
+
+  // Eintragen in den Einstellungen
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="stundenplan"]');
+  const feld = page.locator('[data-chg="spFeld"][data-t="B"][data-i="0"]');
+  await feld.fill("Mathe");
+  await feld.dispatchEvent("change");
+  await expect(feld).toHaveClass(/spok/);
+  expect(await page.evaluate(() => S.meta.stundenplan.B[0])).toBe("Mathe");
+});
+
+test("Klassenorganisation: Daten aus Dateien werden bereinigt", async ({ page }) => {
+  await neueKlasse(page, { demo: false });
+  const r = await page.evaluate(() => ({
+    l: listenBereinigen([null, "x", { id: "<x>", titel: 5, betrag: -3, st: { "<b>": { w: "bar", b: 100 }, a1: { w: "bar", b: "12.5" }, a2: { w: "quatsch" } }, kasse: false, frist: "morgen" }]),
+    k: kasseBereinigen({ konto: { inhaber: 7, iban: "DE02120300000000202051" }, buchungen: [{ b: 1.5 }, { b: 2e9 }, { id: "b1", d: "2026-10-01", text: "Spende", b: 500 }] }),
+    f: fehltageBereinigen([{ k: "a1", d: "2026-03-02" }, { k: "a1", d: "2026-03-02", ganz: false }, { k: "<x>", d: "2026-03-03" }, { k: "a2", d: "gestern" }, { k: "a2", d: "2026-10-05", ganz: false, std: 99, ent: false }]),
+    s: stundenplanBereinigen({ n: 20, zeiten: ["08:00", "8 Uhr"], A: ["  Deutsch ", 5], B: "kaputt" }),
+  }));
+  expect(r.l).toHaveLength(1);
+  expect(r.l[0]).toMatchObject({ titel: "Liste", betrag: 0, kasse: false, frist: "", alt: 0, st: { a1: { w: "bar", b: 0, d: "" } } });
+  expect(r.l[0].id).toMatch(/^[0-9a-f]{16}$/);
+  expect(r.k.konto).toEqual({ inhaber: "", iban: "DE02120300000000202051", bic: "" });
+  expect(r.k.buchungen).toEqual([{ id: "b1", d: "2026-10-01", text: "Spende", b: 500, beleg: "" }]);
+  expect(r.f).toEqual([
+    { k: "a1", d: "2026-03-02", ganz: true, ent: true, std: 0, n: "", sj: "2025/26", hj: 2 },
+    { k: "a2", d: "2026-10-05", ganz: false, ent: false, std: 10, n: "", sj: "2026/27", hj: 1 },
+  ]);
+  expect(r.s.n).toBe(8);
+  expect(r.s.zeiten.slice(0, 2)).toEqual(["08:00", ""]);
+  expect(r.s.A.slice(0, 2)).toEqual(["Deutsch", ""]);
+  expect(r.s.B).toEqual(Array(8).fill(""));
+});
+
+test("GiroCode: QR-Code hat Größe, Suchmuster, Taktlinien und Formatinformation an der richtigen Stelle", async ({ page }) => {
+  await page.goto(URL);
+  const r = await page.evaluate(() => [1, 40, 150, 330].map((n) => {
+    const Q = qrMatrix("x".repeat(n)), N = Q.length, v = (N - 17) / 4;
+    const finder = (r0, c0) => [0, 1, 2, 3, 4, 5, 6].every((i) => [0, 1, 2, 3, 4, 5, 6].every((j) => Q[r0 + i][c0 + j] === (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4))));
+    const takt = [...Array(N - 16).keys()].every((i) => Q[6][i + 8] === ((i + 8) % 2 === 0) && Q[i + 8][6] === ((i + 8) % 2 === 0));
+    // Beide Kopien der Formatinformation stimmen überein
+    const f1 = [0, 1, 2, 3, 4, 5, 7, 8].map((r) => Q[r][8]).concat([7, 5, 4, 3, 2, 1, 0].map((c) => Q[8][c]));
+    const f2 = [...Array(8).keys()].map((i) => Q[8][N - 1 - i]).concat([...Array(7).keys()].map((i) => Q[N - 7 + i][8]));
+    return { v, ganz: Number.isInteger(v), finder: finder(0, 0) && finder(0, N - 7) && finder(N - 7, 0), takt, format: f1.join() === f2.join(), dunkel: Q[N - 8][8] };
+  }));
+  expect(r.map((x) => x.v)).toEqual([1, 3, 8, 13]); // Kapazität bei Fehlerkorrektur M
+  for (const x of r) expect(x).toMatchObject({ ganz: true, finder: true, takt: true, format: true, dunkel: true });
+  expect(await page.evaluate(() => qrMatrix("x".repeat(900)))).toBeNull();
+});
