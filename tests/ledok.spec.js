@@ -635,3 +635,20 @@ test("Dokumente: Einladungstext anpassen mit Vorschau", async ({ page }) => {
   await page.click("#msgJa");
   expect(await page.evaluate(() => S.meta.einladung.rueck)).toBe(true);
 });
+
+test("Desktop mit älterem Installer: Versionsdialog ohne automatische Suche", async ({ page }) => {
+  // Programm-Hülle vor der automatischen Update-Suche: nur Update per Datei
+  await page.addInitScript(() => {
+    window.ledokDesktop = {
+      info: async () => ({ shell: "1.0.0", os: "win32", version: "1.0.0", mitgeliefert: "1.0.0", aktualisiert: false, updateKey: "CE5F-1656-01AF" }),
+      datenLaden: () => null, datenSpeichern: async () => ({ ok: true }), datenLoeschen: async () => ({ ok: true }),
+      sicherung: async () => ({ ok: true }), sicherungenOeffnen: async () => "",
+      updatePruefen: async () => ({ ok: false, fehler: "–" }), updateInstallieren: async () => ({ ok: false }), updateZuruecksetzen: async () => ({ ok: true }),
+    };
+  });
+  await page.goto(URL);
+  await page.click("#verTag");
+  await expect(page.locator("#dlg")).toContainText("kommt mit dem nächsten Installer");
+  await expect(page.locator("#updWahl")).toBeEnabled();
+  await expect(page.locator("#updSuchen")).toHaveCount(0);
+});
