@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-oLagDXMuUTuvSWOXnWY9bRYJX2o52Rc48PbKGT+Zbig='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-JcopIKcYz6BBT4RgPpmsYuaygPP8Mla5NBYkMvI2psA='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -247,6 +247,8 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .fpziel{border:1px solid var(--line);border-radius:10px;padding:.6rem .7rem;background:var(--surface)}
 .legedit2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
 @media (max-width:700px){.legedit2{grid-template-columns:1fr}}
+.page .schnitt{margin:22px 0 8px;border-top:1.5px dashed #888;padding-top:3px;font-size:8.5pt;color:#666;font-family:system-ui,Arial,sans-serif}
+.page .rueck p{margin:6px 0}
 .page .pfuss{margin-top:18px;padding-top:4px;border-top:1px solid #bbb;font-size:8pt;color:#666;font-family:system-ui,Arial,sans-serif;text-align:center}
 /* Einstellungen → Dokumente */
 .dokwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:1.2rem;align-items:start}
@@ -2719,6 +2721,9 @@ const DEFAULT_LEG = ()=>({
   bloecke:LEG_STANDARD.map(legStandardBlock),
   selbst:["Ich halte mich an unsere Regeln.","Ich helfe anderen.","Ich arbeite ruhig und bleibe dran.","Ich arbeite ordentlich."]
 });
+const DEFAULT_EINLADUNG = ()=>({titel:"Einladung zum Lernentwicklungsgespräch",
+  text:"Liebe Eltern von {Vorname},\n\nich möchte mit Ihnen und {Vorname} über die Lernentwicklung im {Halbjahr}. Halbjahr sprechen. Dazu lade ich Sie herzlich ein:\n\n{Termin}\n\nDas Gespräch dauert etwa 20 Minuten. {Vorname} ist dabei und erzählt selbst, was schon gut gelingt.\n\nMit freundlichen Grüßen\n{Lehrkraft}",
+  rueck:true});
 const DEFAULT_KOPF = ()=>({logo:"",anschrift:"",fuss:"",leg:true,bericht:true,liste:false});
 const LOGO_RE=/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 const legBlock=(typ,L=S.meta.leg)=>L.bloecke.find(b=>b.typ===typ);
@@ -2771,7 +2776,7 @@ Regeln: wertschätzend und beobachtungsnah formulieren, keine Diagnosen, keine S
 function defaultState(){
   return {
     version:1,
-    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
+    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
     kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[], foerderplaene:{}
   };
 }
@@ -2988,6 +2993,7 @@ function migrate(st){
   for(const r of st.raster)if(!st.meta.faecher.some(f=>f.name===r.fach))st.meta.faecher.push({name:r.fach,kurz:r.fach,prefix:"X",aktiv:true,benotet:true});
   st.meta.leg=legMigration(st.meta.leg);
   st.meta.kopf=kopfBereinigen(st.meta.kopf);
+  {const e=Object.assign(DEFAULT_EINLADUNG(),st.meta.einladung||{});for(const f of ["titel","text"])if(typeof e[f]!=="string")e[f]=DEFAULT_EINLADUNG()[f];e.rueck=!!e.rueck;st.meta.einladung=e}
   st.meta.legVorlagen=(Array.isArray(st.meta.legVorlagen)?st.meta.legVorlagen:[]).filter(v=>v&&typeof v==="object").map(legVorlageBereinigen);
   st.proben=Array.isArray(st.proben)?st.proben:[];
   st.kinder=st.kinder||[];st.kinder.forEach(k=>{if(k.klasse==null)k.klasse="";if(!Array.isArray(k.faecherNur))k.faecherNur=[];if(!Array.isArray(k.begabt))k.begabt=[]});st.notizen=st.notizen||[];st.foerderplaene=fpBereinigen(st.foerderplaene);st.raster=st.raster||d.raster;st.eintraege=st.eintraege||[];st.texte=st.texte||{};
@@ -3294,7 +3300,7 @@ function dokVorschau(){
   const k=kidById(UI.dokKind)||sortedKids("alle")[0];
   if(!k)return `<p class="muted">Lege zuerst Kinder an, dann siehst du hier die Vorschau.</p>`;
   const kid=UI.showNames?k:{...k,vorname:k.id,nachname:"",geburt:""};
-  return UI.dokArt==="bericht"?berichtSeite(kid):legSeite(kid,legBearbeitet());
+  return UI.dokArt==="bericht"?berichtSeite(kid):UI.dokArt==="einladung"?einladungSeite(kid):legSeite(kid,legBearbeitet());
 }
 /* Logo verkleinern (höchstens 600 × 240 Pixel), damit die Daten klein bleiben */
 function logoVerkleinern(file){
@@ -3305,10 +3311,13 @@ function logoVerkleinern(file){
     img.src=r.result};r.readAsDataURL(file)});
 }
 /* Platzhalter in Freitext-Abschnitten: {Vorname} {Name} {Klasse} {Jgst} {Schule} {Schuljahr} {Halbjahr} {Lehrkraft} {Datum} {Stärken} {Übungsfelder} {Ziele} */
-const PLATZHALTER=["Vorname","Name","Klasse","Jgst","Schule","Schuljahr","Halbjahr","Lehrkraft","Datum","Stärken","Übungsfelder","Ziele"];
+const PLATZHALTER=["Vorname","Name","Klasse","Jgst","Schule","Schuljahr","Halbjahr","Lehrkraft","Datum","Termin","Stärken","Übungsfelder","Ziele"];
+/* LEG-Termin je Kind und Halbjahr: S.texte[textKey(kid)].termin = {d:"JJJJ-MM-TT", z:"HH:MM", ok:geführt} */
+const terminVon=kid=>{const t=S.texte[textKey(kid)];return t&&t.termin&&DAT_RE.test(t.termin.d||"")?t.termin:null};
+const terminText=tm=>tm?`${new Date(tm.d+"T12:00").toLocaleDateString("de-DE",{weekday:"long"})}, ${fmtDate(tm.d)}${tm.z?`, um ${tm.z} Uhr`:""}`:"";
 function platzhalterFuellen(text,kid,P,d){
   const m=S.meta,w={Vorname:kid.vorname||kid.id,Name:[kid.vorname||kid.id,P.nachname||""].join(" ").trim(),Klasse:kid.klasse||m.klasse,Jgst:String(kid.jgst),Schule:m.schule,Schuljahr:m.schuljahr,Halbjahr:String(m.halbjahr),
-    Lehrkraft:m.lehrkraft,Datum:fmtDate(today()),"Stärken":joinList(d.stark),"Übungsfelder":joinList(d.ueben),Ziele:joinList(d.ziele)};
+    Lehrkraft:m.lehrkraft,Datum:fmtDate(today()),Termin:terminText(terminVon(kid))||"am ______________ um ________ Uhr","Stärken":joinList(d.stark),"Übungsfelder":joinList(d.ueben),Ziele:joinList(d.ziele)};
   return String(text).replace(/\{([^{}]+)\}/g,(x,k)=>w[k]!=null?w[k]:x);
 }
 function legSeite(kid,L){
@@ -3341,7 +3350,7 @@ function legSeite(kid,L){
     if((b.typ==="stark"||b.typ==="ueben")&&n&&(n.typ==="stark"||n.typ==="ueben")){html+=`<div class="two"><div>${teil(b)}</div><div>${teil(n)}</div></div>`;i++}
     else html+=teil(b)}
   return `<section class="page leg">${kopf("Lernentwicklungsgespräch","leg")}
-  <h2>${name}</h2><div style="font-size:10pt;color:#555">${geb}Jahrgangsstufe ${kid.jgst}${kid.klasse?" · Klasse "+esc(kid.klasse):""} · Gespräch am ____________</div>
+  <h2>${name}</h2><div style="font-size:10pt;color:#555">${geb}Jahrgangsstufe ${kid.jgst}${kid.klasse?" · Klasse "+esc(kid.klasse):""} · Gespräch am ${terminVon(kid)?fmtDate(terminVon(kid).d):"____________"}</div>
   ${html}${fuss("leg")}
   </section>${legAn("verlauf",L)?verlaufSeite(kid):""}`;
 }
@@ -3385,6 +3394,38 @@ function fpFeld(el){
   const k=el.dataset.fp,z=el.dataset.i!=null?f.ziele[+el.dataset.i]:null;
   if(z)z[k]=k==="bis"?(DAT_RE.test(el.value)?el.value:""):el.value;else if(["zeitraum","anlass","beteiligt"].includes(k))f[k]=el.value;
   f.geaendert=new Date().toISOString();save();
+}
+function einladungSeite(kid){
+  const E=S.meta.einladung,t=platzhalterFuellen(E.text,kid,kid,legInhalt(kid)).trim(),name=esc(kid.vorname||kid.id);
+  return `<section class="page einl">${kopf("Einladung","leg")}
+  <div style="text-align:right;font-size:10pt;color:#555;margin:4px 0 14px">${fmtDate(today())}</div>
+  ${E.titel.trim()?`<h2>${esc(E.titel)}</h2>`:""}
+  ${t.split(/\n\s*\n/).map(p=>`<p class="bp">${esc(p).replace(/\n/g,"<br>")}</p>`).join("")}
+  ${E.rueck?`<div class="schnitt">✂ bitte abtrennen und bis ______________ zurückgeben</div>
+  <div class="rueck"><b>Rückmeldung zum Lernentwicklungsgespräch von ${name}</b>
+   <p>☐ Wir kommen zum vorgeschlagenen Termin${terminVon(kid)?` (${esc(terminText(terminVon(kid)))})`:""}.</p>
+   <p>☐ Wir können nicht und bitten um einen anderen Termin: ____________________________</p>
+   <div class="sig" style="grid-template-columns:1fr 1fr"><div>Datum</div><div>Unterschrift Erziehungsberechtigte</div></div></div>`:""}
+  ${fuss("leg")}</section>`;
+}
+function terminSeite(kids){
+  const zeilen=kids.map(k=>({k,tm:terminVon(k)})).sort((a,b)=>(a.tm?a.tm.d+(a.tm.z||""):"~").localeCompare(b.tm?b.tm.d+(b.tm.z||""):"~")||a.k.id.localeCompare(b.k.id));
+  return `<section class="page">${kopf("LEG-Termine")}<h2>Termine für die Lernentwicklungsgespräche</h2>
+  <p style="font-size:9.5pt">${S.meta.halbjahr}. Halbjahr ${esc(S.meta.schuljahr)} · ${zeilen.filter(x=>x.tm).length} von ${zeilen.length} Terminen vergeben</p>
+  <table style="font-size:10pt"><tr><th style="width:30%">Tag</th><th style="width:14%">Uhrzeit</th><th>Kind</th><th style="width:12%">geführt</th></tr>
+  ${zeilen.map(({k,tm})=>`<tr><td>${tm?esc(new Date(tm.d+"T12:00").toLocaleDateString("de-DE",{weekday:"short"}))+" "+fmtDate(tm.d):"–"}</td><td>${tm&&tm.z?esc(tm.z):"–"}</td><td>${kidLabel(k)} <span style="color:#666">(Jgst. ${k.jgst})</span></td><td style="text-align:center">${tm&&tm.ok?"✓":"☐"}</td></tr>`).join("")}</table>${fuss()}</section>`;
+}
+function legPlanerCard(){
+  const kids=sortedKids(UI.expJgst),n=kids.filter(terminVon).length,ok=kids.filter(k=>terminVon(k)&&terminVon(k).ok).length;
+  return `<div class="card stack"><div class="row"><h3 style="margin:0">LEG-Planer</h3><span class="small muted">${S.meta.halbjahr}. Halbjahr · ${n} von ${kids.length} Terminen vergeben · ${ok} geführt</span></div>
+   <p class="small" style="margin:0">Trage die Gesprächstermine ein. Daraus druckst du Einladungen für die Eltern und eine Terminliste; das Datum erscheint auch auf dem LEG-Bogen. Den Text der Einladung passt du unter <a href="#" data-act="tab" data-v="dokumente">Einstellungen → Dokumente</a> an.</p>
+   ${kids.length?`<div class="tw" style="max-height:46vh"><table class="edit"><tr><th>Kind</th><th>Datum</th><th>Uhrzeit</th><th class="num">geführt</th></tr>
+   ${kids.map(k=>{const tm=terminVon(k)||{};return `<tr><td>${kidLabel(k)} <span class="muted small">Jgst. ${k.jgst}</span></td>
+    <td><input type="date" value="${esc(tm.d||"")}" data-chg="termin" data-k="${esc(k.id)}" data-f="d" aria-label="Datum ${esc(k.id)}"></td>
+    <td><input type="time" value="${esc(tm.z||"")}" data-chg="termin" data-k="${esc(k.id)}" data-f="z" aria-label="Uhrzeit ${esc(k.id)}" ${tm.d?"":"disabled"}></td>
+    <td class="num"><input type="checkbox" ${tm.ok?"checked":""} data-chg="termin" data-k="${esc(k.id)}" data-f="ok" aria-label="Gespräch mit ${esc(k.id)} geführt" ${tm.d?"":"disabled"}></td></tr>`}).join("")}</table></div>`:`<p class="small muted">Noch keine Kinder.</p>`}
+   <div class="row"><button class="btn" data-act="terminFolge" ${kids.length?"":"disabled"}>Termine fortlaufend vergeben …</button><span class="spacer"></span>
+    <button class="btn" data-act="printTermine" ${kids.length?"":"disabled"}>Terminliste drucken</button><button class="btn primary" data-act="printEinladung" ${kids.length?"":"disabled"}>Einladungen drucken</button></div></div>`;
 }
 function verlaufSeite(kid){
   return `<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – Lernverlauf</h2>
@@ -4055,6 +4096,7 @@ export(){
    <div class="card${istFL()?" hidden-fl":""}"><h3 style="margin-top:0">Förderpläne</h3><p class="small">Alle Förderpläne der gewählten Kinder (${sortedKids(UI.expJgst).filter(fpVon).length} vorhanden). Anlegen und bearbeiten unter „Kind → Förderplan“.</p><button class="btn primary" data-act="printFoerderAlle">Förderpläne drucken</button></div>
   </div>
   <div class="note">Notengrenzen (Fachwert ab … ergibt Note): ${S.meta.notenGrenzen.map((g,i)=>`<label class="row small" style="display:inline-flex;gap:.25rem;margin-right:.6rem">${i+1}: <input type="number" step="0.1" min="1" max="9" value="${g}" style="width:4.2rem" data-chg="grenze" data-i="${i}"></label>`).join("")} darunter 6. Bitte im Kollegium abstimmen.</div>
+  ${istFL()?"":legPlanerCard()}
   ${foerderCard()}
   ${kiCard()}</div>`;
 },
@@ -4120,7 +4162,7 @@ dokumente(){
      ${b.typ==="frei"?`<textarea rows="3" data-bind="${pfad}.text" placeholder="z. B. Liebe Eltern von {Vorname}, …" aria-label="Text des Abschnitts">${esc(b.text)}</textarea>
       <label class="row small" style="gap:.4rem">Schreiblinien darunter <select data-bind="${pfad}.linien" data-type="num" data-rerender>${[0,1,2,3,4,5,6].map(x=>`<option ${b.linien===x?"selected":""}>${x}</option>`).join("")}</select></label>`:""}
      ${b.typ==="selbst"?`<label class="f small">Sätze (ein Satz pro Zeile, das Kind kreuzt 😀 🙂 😕 an)<textarea rows="4" data-chg="legSelbst">${esc(L.selbst.join("\n"))}</textarea></label>`:""}</li>`};
-  const kids=sortedKids("alle"),kid=kidById(UI.dokKind)||kids[0],art=UI.dokArt==="bericht"?"bericht":"leg";
+  const kids=sortedKids("alle"),kid=kidById(UI.dokKind)||kids[0],art=["bericht","einladung"].includes(UI.dokArt)?UI.dokArt:"leg";
   return `<div class="stack"><h2>Dokumente</h2>
   <p class="muted" style="margin:0">Hier legst du fest, wie LEG-Bögen, Berichte und Listen gedruckt aussehen. Die Inhalte je Kind bearbeitest du unter „Kind“.</p>
   <div class="dokwrap"><div class="stack dokedit">
@@ -4143,8 +4185,13 @@ dokumente(){
    <ol class="dabslist">${L.bloecke.map(abschnitt).join("")}</ol>
    <div class="note small">Platzhalter für Freitexte: ${PLATZHALTER.map(x=>`<code>{${x}}</code>`).join(" ")}<br>Beispiel: „Liebe Eltern, am {Datum} sprechen wir über die Lernentwicklung von {Vorname}.“</div>
    <div class="row"><button class="btn" data-act="legFrei">+ Freitext-Abschnitt</button><span class="spacer"></span><button class="btn ghost" data-act="legTitelReset">Aufbau zurücksetzen</button></div></div>
+  <div class="card stack"><h3 style="margin:0">Einladung zum LEG</h3>
+   <p class="small muted" style="margin:0">Brief an die Eltern, gedruckt im <a href="#" data-act="tab" data-v="export">Sammelexport → LEG-Planer</a>. Briefkopf und Fußzeile wie beim LEG-Bogen. {Termin} wird durch Tag, Datum und Uhrzeit ersetzt.</p>
+   <label class="f">Überschrift<input type="text" value="${esc(S.meta.einladung.titel)}" data-bind="meta.einladung.titel"></label>
+   <label class="f">Text (Leerzeile = neuer Absatz)<textarea rows="9" data-bind="meta.einladung.text">${esc(S.meta.einladung.text)}</textarea></label>
+   <div class="row"><label class="row small" style="gap:.4rem"><input type="checkbox" ${S.meta.einladung.rueck?"checked":""} data-bind="meta.einladung.rueck" data-rerender> Abschnitt zum Zurückgeben anhängen</label><span class="spacer"></span><button class="btn ghost" data-act="einladungReset">Text zurücksetzen</button></div></div>
   </div>
-  <div class="dokprev"><div class="row" style="margin-bottom:.6rem"><div class="seg">${[["leg","LEG-Bogen"],["bericht","Bericht"]].map(([k,l])=>`<button class="${art===k?"on":""}" data-act="dokArt" data-v="${k}">${l}</button>`).join("")}</div><span class="spacer"></span>
+  <div class="dokprev"><div class="row" style="margin-bottom:.6rem"><div class="seg">${[["leg","LEG-Bogen"],["bericht","Bericht"],["einladung","Einladung"]].map(([k,l])=>`<button class="${art===k?"on":""}" data-act="dokArt" data-v="${k}">${l}</button>`).join("")}</div><span class="spacer"></span>
    ${kids.length?`<label class="row small" style="gap:.4rem">Kind <select data-chg="dokKind">${kids.map(k=>`<option value="${esc(k.id)}" ${k===kid?"selected":""}>${esc(UI.showNames&&k.vorname?kurzName(k):k.id)}</option>`).join("")}</select></label>`:""}</div>
    <div class="preview" id="dokPrev">${dokVorschau()}</div></div></div></div>`;
 },
@@ -5642,13 +5689,14 @@ const ACT = {
   vFach:a=>{UI.vFach=a.dataset.v;render()},
   printVerlauf:()=>{const kid=kidById(UI.kind);drucke(verlaufSeite(kid)+(UI.vMode==="thema"?`<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – ${esc(UI.vFach==="ASV"?"Arbeits- und Sozialverhalten":UI.vFach)} je Thema</h2><div class="minis" style="margin-top:8px">${verlaufThemen(kid,UI.vFach)}</div>${fuss()}</section>`:""))},
   legSave:()=>{legCollect(kidById(UI.kind));render();toast("LEG-Bogen gespeichert.",2000)},
-  legReset:async()=>{if(!await frage("Alle individuellen Änderungen am LEG-Bogen verwerfen?"))return;const kid=kidById(UI.kind),t=S.texte[textKey(kid)];if(t){delete t.leg;if(!t.bericht)delete S.texte[textKey(kid)]}save();render()},
+  legReset:async()=>{if(!await frage("Alle individuellen Änderungen am LEG-Bogen verwerfen?"))return;const kid=kidById(UI.kind),t=S.texte[textKey(kid)];if(t){delete t.leg;if(!t.bericht&&!t.termin)delete S.texte[textKey(kid)]}save();render()},
   legTitelReset:async()=>{if(await frage("Aufbau dieser LEG-Vorlage auf den Auslieferungszustand zurücksetzen? Überschriften, Reihenfolge und Sätze zur Selbsteinschätzung werden zurückgesetzt, eigene Freitext-Abschnitte entfernt.")){Object.assign(legBearbeitet(),DEFAULT_LEG());save();render()}},
   legAbschnitt:a=>{const L=legBearbeitet().bloecke,i=+a.dataset.i,b=L[i];if(!b)return;
     if(a.dataset.v==="weg"){L.splice(i,1)}
     else{const j=a.dataset.v==="hoch"?i-1:i+1;if(j<0||j>=L.length)return;L[i]=L[j];L[j]=b}
     save();const y=window.scrollY;render();window.scrollTo(0,y)},
   legFrei:()=>{legBearbeitet().bloecke.push({typ:"frei",an:true,titel:"Neuer Abschnitt",text:"",linien:2,id:neueId()});save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  einladungReset:async()=>{if(await frage("Überschrift und Text der Einladung auf den Standard zurücksetzen?")){S.meta.einladung=DEFAULT_EINLADUNG();save();render()}},
   legVNeu:async()=>{const name=await askText("Neue LEG-Vorlage","Name der Vorlage, z. B. „LEG Jgst. 1 kindgerecht“. Sie startet als Kopie der gerade gezeigten Vorlage.","");if(!name||!name.trim())return;
     const q=legBearbeitet(),v=legVorlageBereinigen({name,jgst:[],bloecke:JSON.parse(JSON.stringify(q.bloecke)),selbst:[...q.selbst]});
     S.meta.legVorlagen.push(v);UI.legV=v.id;save();render();toast(`Vorlage „${esc(v.name)}“ angelegt. Wähle unten, für welche Jahrgangsstufen sie gilt.`,4000)},
@@ -5667,6 +5715,21 @@ const ACT = {
     S.meta.legVorlagen.push(r.L);UI.legV=r.L.id;
     if(r.kopf&&(r.kopf.logo||r.kopf.anschrift.trim()||r.kopf.fuss.trim())&&await frage("Die Datei enthält auch einen Briefkopf (Logo, Anschrift, Fußzeile). Soll er deinen bisherigen Briefkopf ersetzen?",{ja:"Briefkopf übernehmen",nein:"Nur die Vorlage"}))S.meta.kopf=r.kopf;
     save();render();toast(`Vorlage „${esc(r.L.name)}“ übernommen. Wähle, für welche Jahrgangsstufen sie gilt.`,4500)},
+  printEinladung:async()=>{const alle=sortedKids(UI.expJgst);let kids=alle.filter(terminVon);
+    if(!kids.length){if(!await frage("Es sind noch keine Termine eingetragen. Einladungen mit leerer Terminzeile für alle Kinder drucken?",{ja:"Drucken"}))return;kids=alle}
+    else if(kids.length<alle.length&&!await frage(`${kids.length} von ${alle.length} Kindern haben einen Termin. Es werden nur deren Einladungen gedruckt.`,{ja:"Drucken"}))return;
+    drucke(kids.map(einladungSeite).join(""))},
+  printTermine:()=>drucke(terminSeite(sortedKids(UI.expJgst))),
+  terminFolge:()=>{const morgen=new Date(Date.now()+7*864e5),def=`${morgen.getFullYear()}-${pad(morgen.getMonth()+1)}-${pad(morgen.getDate())}`;
+    const d=dialog(`<form id="tff"><h2>Termine fortlaufend vergeben</h2><p class="small muted">Die Kinder bekommen nacheinander Termine an einem Tag – in der Reihenfolge der Liste (${esc(UI.expJgst==="alle"?"alle Jahrgangsstufen":"Jgst. "+UI.expJgst)}).</p>
+     <div class="row"><label class="f">Tag<input type="date" id="tfD" value="${def}" required></label><label class="f">Beginn<input type="time" id="tfZ" value="14:00" required></label><label class="f">Minuten je Gespräch<input type="number" id="tfM" value="20" min="5" max="120" style="width:6rem"></label><label class="f">Pause dazwischen<input type="number" id="tfP" value="5" min="0" max="60" style="width:6rem"></label></div>
+     <label class="row small" style="gap:.4rem;margin-top:.5rem"><input type="checkbox" id="tfNur" checked> nur Kinder ohne Termin</label>
+     <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Vergeben</button></div></form>`);
+    $("#tff").onsubmit=e=>{e.preventDefault();const tag=$("#tfD").value,[h,mi]=$("#tfZ").value.split(":").map(Number),dauer=Math.max(5,+$("#tfM").value||20),pause=Math.max(0,+$("#tfP").value||0);
+      if(!DAT_RE.test(tag)||isNaN(h))return;let t=h*60+mi,n=0;
+      for(const k of sortedKids(UI.expJgst)){if($("#tfNur").checked&&terminVon(k))continue;const key=textKey(k);S.texte[key]=S.texte[key]||{};
+        S.texte[key].termin={d:tag,z:`${pad(Math.floor(t/60)%24)}:${pad(t%60)}`,ok:false};t+=dauer+pause;n++}
+      d.close();save();const y=window.scrollY;render();window.scrollTo(0,y);toast(n?`${n} Termine vergeben.`:"Alle Kinder haben schon einen Termin.",3000)}},
   dokArt:a=>{UI.dokArt=a.dataset.v;const y=window.scrollY;render();window.scrollTo(0,y)},
   kopfLogo:async()=>{const f=await pickFile("image/png,image/jpeg,image/webp");if(!f)return;
     if(f.size>8e6)return info("Das Bild ist zu groß. Bitte eine Datei unter 8 MB wählen.");
@@ -5682,7 +5745,7 @@ const ACT = {
   kiPromptReset:()=>{S.meta.kiPrompt=DEFAULT_KI_PROMPT;save();render()},
   kiDownload:()=>{const t=$("#kiTA").value;download(`ki-auswertung-pseudonymisiert-${today()}.txt`,t,"text/plain;charset=utf-8");toast("Heruntergeladen. Die Datei nach der Auswertung löschen.",4000)},
   kiCopy:async()=>{try{await navigator.clipboard.writeText($("#kiTA").value);toast("In die Zwischenablage kopiert.",2500)}catch(e){$("#kiTA").select();document.execCommand("copy");toast("Kopiert.",2000)}},
-  regen:async()=>{const kid=kidById(UI.kind);if(S.texte[textKey(kid)]&&S.texte[textKey(kid)].bericht&&!await frage("Gespeicherte Überarbeitung durch neuen Entwurf ersetzen?"))return;const t=S.texte[textKey(kid)];if(t){delete t.bericht;if(!t.leg)delete S.texte[textKey(kid)]}save();render()},
+  regen:async()=>{const kid=kidById(UI.kind);if(S.texte[textKey(kid)]&&S.texte[textKey(kid)].bericht&&!await frage("Gespeicherte Überarbeitung durch neuen Entwurf ersetzen?"))return;const t=S.texte[textKey(kid)];if(t){delete t.bericht;if(!t.leg&&!t.termin)delete S.texte[textKey(kid)]}save();render()},
   saveText:()=>{const kid=kidById(UI.kind);S.texte[textKey(kid)]={...(S.texte[textKey(kid)]||{}),bericht:$("#berichtTA").value};save();render();toast("Text gespeichert.",2000)},
   fpNeu:()=>{const kid=kidById(UI.kind);if(!kid)return;S.foerderplaene[kid.id]=fpLeer();S.foerderplaene[kid.id].ziele.push({id:neueId(),text:"",massnahmen:"",wer:"",bis:"",stand:"offen"});save();render()},
   fpZiel:()=>{const f=fpVon(kidById(UI.kind));if(!f)return;f.ziele.push({id:neueId(),text:"",massnahmen:"",wer:"",bis:"",stand:"offen"});save();const y=window.scrollY;render();window.scrollTo(0,y)},
@@ -6174,6 +6237,10 @@ const CHG = {
   legV:el=>{UI.legV=el.value;const y=window.scrollY;render();window.scrollTo(0,y)},
   legVJgst:el=>{const L=legBearbeitet(),j=+el.dataset.v;if(L===S.meta.leg)return;
     if(el.checked){for(const v of S.meta.legVorlagen)v.jgst=v.jgst.filter(x=>x!==j);L.jgst=[...L.jgst,j].sort()}else L.jgst=L.jgst.filter(x=>x!==j);
+    save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  termin:el=>{const k=kidById(el.dataset.k);if(!k)return;const key=textKey(k),t=S.texte[key]=S.texte[key]||{},tm=t.termin||{d:"",z:"",ok:false},f=el.dataset.f;
+    tm[f]=f==="ok"?el.checked:el.value;
+    if(!tm.d){delete t.termin;if(!Object.keys(t).length)delete S.texte[key]}else t.termin=tm;
     save();const y=window.scrollY;render();window.scrollTo(0,y)},
   dokKind:el=>{UI.dokKind=el.value;const p=$("#dokPrev");if(p)p.innerHTML=dokVorschau()},
   rAlleF:el=>{UI.rAlleF=el.checked;render()},
