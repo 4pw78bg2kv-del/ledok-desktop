@@ -72,6 +72,18 @@ test("Beispielklasse: alle Tabs und Einstellungen öffnen @handy", async ({ page
   await expect(page.locator(".hilfe h2", { hasText: "Hilfe" })).toBeVisible();
 });
 
+test("Hilfe bietet die Bedienungsanleitung als Word-Datei an", async ({ page }) => {
+  await neueKlasse(page);
+  await page.keyboard.press("?");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click('[data-act="anleitungLaden"]')]);
+  const version = await page.evaluate(() => APP_VERSION);
+  expect(dl.suggestedFilename()).toBe(`LeDoK-Bedienungsanleitung-${version}.docx`);
+  const datei = require("fs").readFileSync(await dl.path());
+  expect(datei.slice(0, 2).toString()).toBe("PK");
+  const sha = await page.evaluate(() => document.getElementById("anleitung-docx").dataset.sha256);
+  expect(require("crypto").createHash("sha256").update(datei).digest("hex")).toBe(sha);
+});
+
 test("Erfassen speichert eine Bewertung", async ({ page }) => {
   await neueKlasse(page);
   await page.click('nav.tabs [data-v="erfassen"]');

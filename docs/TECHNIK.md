@@ -1,8 +1,8 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 20.10.2026 · `main` nach PR #20 · App-Version 1.0.0 Beta (mit unveröffentlichten Änderungen)
+Stand: 20.10.2026 · `main` nach PR #25 · App-Version 1.1.0 Beta (mit unveröffentlichten Änderungen)
 
-Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung, Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
+Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung ([`docs/LeDoK-Bedienungsanleitung.docx`](LeDoK-Bedienungsanleitung.docx), auch in der App unter Hilfe), Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
 ## Inhalt
 
@@ -57,7 +57,7 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 
 | Pfad | Inhalt |
 |---|---|
-| `app/LeDoK.html` | die App (ca. 6.400 Zeilen, davon eine Zeile `LP_VORLAGE` mit dem Lehrplan). Einzige Quelle. |
+| `app/LeDoK.html` | die App (ca. 6.400 Zeilen, davon eine Zeile `LP_VORLAGE` mit dem Lehrplan und eine mit der eingebetteten Bedienungsanleitung). Einzige Quelle. |
 | `desktop/main.js` | Electron-Hauptprozess: Fenster, Menü, Protokoll, Netzsperre, IPC, Sicherungen, Update |
 | `desktop/update.js` | Prüfung von `.ledok-update`-Dateien; gleiche Berechnung wie `updPayload`/`updFp` in der App |
 | `desktop/preload.js` | stellt `window.ledokDesktop` bereit (feste, schmale Schnittstelle) |
@@ -65,7 +65,8 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 | `build/icon.png`, `build/icon.ico` | App-Symbol |
 | `scripts/version-sync.js` | übernimmt `APP_VERSION` in `package.json`, prüft Tag und CSP-Hash |
 | `scripts/csp-hash.js` | trägt den SHA-256 des App-Skripts in die CSP ein bzw. prüft ihn (`--pruefen`) |
-| `scripts/pruefen.js` | schnelle Prüfung ohne Browser: Syntax, Version, CHANGELOG, CSP-Hash |
+| `scripts/pruefen.js` | schnelle Prüfung ohne Browser: Syntax, Version, CHANGELOG, CSP-Hash, eingebettete Anleitung |
+| `scripts/anleitung.js` | bettet `docs/LeDoK-Bedienungsanleitung.docx` in `app/LeDoK.html` ein bzw. prüft sie (`--pruefen`) |
 | `scripts/release.js` | `npm run release x.y.z`: Version, Datum, CHANGELOG, Tests, Commit, optional Tag |
 | `tests/ledok.spec.js`, `playwright.config.js` | Oberflächentests (Playwright, Chromium) |
 | `.github/workflows/tests.yml` | Tests bei jedem Push und Pull Request |
@@ -74,6 +75,8 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 | `.gitattributes` | erzwingt LF, damit der CSP-Hash auf Windows stimmt |
 | `.gitignore` | schließt u. a. `*.ledok-updatekey` und `*-PRIVAT*` aus |
 | `ANLEITUNG.md` | Bauen, Updates verteilen, Installation, Arbeitsweise |
+| `docs/LeDoK-Bedienungsanleitung.docx` | Bedienungsanleitung für Lehrkräfte (Word, mit Bildern); wird in die App eingebettet |
+| `docs/TECHNIK.md` | diese Datei |
 | `CHANGELOG.md` | Änderungen für Lehrkräfte, Abschnitt „Unveröffentlicht“ zuerst |
 
 ## 3 · Die App `app/LeDoK.html`
@@ -83,7 +86,8 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 | Zeilen (ca.) | Abschnitt |
 |---|---|
 | 1–620 | `<head>`, CSP-Meta, CSS (helles und dunkles Farbschema über `:root`-Variablen, Druck-CSS) |
-| 621 | `<script>` (genau ein Skriptblock; sein Hash steht in der CSP) |
+| 620 | `<template id="anleitung-docx">`: die Word-Anleitung als Base64 (ca. 1,6 MB in einer Zeile), außerhalb des Skripts |
+| 623 | `<script>` (genau ein Skriptblock; sein Hash steht in der CSP) |
 | 622–659 | Konstanten: `STORE_BASE`, `PROFIL_KEY`, ASV-Merkmale, Skala, `QUELLE` |
 | 660 | `LP_VORLAGE`: LehrplanPLUS 1/2, 3/4 und DaZ 1–4, ca. 3.700 Texte |
 | 2633–2792 | Migration des alten flachen Rasters, LEG-Abschnitte und -Vorlagen, Briefkopf, Einladung, `defaultState()` |
@@ -108,7 +112,9 @@ Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen 
 - Inline-Handler (`onclick=` im HTML) sind durch die CSP gesperrt. Handler werden nach dem Rendern in JS gesetzt.
 - Alle Texte aus Daten laufen durch `esc()`.
 - `UI` hält den flüchtigen Zustand (aktiver Reiter, Filter, Namen-Schalter). Er wird nicht gespeichert.
-- **Schnellsuche** (Strg/⌘+K, Knopf ⌕): `sucheQuellen()` sammelt Bereiche, Einstellungsseiten, Kinder, beobachtbare Themen und zwei Aktionen; `sucheTreffer()` filtert und sortiert (höchstens 12), `sucheOeffnen()` zeigt das Ergebnis in `#dlg`. Im Kürzel-Modus wird nur nach Kürzeln gesucht.
+- **Schnellsuche** (Strg/⌘+K, Knopf ⌕): `sucheQuellen()` sammelt Bereiche, Einstellungsseiten, Kinder, beobachtbare Themen und drei Aktionen (Sicherungskopie, Bedienungsanleitung, Sperren); `sucheTreffer()` filtert und sortiert (höchstens 12), `sucheOeffnen()` zeigt das Ergebnis in `#dlg`. Im Kürzel-Modus wird nur nach Kürzeln gesucht.
+- **Dein Tag** (Heute): `tagesFortschritt()` fasst Fokustag und Fokuswoche zu einem Balken zusammen. Ein Kind des Fokustags zählt als erledigt, wenn alle seine Fokus-Themen bewertet sind; dazu kommen die erledigten Kinder der Fokuswoche. Bei 100 % bekommt die Karte die Klasse `fertig` (grün). Nicht an Wochenenden, nicht für Fachlehrkräfte und nicht, wenn `S.meta.tagesbalken === false`.
+- **Bedienungsanleitung:** Der Knopf „Bedienungsanleitung (Word)“ in der Hilfe und die gleichnamige Aktion der Schnellsuche rufen `ACT.anleitungLaden`. Es dekodiert den Inhalt von `#anleitung-docx` und lädt ihn über `download()` als `LeDoK-Bedienungsanleitung-<APP_VERSION>.docx` herunter. Fehlt der Block, erscheint ein Hinweis.
 - **Druck:** Jeder Druck läuft über `drucke(html)`. Es zeigt zuerst eine Vorschau in `#dlg`; erst „Drucken …“ schreibt das HTML in `#print-root` und ruft `window.print()`. Nach `afterprint` wird `#print-root` geleert.
 - Darstellung hell/dunkel: pro Gerät in `localStorage` (`themeLesen`), nicht in den Daten.
 
@@ -138,7 +144,7 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
@@ -165,6 +171,8 @@ S = {
 - `S.texte[…].termin`: Gesprächstermin aus dem LEG-Planer, `d` = Datum (JJJJ-MM-TT), `z` = Uhrzeit, `ok` = geführt. Er hängt am Schlüssel Kind|Schuljahr|Halbjahr, gilt also je Halbjahr, wird mit dem Kind gelöscht und reist in der Übergabedatei mit. „Auf Entwurf zurücksetzen“ bei Bericht und LEG lässt den Termin stehen. Platzhalter `{Termin}` (Wochentag, Datum, Uhrzeit) gilt in Freitext-Abschnitten und in der Einladung.
 - `S.meta.einladung`: Elternbrief zum LEG `{titel, text, rueck}`; `rueck` hängt einen Rückmeldeabschnitt an. `migrate()` ergänzt fehlende Felder aus `DEFAULT_EINLADUNG()`. Druckseiten: `einladungSeite(kid)`, `terminSeite(kids)`; Oberfläche: `legPlanerCard()` im Sammelexport.
 - `S.foerderplaene`: Förderpläne nach Kind-ID (Kind → Förderplan, Sammeldruck im Export). `fpBereinigen()` säubert sie beim Laden und Einlesen (gültige IDs, Datum `bis` nur im Format JJJJ-MM-TT, Stand aus `FP_STAND`). `kindLoeschen()`, das Umbenennen ungültiger Kürzel in `datenBereinigen()` und „Schülerdaten löschen“ ziehen die Pläne mit. Die Übergabedatei eines Kindes (`kindPaket`) enthält keinen Förderplan.
+- `S.meta.druck`: Druckbild `{groesse, schrift, grau}` für alle Ausdrucke. `groesse` ist einer aus `DRUCK_GROESSEN` (90, 100, 110, 125 Prozent), `schrift` `serif` oder `sans`, `grau` druckt Logo und Diagramme in Graustufen. `druckBereinigen()` säubert den Wert beim Laden und Einlesen; `druckKlassen()` liefert die Klassen `d-sans` und `d-grau` für `#print-root` und die Vorschau, `druckZoom()` den `zoom`-Stil.
+- `S.meta.tagesbalken`: `false` blendet den Balken „Dein Tag“ auf **Heute** aus (`ACT.tagesbalkenAus`/`tagesbalkenAn`); fehlt der Wert, wird er gezeigt.
 - `S.meta.kopf`: Briefkopf `{logo, anschrift, fuss, leg, bericht, liste}`. `logo` ist eine Data-URL, die nur gerendert wird, wenn sie auf `LOGO_RE` passt (PNG, JPEG oder WebP in Base64). Beim Einlesen verkleinert `logoVerkleinern()` das Bild auf höchstens 600 × 240 px und speichert es als PNG. Die drei Schalter legen fest, für welche Druckart der Briefkopf gilt.
 
 ### Migration
@@ -173,6 +181,7 @@ S = {
 
 - Skala 1–10 → 1–9 (`meta.skala9`), altes flaches Raster → Baum (`baumMigration`), fehlende Felder aus `defaultState()`.
 - Rechtschreibkorrekturen 2026 in gespeicherten Rastern und Bausteinen (`RS_FIX`, Flag `meta.rs2026`).
+- **Datenprüfung** (Daten & Sicherheit, `ACT.datenPruefen`): `datenPruefung()` zählt Einträge ohne Kind, Einträge ohne Thema (weder Knoten noch ASV-Merkmal), Notizen, Texte und Förderpläne ohne Kind sowie Einträge mit Datum in der Zukunft. Nach Rückfrage legt sie eine Sicherung `vor-aufraeumen` an und entfernt mit `datenAufraeumen()` die Reste ohne Kind oder Thema; Einträge in der Zukunft werden nur gemeldet.
 - `datenBereinigen(st)`: verwirft ungültige Einträge, Notizen und IDs (`ID_RE` erlaubt keine `<>"'`&\` und Steuerzeichen) und vergibt bei Bedarf neue Kürzel. Das schützt vor eingeschleustem Code aus Dateien anderer Personen.
 - `meta.schema = SCHEMA` (derzeit 2). Daten mit höherem Schema öffnet eine ältere App nicht („neuer“), statt sie falsch zu lesen.
 
@@ -210,6 +219,7 @@ S = {
 | `vor-schuljahreswechsel` | Schuljahreswechsel |
 | `vor-kind-loeschen` | ein Kind löschen (nur Desktop-App) |
 | `vor-einspielen` | „Kopie einspielen“ |
+| `vor-aufraeumen` | „Aufräumen“ in der Datenprüfung |
 | `vor-update-<version>`, `vor-zuruecksetzen-<version>` | Update einspielen bzw. zurücksetzen (im Hauptprozess) |
 | `notfall` | Sperren, obwohl das Speichern fehlgeschlagen ist |
 
@@ -416,13 +426,15 @@ npm run dist:win | dist:mac | dist:linux
 
 **Release-Ablauf:**
 
-1. Änderungen für Lehrkräfte laufend unter `## Unveröffentlicht` in `CHANGELOG.md` eintragen.
-2. `npm run release x.y.z`: setzt `APP_VERSION` und `APP_DATUM` (heute, Europe/Berlin), macht aus „Unveröffentlicht“ den Abschnitt `## x.y.z (Kanal)`, gibt den Hinweistext für das Update-Paket aus, führt die Tests aus und committet „Version x.y.z“. Schlagen die Tests fehl, wird alles zurückgenommen.
+1. Änderungen für Lehrkräfte laufend unter `## Unveröffentlicht` in `CHANGELOG.md` eintragen und die Bedienungsanleitung nachziehen (siehe unten).
+2. `npm run release x.y.z`: setzt `APP_VERSION` und `APP_DATUM` (heute, Europe/Berlin), macht aus „Unveröffentlicht“ den Abschnitt `## x.y.z (Kanal)`, gibt den Hinweistext für das Update-Paket aus, bettet die aktuelle Word-Anleitung ein (`anleitung.js`, mit Hinweis, falls darin noch nicht „Version x.y.z“ steht), führt die Tests aus und committet „Version x.y.z“. Schlagen die Tests fehl, wird alles zurückgenommen.
 3. Pushen.
 4. Update-Paket in `LeDoK.html#hersteller` erzeugen und verteilen.
 5. Nur bei Änderungen an der Hülle: `--tag` bzw. Tag `vx.y.z` pushen. `build.yml` baut dann beide Installer und legt einen Release-Entwurf an.
 
-**Versionsanzeige:** `const APP_VERSION="x.y.z", APP_DATUM="JJJJ-MM-TT";` und `const APP_KANAL="Beta";` in `app/LeDoK.html`. Unten rechts erscheint „Version x.y.z Beta“; ein Klick öffnet `ueberDialog()`. `version-sync.js` überträgt die Nummer beim Bauen in `package.json` und bricht ab, wenn ein Tag nicht zur Version passt.
+**Bedienungsanleitung:** Die Word-Datei `docs/LeDoK-Bedienungsanleitung.docx` ist die Fassung für Lehrkräfte. Nach jeder neuen Fassung `node scripts/anleitung.js` ausführen; es schreibt sie als Base64 mit SHA-256 (`data-sha256`) in `<template id="anleitung-docx">` vor `#print-root`. Weil der Block außerhalb des Skripts steht, bleibt der CSP-Hash gleich. `pruefen.js` (also `npm test` und CI) schlägt fehl, wenn eingebettete und abgelegte Datei voneinander abweichen. Da das Update-Paket die ganze `LeDoK.html` enthält, kommt die Anleitung mit jedem Update zu den Lehrkräften (die App wächst dadurch auf ca. 2,7 MB, Grenze für Update-Pakete 30 MB).
+
+**Versionsanzeige:** `const APP_VERSION="x.y.z", APP_DATUM="JJJJ-MM-TT";` und `const APP_KANAL="Beta";` in `app/LeDoK.html`. Unten rechts erscheint „Version x.y.z Beta“ (bzw. „Update x.y.z verfügbar“); ein Klick öffnet `ueberDialog()`. Den Abschnitt „Automatisch suchen“ zeigt der Dialog nur, wenn die Hülle `window.ledokDesktop.updateSuchen` anbietet; mit einem älteren Installer fehlt er. `version-sync.js` überträgt die Nummer beim Bauen in `package.json` und bricht ab, wenn ein Tag nicht zur Version passt.
 
 **Installer:**
 
@@ -435,7 +447,7 @@ npm run dist:win | dist:mac | dist:linux
 
 `npm test` = `scripts/pruefen.js` + Playwright.
 
-**`pruefen.js`** (ohne Browser): Skript syntaktisch lesbar (`vm.Script`), `APP_VERSION` im Format x.y.z, gültiges `APP_DATUM`, Abschnitt `## <Version>` in `CHANGELOG.md`, CSP-Hash stimmt.
+**`pruefen.js`** (ohne Browser): Skript syntaktisch lesbar (`vm.Script`), `APP_VERSION` im Format x.y.z, gültiges `APP_DATUM`, Abschnitt `## <Version>` in `CHANGELOG.md`, CSP-Hash stimmt, eingebettete Bedienungsanleitung entspricht `docs/LeDoK-Bedienungsanleitung.docx`.
 
 **`tests/ledok.spec.js`** (Chromium, Projekte „Desktop“ 1280×860 und „Handy“ Pixel 7 für `@handy`). Jeder Test startet mit leerem Speicher und schlägt auch bei einem JavaScript-Fehler auf der Seite fehl.
 
@@ -444,7 +456,9 @@ npm run dist:win | dist:mac | dist:linux
 | Startbildschirm lädt ohne Fehler | Start, Versionsanzeige |
 | Passwort-Regeln beim Anlegen | mindestens 8 Zeichen, Wiederholung |
 | Beispielklasse: alle Tabs und Einstellungen öffnen | alle Reiter und Einstellungsseiten, Hilfe |
+| Hilfe bietet die Bedienungsanleitung als Word-Datei an | Dateiname mit Version, Word-Datei, SHA-256 passt zu `data-sha256` |
 | Erfassen speichert eine Bewertung | Eintrag entsteht |
+| Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausblenden | Zählung, Ausblenden bleibt nach erneutem Zeichnen, Einblenden über den Knopf oben |
 | Daten bleiben verschlüsselt erhalten … | Neuladen, falsches und richtiges Passwort |
 | Zweites LeDoK am selben Rechner löschen … | Profile, Löschen nur des gewählten |
 | Fachlehrkraft startet ohne Klasse | Willkommensseite |
@@ -463,6 +477,10 @@ npm run dist:win | dist:mac | dist:linux
 | Förderplan: Daten aus Dateien werden bereinigt | `fpBereinigen` |
 | LEG-Planer: Termine vergeben, Einladungen und Terminliste drucken | fortlaufend vergeben, „geführt“, LEG-Datum, Zurücksetzen behält den Termin, leeres Datum entfernt ihn |
 | Dokumente: Einladungstext anpassen mit Vorschau | `S.meta.einladung`, Vorschau „Einladung“ |
+| Dokumente: Druckbild mit Schriftgröße, Schriftart und Graustufen | `S.meta.druck`, Klassen und Zoom in Vorschau und Druck |
+| Datenprüfung: findet Reste ohne Kind oder Thema und räumt sie auf | `datenPruefung`, `datenAufraeumen`, Sicherung vorher |
+| Desktop: gefundenes Update wird erst nach Zustimmung eingespielt | `updateAnbieten`, Hinweis unten rechts |
+| Desktop mit älterem Installer: Versionsdialog ohne automatische Suche | kein Abschnitt „Automatisch suchen“ ohne `updateSuchen` |
 
 CI: `.github/workflows/tests.yml` bei jedem Push und Pull Request; bei Fehlern liegt ein Artefakt „testbericht“ am Lauf.
 
@@ -484,7 +502,7 @@ connect-src 'none'; form-action 'none'; base-uri 'none'
 ## 14 · Regeln für Änderungen
 
 1. Nur `app/LeDoK.html` in diesem Repository bearbeiten. Das private Repository `LeDoK` wird nicht mehr gebraucht.
-2. Nach Skriptänderungen `node scripts/csp-hash.js`, dann `npm test`.
+2. Nach Skriptänderungen `node scripts/csp-hash.js`, nach einer neuen Fassung der Word-Anleitung `node scripts/anleitung.js`, dann `npm test`.
 3. Jede für Lehrkräfte sichtbare Änderung unter „Unveröffentlicht“ in `CHANGELOG.md` eintragen, in ganzen Sätzen und mit den Namen aus der App.
 4. Rückfragen nie mit `prompt()`/`confirm()`/`alert()`, sondern mit `askText`, `frage`, `info`. Einen zweiten Dateidialog nie automatisch öffnen, sondern über `askFile`.
 5. Daten aus fremden Dateien immer durch `eintragOk`, `notizOk`, `idOk` bzw. `datenBereinigen` schicken und alles Angezeigte durch `esc()`.
@@ -495,7 +513,6 @@ connect-src 'none'; form-action 'none'; base-uri 'none'
 ## 15 · Offene Punkte
 
 - **Signierte Schulvorlagen:** `.ledok-vorlage` wird nicht mit dem Schulschlüssel signiert. Das wäre nötig, wenn eine „Vorlage der Schule“ verbindlich gekennzeichnet werden soll.
-- **Automatische Update-Suche** (PR #11, Entwurf), siehe Kapitel 10.
 - **Import fremder Klassenlisten (CSV):** vorgeschlagen, nicht umgesetzt. Der vorhandene `csvParse()` erkennt bereits Trennzeichen, Anführungszeichen und BOM.
 - **Code-Signing:** Apple-Developer-Konto bzw. Windows-Zertifikat, damit die Warnungen beim ersten Start entfallen. Ergänzung in `build.yml`.
 - **Lizenzierung:** besprochen, nicht umgesetzt.
