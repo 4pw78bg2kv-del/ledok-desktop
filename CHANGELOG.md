@@ -12,6 +12,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 **Neu**
 - **Schnellsuche:** Mit Strg+K (Mac: ⌘K) oder dem Knopf ⌕ oben findest du ein Kind, ein Thema oder eine Einstellung und springst direkt hin.
 - **Druckvorschau:** Vor jedem Druck zeigt LeDoK eine Vorschau der Seiten. Erst mit „Drucken …“ öffnet sich der Druckdialog.
+- Im **Sammelexport** gibt es den **LEG-Planer**. Dort trägst du für jedes Kind Datum und Uhrzeit des Gesprächs ein oder lässt die Termine fortlaufend vergeben, zum Beispiel alle 20 Minuten mit 5 Minuten Pause. Daraus druckst du **Einladungen für die Eltern** mit Abschnitt zum Zurückgeben und eine **Terminliste**. Das Datum steht auch auf dem LEG-Bogen. Ein Haken zeigt, welche Gespräche schon geführt sind.
+- Den Text der Einladung passt du unter **Einstellungen → Dokumente** an, mit Vorschau. Der neue Platzhalter {Termin} gilt auch in Freitext-Abschnitten des LEG-Bogens.
 - Unter **Einstellungen → Dokumente** gibt es einen **Briefkopf der Schule**: Logo, Anschrift und eine Fußzeile. Du legst fest, ob er auf LEG-Bögen, Berichten oder Listen erscheint.
 - Den **LEG-Bogen** baust du dort aus Abschnitten zusammen. Du schaltest Abschnitte ein und aus, benennst sie um und änderst ihre Reihenfolge. Eigene **Freitext-Abschnitte** können Platzhalter wie {Vorname}, {Datum} oder {Stärken} enthalten und Schreiblinien bekommen. Eine Vorschau zeigt sofort, wie der Bogen aussieht.
 - Für den LEG-Bogen kannst du **mehrere Vorlagen** anlegen, zum Beispiel eine kindgerechte für Jahrgangsstufe 1. Jede Vorlage gilt für die Jahrgangsstufen, die du auswählst, für alle anderen Kinder gilt die Standardvorlage. Beim Drucken kannst du auch eine andere Vorlage wählen.

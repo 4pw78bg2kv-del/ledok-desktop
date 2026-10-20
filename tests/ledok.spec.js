@@ -522,3 +522,65 @@ test("Druckvorschau erscheint vor dem Drucken", async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.__gedruckt || 0)).toBe(1);
   expect(await page.evaluate(() => document.querySelectorAll("#print-root .page").length)).toBe(n);
 });
+
+test("LEG-Planer: Termine vergeben, Einladungen und Terminliste drucken", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="export"]');
+  const kinder = await page.evaluate(() => sortedKids(UI.expJgst).map((k) => k.id));
+  await page.click('[data-act="terminFolge"]');
+  await page.fill("#tfD", "2026-11-10");
+  await page.fill("#tfZ", "14:00");
+  await page.fill("#tfM", "20");
+  await page.fill("#tfP", "5");
+  await page.click('#tff button[type="submit"]');
+  const t = await page.evaluate(() => sortedKids(UI.expJgst).map((k) => terminVon(k)));
+  expect(t[0]).toEqual({ d: "2026-11-10", z: "14:00", ok: false });
+  expect(t[1].z).toBe("14:25");
+  expect(t.every(Boolean)).toBe(true);
+
+  // Einzelnen Termin ändern und als geführt markieren
+  await page.fill(`[aria-label="Uhrzeit ${kinder[0]}"]`, "08:15");
+  await page.locator(`[aria-label="Uhrzeit ${kinder[0]}"]`).blur();
+  await page.check(`[aria-label="Gespräch mit ${kinder[0]} geführt"]`);
+  expect(await page.evaluate((id) => terminVon(kidById(id)), kinder[0])).toEqual({ d: "2026-11-10", z: "08:15", ok: true });
+  await expect(page.locator(".card", { hasText: "LEG-Planer" })).toContainText("1 geführt");
+
+  const r = await page.evaluate((id) => {
+    const k = kidById(id);
+    return { einl: einladungSeite(k), leg: legSeite(k), liste: terminSeite(sortedKids("alle")) };
+  }, kinder[0]);
+  expect(r.einl).toContain("Dienstag, 10.11.2026, um 08:15 Uhr");
+  expect(r.einl).toContain("bitte abtrennen");
+  expect(r.einl).not.toMatch(/\{[A-Za-zÄÖÜäöü]+\}|undefined/);
+  expect(r.leg).toContain("Gespräch am 10.11.2026");
+  expect(r.liste).toContain("08:15");
+  expect(r.liste.indexOf("08:15")).toBeLessThan(r.liste.indexOf("14:25"));
+
+  // Ein LEG-Entwurf zurücksetzen lässt den Termin stehen
+  await page.evaluate((id) => { const k = kidById(id); S.texte[textKey(k)].leg = { stark: [], ueben: [], ziele: [], faecher: {} }; UI.kind = id; }, kinder[0]);
+  await page.evaluate(() => { ACT.legReset(); });
+  await page.click("#msgJa");
+  expect(await page.evaluate((id) => terminVon(kidById(id)), kinder[0])).toBeTruthy();
+
+  // Datum leeren entfernt den Termin
+  await page.fill(`[aria-label="Datum ${kinder[1]}"]`, "");
+  await page.locator(`[aria-label="Datum ${kinder[1]}"]`).blur();
+  expect(await page.evaluate((id) => terminVon(kidById(id)), kinder[1])).toBeNull();
+});
+
+test("Dokumente: Einladungstext anpassen mit Vorschau", async ({ page }) => {
+  await neueKlasse(page);
+  await zuDokumente(page);
+  await page.click('[data-act="dokArt"][data-v="einladung"]');
+  const vorschau = page.locator("#dokPrev");
+  await expect(vorschau).toContainText("Einladung zum Lernentwicklungsgespräch");
+  await expect(vorschau).toContainText("am ______________ um ________ Uhr");
+  await page.fill('[data-bind="meta.einladung.text"]', "Hallo {Vorname}, Termin {Termin}.");
+  const kuerzel = await page.evaluate(() => sortedKids("alle")[0].id);
+  await expect(vorschau).toContainText(`Hallo ${kuerzel}, Termin am`);
+  await page.uncheck('[data-bind="meta.einladung.rueck"]');
+  await expect(vorschau).not.toContainText("bitte abtrennen");
+  await page.click('[data-act="einladungReset"]');
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => S.meta.einladung.rueck)).toBe(true);
+});
