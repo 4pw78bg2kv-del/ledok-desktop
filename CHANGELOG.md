@@ -9,6 +9,9 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Geändert**
+- Findet „Jetzt suchen“ kein Update, nennt LeDoK jetzt die durchsuchten Ordner und den Grund, warum eine Datei abgelehnt wurde oder ein Ordner nicht lesbar war. Auf dem Mac fragt LeDoK beim ersten Mal um Erlaubnis für den Download-Ordner (ab dem nächsten Installer).
+
 ## 1.1.1 (Beta)
 
 **Neu**

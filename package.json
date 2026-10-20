@@ -75,7 +75,13 @@
       "identity": "-",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "artifactName": "LeDoK-${version}-mac.${ext}"
+      "artifactName": "LeDoK-${version}-mac.${ext}",
+      "extendInfo": {
+        "NSDownloadsFolderUsageDescription": "LeDoK sucht im Download-Ordner nach neuen, signierten Update-Dateien (.ledok-update).",
+        "NSDocumentsFolderUsageDescription": "LeDoK legt Sicherungen deiner Daten im Ordner „LeDoK-Sicherungen“ in Dokumente ab.",
+        "NSRemovableVolumesUsageDescription": "LeDoK sucht im gewählten Update-Ordner auf einem USB-Stick nach neuen Update-Dateien.",
+        "NSNetworkVolumesUsageDescription": "LeDoK sucht im gewählten Update-Ordner auf dem Schulserver nach neuen Update-Dateien."
+      }
     },
     "dmg": {
       "title": "LeDoK ${version}"
