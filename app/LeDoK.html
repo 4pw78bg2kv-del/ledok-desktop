@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-L7BRAoM4fRdJsWG6dRyklJpYNcsGEhJMU+cxN8BvDZo='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-164e+DftiYLsGC9gXgkEFmPMLyJN36k2zY3h11FUl6A='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -244,6 +244,15 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .page .bk{display:flex;align-items:center;gap:12px;margin-bottom:6px;font-family:system-ui,Arial,sans-serif;font-size:9pt;color:#333;line-height:1.35}
 .page .bk-logo{max-height:20mm;max-width:50mm;object-fit:contain}
 .page .bk-txt b{font-size:11.5pt;color:#1a1a1a}
+.suche input{width:100%;font-size:1.05rem;padding:.6rem .7rem}
+#suList{display:flex;flex-direction:column;gap:2px;margin-top:.5rem;max-height:52vh;overflow:auto}
+.suitem{display:grid;grid-template-columns:7.5rem 1fr auto;gap:.6rem;align-items:baseline;text-align:left;border:0;background:none;border-radius:8px;padding:.45rem .6rem;color:var(--ink)}
+.suitem.on,.suitem:hover{background:var(--accent-soft)}
+.suart{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.sutx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dlg.dlg-druck{width:min(980px,calc(100% - 2rem))!important}
+.druckprev{max-height:68vh;background:#e9ecee;padding:12px}
+.druckprev .page{background:#fff;padding:16mm;margin:0 auto 12px;max-width:210mm;box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .page .pfuss{margin-top:18px;padding-top:4px;border-top:1px solid #bbb;font-size:8pt;color:#666;font-family:system-ui,Arial,sans-serif;text-align:center}
 /* Einstellungen → Dokumente */
 .dokwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:1.2rem;align-items:start}
@@ -3357,9 +3366,15 @@ function asvBemerkungSeite(filter){
   ${kids.map(k=>{const t=berichtText(k).split(/\n\s*\n/).filter(p=>/^(Sozialverhalten|Lern- und Arbeitsverhalten):/.test(p));
    return `<div style="margin-top:10px"><b>${esc(k.vorname||k.id)}</b> (Jgst. ${k.jgst})<br>${t.map(esc).join("<br>")||"– keine Beobachtungen –"}</div>`}).join("")}${fuss()}</section>`;
 }
+/* Vor dem Druck eine Vorschau in LeDoK zeigen: Fehler fallen auf, bevor Papier verbraucht ist */
 function drucke(html){
-  $("#print-root").innerHTML=html;
-  setTimeout(()=>window.print(),50);
+  const n=(html.match(/<section class="page/g)||[]).length;
+  const d=dialog(`<div class="row" style="align-items:baseline"><h2 style="margin:0">Druckvorschau</h2><span class="small muted">${n} ${n===1?"Dokument":"Dokumente"} – lange Dokumente können auf mehrere Blätter laufen</span></div>
+   <div class="preview druckprev">${html}</div>
+   <div class="row" style="margin-top:1rem"><span class="small muted">Im Druckdialog kannst du auch „Als PDF speichern“ wählen.</span><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="button" id="dvDruck">Drucken …</button></div>`,true);
+  d.classList.add("dlg-druck");d.addEventListener("close",()=>d.classList.remove("dlg-druck"),{once:true});
+  const k=$("#dvDruck");k.focus();
+  k.onclick=()=>{d.close();$("#print-root").innerHTML=html;setTimeout(()=>window.print(),50)};
 }
 window.addEventListener("afterprint",()=>{$("#print-root").innerHTML=""});
 
@@ -3468,6 +3483,7 @@ function render(){
       <button class="btn" data-act="tab" data-v="hilfe">? Hilfe</button>
       <button class="btn" data-act="lock" title="Sperren, ohne Kopie">🔒 Sperren</button>
      </div></details>
+    <button class="btn ghost" data-act="suche" title="Suchen (Strg+K)" aria-label="Suchen">⌕</button>
     <button class="btn ${UI.tab==="hilfe"?"on-set":"ghost"} hilfebtn" data-act="tab" data-v="hilfe" title="Hilfe (Taste ?)" aria-label="Hilfe">?</button>
     <button class="btn ${UI.tab==="einst"?"on-set":"ghost"}" data-act="tab" data-v="einst" title="Klasse, Raster, Textbausteine, Daten & Sicherheit">⚙ <span class="mlab">Einstellungen</span></button>
     <button class="btn primary" data-act="beenden" title="Speichern, Sicherungskopie herunterladen und sperren">Beenden</button>
@@ -3812,7 +3828,7 @@ hilfe(){
    <tr><td>${k("N")}</td><td colspan="2">Notiz zum Kind</td></tr>
    <tr><td>${k("+")}</td><td colspan="2">Spontanbeobachtung</td></tr>
    <tr><td>${k("Esc")}</td><td colspan="2">Auswahl aufheben</td></tr></table>
-   <p class="small muted">Überall: ${k("?")} öffnet diese Hilfe. In Notizfeldern speichert ${k("Strg")}+${k("Enter")}.</p></section>
+   <p class="small muted">Überall: ${k("Strg")}+${k("K")} (Mac: ${k("⌘")}+${k("K")}) öffnet die Schnellsuche für Kinder, Themen und Einstellungen. ${k("?")} öffnet diese Hilfe. In Notizfeldern speichert ${k("Strg")}+${k("Enter")}.</p></section>
 
   <section class="card" id="h-auswerten"><h3>Auswerten</h3>
    <dl class="hdl">
@@ -5357,6 +5373,34 @@ function problemMelden(){
 /* ---------- Dialoge ---------- */
 function dialog(html,breit){const d=$("#dlg");d.style.width=breit?"min(760px, calc(100% - 2rem))":"";d.innerHTML=html;d.showModal();return d}
 function closeDlg(){const d=$("#dlg");if(d.open)d.close()}
+/* ---------- Schnellsuche (Strg+K / ⌘K) ---------- */
+function sucheQuellen(){
+  const q=[],tab=v=>()=>ACT.tab({dataset:{v}});
+  for(const [k,l] of TABS)q.push({art:"Bereich",text:l,los:tab(k)});
+  q.push({art:"Bereich",text:"Hilfe",los:tab("hilfe")});
+  for(const [k,l,d] of einstTabs())q.push({art:"Einstellungen",text:l,info:d,los:tab(k)});
+  for(const k of sortedKids("alle"))q.push({art:"Kind",text:UI.showNames&&k.vorname?kurzName(k):k.id,info:"Jgst. "+k.jgst,such:UI.showNames?[k.id,k.vorname,k.nachname].join(" "):k.id,los:()=>ACT.goKind({dataset:{k:k.id}})});
+  for(const r of S.raster)if(!r.aus&&bewertbar(r)&&hatModus(r,"beob"))q.push({art:"Thema",text:r.text||r.id,info:`${fachObj(r.fach).kurz||r.fach} · ${r.id}`,los:()=>ACT.goKomp({dataset:{v:r.id}})});
+  q.push({art:"Aktion",text:"Sicherungskopie herunterladen",los:()=>ACT.backup()});
+  q.push({art:"Aktion",text:"Jetzt sperren",los:()=>lock()});
+  return q;
+}
+function sucheTreffer(text){
+  const w=text.toLowerCase().split(/\s+/).filter(Boolean);if(!w.length)return [];
+  return sucheQuellen().map(x=>{const h=[x.text,x.info||"",x.such||"",x.art].join(" ").toLowerCase(),t=x.text.toLowerCase();
+    return w.every(v=>h.includes(v))?{x,r:(t.startsWith(w[0])?0:t.includes(w[0])?1:2)+(x.art==="Thema"?.5:0)}:null}).filter(Boolean).sort((a,b)=>a.r-b.r).slice(0,12).map(y=>y.x);
+}
+function sucheOeffnen(){
+  UI.suche=[];UI.suSel=0;
+  dialog(`<div class="suche"><input type="search" id="suIn" placeholder="Kind, Thema oder Einstellung suchen …" aria-label="Suchen" autocomplete="off"><div id="suList" role="listbox" aria-label="Treffer"></div>
+   <p class="small muted" style="margin:.4rem 0 0">↑ ↓ auswählen · Enter öffnen · Esc schließen</p></div>`);
+  const i=$("#suIn"),zeigen=()=>{UI.suche=sucheTreffer(i.value);UI.suSel=Math.min(UI.suSel,Math.max(0,UI.suche.length-1));
+    $("#suList").innerHTML=UI.suche.length?UI.suche.map((x,n)=>`<button type="button" class="suitem${n===UI.suSel?" on":""}" role="option" aria-selected="${n===UI.suSel}" data-act="sucheLos" data-i="${n}"><span class="suart">${esc(x.art)}</span><span class="sutx">${esc(x.text)}</span>${x.info?`<span class="small muted">${esc(x.info)}</span>`:""}</button>`).join(""):i.value.trim()?`<p class="small muted">Nichts gefunden.</p>`:""};
+  i.addEventListener("input",()=>{UI.suSel=0;zeigen()});
+  i.addEventListener("keydown",e=>{if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const n=UI.suche.length;if(!n)return;UI.suSel=(UI.suSel+(e.key==="ArrowDown"?1:n-1))%n;zeigen()}
+    else if(e.key==="Enter"){e.preventDefault();if(UI.suche[UI.suSel])ACT.sucheLos({dataset:{i:UI.suSel}})}});
+  i.focus();
+}
 const dlgOffen=()=>$("#dlg").open||!!document.querySelector("#dlgMsg[open]");
 function askText(title,text,def,mehrzeilig){
   return new Promise(res=>{
@@ -5469,6 +5513,8 @@ const ACT = {
   namenModus:a=>{UI.showNames=a.dataset.v==="1";render()},
   theme:a=>{themeSetzen(a.dataset.v);render()},
   lock:()=>lock(),
+  sucheLos:a=>{const x=(UI.suche||[])[+a.dataset.i];closeDlg();if(x)x.los()},
+  suche:()=>sucheOeffnen(),
   goKind:a=>{UI.kind=a.dataset.k;UI.tab="kind";render();window.scrollTo(0,0)},
   kidNav:a=>{UI.kind=a.dataset.v;render()},
   rate:a=>rate(a.dataset.k,+a.dataset.w),
@@ -6137,6 +6183,7 @@ document.addEventListener("input",e=>{if(e.target.dataset&&e.target.dataset.pv&&
     rows.forEach(z=>{if(z.dataset.h==null)z.dataset.h=z.hidden?"1":"0"});
     const hit=new Set();rows.forEach(z=>{if(z.dataset.txt.includes(q)){hit.add(z.dataset.v);z.dataset.pfad.split("|").filter(Boolean).forEach(p=>hit.add(p))}});
     rows.forEach(z=>z.hidden=!hit.has(z.dataset.v));const l=document.querySelector(".rleer");if(l)l.hidden=hit.size>0;return}if(e.target.id==="kSuche"){const q=e.target.value.trim().toLowerCase();document.querySelectorAll(".klist .kitem").forEach(b=>{b.hidden=!!q&&!b.textContent.toLowerCase().includes(q)});document.querySelectorAll(".klist .klb").forEach(h=>{h.hidden=!!q})}if(e.target.dataset.chg==="lzkPrev")CHG.lzkPrev(e.target);if(e.target.id==="kiTA")UI.ki.text=e.target.value});
+document.addEventListener("keydown",e=>{if(S&&(e.ctrlKey||e.metaKey)&&!e.altKey&&e.key.toLowerCase()==="k"&&!dlgOffen()){e.preventDefault();sucheOeffnen()}});
 document.addEventListener("keydown",e=>{if(e.key==="?"&&S&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)&&!e.target.isContentEditable&&!dlgOffen()){e.preventDefault();UI.tab="hilfe";render();window.scrollTo(0,0)}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="kgpw"){e.preventDefault();ACT.klasseEntsperren();return}if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.pv){e.preventDefault();const ins=[...document.querySelectorAll(`.ptab input[data-pv][data-c="${CSS.escape(e.target.dataset.c)}"]:not([disabled])`)];const n=ins[ins.indexOf(e.target)+1];if(n){n.focus();n.select()}return}});
 document.addEventListener("keydown",e=>{if(e.target.id==="jText"&&e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();ACT.saveJournal()}});
