@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-RTJxkf8lcQBAE9HyFXqRHIXsoYI3FH9oNdJi8hiySFQ='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DaGp/fSWfzl5l+cdj5nvTOSLFKCJBpTlDveQswZ4oxU='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -240,6 +240,20 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .page .foot{margin-top:16px;font-size:8.5pt;color:#666;font-family:system-ui,Arial,sans-serif}
 .page p.bp{margin:0 0 8px;text-align:justify}
 .pips{letter-spacing:2px;font-size:10pt}
+.page .bk{display:flex;align-items:center;gap:12px;margin-bottom:6px;font-family:system-ui,Arial,sans-serif;font-size:9pt;color:#333;line-height:1.35}
+.page .bk-logo{max-height:20mm;max-width:50mm;object-fit:contain}
+.page .bk-txt b{font-size:11.5pt;color:#1a1a1a}
+.page .pfuss{margin-top:18px;padding-top:4px;border-top:1px solid #bbb;font-size:8pt;color:#666;font-family:system-ui,Arial,sans-serif;text-align:center}
+/* Einstellungen → Dokumente */
+.dokwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:1.2rem;align-items:start}
+.dokprev{position:sticky;top:76px}
+.dokprev .preview{max-height:calc(100vh - 160px)}
+@media (max-width:1100px){.dokwrap{grid-template-columns:minmax(0,1fr)}.dokprev{position:static}}
+.dabslist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.dabs{display:flex;flex-direction:column;gap:.4rem;border:1px solid var(--line);border-radius:10px;padding:.5rem .6rem;background:var(--surface)}
+.dabs.aus{opacity:.6}
+.dabs input[type=text],.dabs textarea{width:100%}
+.dok-logo{max-height:48px;max-width:160px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:6px;padding:3px}
 /* Bewerten (Erfassen › Beobachtung) */
 .rate-wrap{display:grid;grid-template-columns:260px 1fr;gap:1.4rem;align-items:start}
 .rside{position:sticky;top:76px;display:flex;flex-direction:column;gap:.9rem;max-height:calc(100vh - 130px);overflow:auto;padding-right:2px}
@@ -2691,11 +2705,36 @@ function defaultBausteine(){
     notizen:["arbeitet konzentriert und ausdauernd","braucht Unterstützung beim Arbeitsbeginn","nutzt Hilfsmittel selbstständig","erklärt den eigenen Lösungsweg nachvollziehbar","hilft anderen Kindern, ohne vorzusagen","lässt sich leicht ablenken","arbeitet sorgfältig und ordentlich","beteiligt sich aktiv am Unterrichtsgespräch","hält Gesprächsregeln ein","deutlicher Fortschritt seit der letzten Beobachtung"]
   };
 }
+/* LEG-Bogen als Folge von Abschnitten: ein- und ausschaltbar, umbenennbar, verschiebbar; dazu eigene Freitext-Abschnitte */
+const LEG_ABSCHNITTE={pers:{name:"Persönliche Worte",info:"Text je Kind unter „Kind → LEG-Bogen“"},stark:{name:"Stärken",titel:"Das kannst du schon gut"},ueben:{name:"Übungsfelder",titel:"Daran arbeitest du noch"},
+  faecher:{name:"Fächertabelle",titel:"So weit bist du in den Fächern"},selbst:{name:"Selbsteinschätzung",titel:"Das denke ich über mich"},ziele:{name:"Ziele",titel:"Meine Ziele"},vereinb:{name:"Vereinbarung",titel:"Das vereinbaren wir"},
+  frei:{name:"Freitext",titel:""},unterschrift:{name:"Unterschriften"},verlauf:{name:"Seite „Lernverlauf“ (Diagramme)",info:"wird als eigene Seite angehängt"}};
+const LEG_STANDARD=["pers","stark","ueben","faecher","selbst","ziele","vereinb","unterschrift","verlauf"];
+const legStandardBlock=typ=>{const b={typ,an:typ!=="verlauf"};if(LEG_ABSCHNITTE[typ].titel!=null)b.titel=LEG_ABSCHNITTE[typ].titel;return b};
 const DEFAULT_LEG = ()=>({
-  titel:{stark:"Das kannst du schon gut",ueben:"Daran arbeitest du noch",faecher:"So weit bist du in den Fächern",selbst:"Das denke ich über mich",ziele:"Meine Ziele",vereinb:"Das vereinbaren wir"},
-  selbst:["Ich halte mich an unsere Regeln.","Ich helfe anderen.","Ich arbeite ruhig und bleibe dran.","Ich arbeite ordentlich."],
-  zeigen:{faecher:true,selbst:true,unterschrift:true,verlauf:false}
+  bloecke:LEG_STANDARD.map(legStandardBlock),
+  selbst:["Ich halte mich an unsere Regeln.","Ich helfe anderen.","Ich arbeite ruhig und bleibe dran.","Ich arbeite ordentlich."]
 });
+const DEFAULT_KOPF = ()=>({logo:"",anschrift:"",fuss:"",leg:true,bericht:true,liste:false});
+const LOGO_RE=/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+const legBlock=typ=>S.meta.leg.bloecke.find(b=>b.typ===typ);
+const legAn=typ=>{const b=legBlock(typ);return !!(b&&b.an)};
+const legTitel=typ=>{const b=legBlock(typ);return b&&b.titel!=null?b.titel:(LEG_ABSCHNITTE[typ].titel||"")};
+/* Ältere Daten (Überschriften + Schalter) in Abschnitte überführen und alles in gültiger Form halten */
+function legMigration(L){
+  const dl=DEFAULT_LEG();L=L&&typeof L==="object"?L:dl;
+  if(!Array.isArray(L.bloecke)){const t=L.titel||{},z=Object.assign({faecher:true,selbst:true,unterschrift:true,verlauf:false},L.zeigen||{});
+    L.bloecke=LEG_STANDARD.map(typ=>{const b=legStandardBlock(typ);if(z[typ]!=null)b.an=!!z[typ];if(b.titel!=null&&typeof t[typ]==="string")b.titel=t[typ];return b})}
+  const gesehen=new Set();
+  L.bloecke=L.bloecke.filter(b=>b&&LEG_ABSCHNITTE[b.typ]&&(b.typ==="frei"||!gesehen.has(b.typ))&&gesehen.add(b.typ)).map(b=>{
+    const x={typ:b.typ,an:b.an!==false};if(LEG_ABSCHNITTE[b.typ].titel!=null)x.titel=typeof b.titel==="string"?b.titel:LEG_ABSCHNITTE[b.typ].titel;
+    if(b.typ==="frei"){x.id=idOk(b.id)?b.id:neueId();x.text=typeof b.text==="string"?b.text:"";x.linien=Math.min(6,Math.max(0,Math.round(+b.linien)||0))}
+    return x});
+  for(const typ of LEG_STANDARD)if(!gesehen.has(typ))L.bloecke.push(legStandardBlock(typ));
+  if(!Array.isArray(L.selbst))L.selbst=dl.selbst;
+  delete L.titel;delete L.zeigen;
+  return L;
+}
 const kategorien = ()=>["Allgemein","Sozialverhalten","Arbeitsverhalten",...FAECHER,"Elternkontakt"];
 const DEFAULT_KI_PROMPT = `Du bist eine erfahrene Grundschullehrkraft und unterstützt bei der Auswertung von Lernbeobachtungen.
 Unten stehen pseudonymisierte Beobachtungen aus einer kombinierten Klasse 1/2 in Bayern. Die Kinder sind nur mit Kürzeln (S01, S02 …) bezeichnet. Kennwerte nutzen eine Skala von 1 bis 9; 7 bedeutet „Kompetenzerwartung sicher erreicht“.
@@ -2710,7 +2749,7 @@ Regeln: wertschätzend und beobachtungsnah formulieren, keine Diagnosen, keine S
 function defaultState(){
   return {
     version:1,
-    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
+    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
     kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[]
   };
 }
@@ -2925,9 +2964,8 @@ function migrate(st){
   if(!Array.isArray(st.meta.faecher)||!st.meta.faecher.length)st.meta.faecher=defaultFaecher();
   st.meta.asvModus=st.meta.asvModus||{};
   for(const r of st.raster)if(!st.meta.faecher.some(f=>f.name===r.fach))st.meta.faecher.push({name:r.fach,kurz:r.fach,prefix:"X",aktiv:true,benotet:true});
-  const dl=DEFAULT_LEG();st.meta.leg=st.meta.leg||dl;
-  st.meta.leg.titel=Object.assign(dl.titel,st.meta.leg.titel||{});st.meta.leg.zeigen=Object.assign(dl.zeigen,st.meta.leg.zeigen||{});
-  if(!Array.isArray(st.meta.leg.selbst))st.meta.leg.selbst=dl.selbst;
+  st.meta.leg=legMigration(st.meta.leg);
+  {const K=Object.assign(DEFAULT_KOPF(),st.meta.kopf||{});if(!LOGO_RE.test(K.logo))K.logo="";for(const f of ["anschrift","fuss"])K[f]=typeof K[f]==="string"?K[f]:"";for(const f of ["leg","bericht","liste"])K[f]=!!K[f];st.meta.kopf=K}
   st.proben=Array.isArray(st.proben)?st.proben:[];
   st.kinder=st.kinder||[];st.kinder.forEach(k=>{if(k.klasse==null)k.klasse="";if(!Array.isArray(k.faecherNur))k.faecherNur=[];if(!Array.isArray(k.begabt))k.begabt=[]});st.notizen=st.notizen||[];st.raster=st.raster||d.raster;st.eintraege=st.eintraege||[];st.texte=st.texte||{};
   if(st.raster.some(r=>r.ebene==null))baumMigration(st);
@@ -3178,10 +3216,15 @@ function legDruck(kids){
 }
 
 /* ---------- Druckseiten ---------- */
-function kopf(titel){
-  const m=S.meta;
-  return `<div class="ph"><span>${esc(m.schule||"Grundschule")} · ${esc(m.klasse)}</span><span>${esc(titel)} · Schuljahr ${esc(m.schuljahr)}, ${m.halbjahr}. Halbjahr</span></div>`;
+/* art: "leg", "bericht" oder "liste" – je Art schaltest du den Briefkopf unter Einstellungen → Dokumente ein */
+const briefkopfAn=art=>{const K=S.meta.kopf;return !!(K&&K[art]&&(LOGO_RE.test(K.logo)||K.anschrift.trim()))};
+function kopf(titel,art="liste"){
+  const m=S.meta,K=m.kopf,rechts=`${esc(titel)} · Schuljahr ${esc(m.schuljahr)}, ${m.halbjahr}. Halbjahr`;
+  if(!briefkopfAn(art))return `<div class="ph"><span>${esc(m.schule||"Grundschule")} · ${esc(m.klasse)}</span><span>${rechts}</span></div>`;
+  return `<div class="bk">${LOGO_RE.test(K.logo)?`<img class="bk-logo" src="${K.logo}" alt="">`:""}<div class="bk-txt"><b>${esc(m.schule||"Grundschule")}</b>${K.anschrift.trim()?`<div>${esc(K.anschrift.trim()).replace(/\n/g,"<br>")}</div>`:""}</div></div>
+  <div class="ph"><span>${esc(m.klasse)}</span><span>${rechts}</span></div>`;
 }
+function fuss(art="liste"){const K=S.meta.kopf;return K&&K[art]&&K.fuss.trim()?`<div class="pfuss">${esc(K.fuss.trim()).replace(/\n/g,"<br>")}</div>`:""}
 const pips = b=>({2:"●○○○",5:"●●○○",7:"●●●○",9:"●●●●"}[b]||"");
 function legEntwurf(kid){
   const d=legDaten(kid);
@@ -3195,39 +3238,72 @@ function legInhalt(kid){
   return {persoenlich:o.persoenlich||"",stark:o.stark||[],ueben:o.ueben||[],ziele:o.ziele||[],vereinbarung:o.vereinbarung||"",
     faecher:g.faecher.map(f=>({...f,text:o.faecher&&o.faecher[f.fach]!=null?o.faecher[f.fach]:f.text})).filter(f=>f.text.trim()!=="")};
 }
+/* Vorschau unter Einstellungen → Dokumente; im Kürzel-Modus ohne Namen */
+function dokVorschau(){
+  const k=kidById(UI.dokKind)||sortedKids("alle")[0];
+  if(!k)return `<p class="muted">Lege zuerst Kinder an, dann siehst du hier die Vorschau.</p>`;
+  const kid=UI.showNames?k:{...k,vorname:k.id,nachname:"",geburt:""};
+  return UI.dokArt==="bericht"?berichtSeite(kid):legSeite(kid);
+}
+/* Logo verkleinern (höchstens 600 × 240 Pixel), damit die Daten klein bleiben */
+function logoVerkleinern(file){
+  return new Promise((res,rej)=>{const r=new FileReader();r.onerror=rej;r.onload=()=>{const img=new Image();img.onerror=rej;
+    img.onload=()=>{const f=Math.min(1,600/img.naturalWidth,240/img.naturalHeight),c=document.createElement("canvas");
+      c.width=Math.max(1,Math.round(img.naturalWidth*f));c.height=Math.max(1,Math.round(img.naturalHeight*f));
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);const url=c.toDataURL("image/png");LOGO_RE.test(url)?res(url):rej(new Error("Logo"))};
+    img.src=r.result};r.readAsDataURL(file)});
+}
+/* Platzhalter in Freitext-Abschnitten: {Vorname} {Name} {Klasse} {Jgst} {Schule} {Schuljahr} {Halbjahr} {Lehrkraft} {Datum} {Stärken} {Übungsfelder} {Ziele} */
+const PLATZHALTER=["Vorname","Name","Klasse","Jgst","Schule","Schuljahr","Halbjahr","Lehrkraft","Datum","Stärken","Übungsfelder","Ziele"];
+function platzhalterFuellen(text,kid,P,d){
+  const m=S.meta,w={Vorname:kid.vorname||kid.id,Name:[kid.vorname||kid.id,P.nachname||""].join(" ").trim(),Klasse:kid.klasse||m.klasse,Jgst:String(kid.jgst),Schule:m.schule,Schuljahr:m.schuljahr,Halbjahr:String(m.halbjahr),
+    Lehrkraft:m.lehrkraft,Datum:fmtDate(today()),"Stärken":joinList(d.stark),"Übungsfelder":joinList(d.ueben),Ziele:joinList(d.ziele)};
+  return String(text).replace(/\{([^{}]+)\}/g,(x,k)=>w[k]!=null?w[k]:x);
+}
 function legSeite(kid){
-  const d=legInhalt(kid), L=S.meta.leg, T=L.titel, Z=L.zeigen, P=(UI.legTmp&&UI.legTmp[kid.id])||kid;
+  const d=legInhalt(kid), L=S.meta.leg, P=(UI.legTmp&&UI.legTmp[kid.id])||kid;
   const name=esc([kid.vorname||kid.id,P.nachname||""].join(" ").trim()), geb=P.geburt?"geb. "+fmtDate(P.geburt)+" · ":"";
   const li=a=>a.length?`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<p style="color:#888">– noch keine Beobachtungen –</p>`;
   const zeilen=t=>{const [h,...r]=String(t).split("\n");return esc(h)+r.map(x=>`<br><small>${esc(x)}</small>`).join("")};
+  const h4=b=>b.titel&&b.titel.trim()?`<h4>${esc(b.titel)}</h4>`:"";
+  const linien=n=>n>0?`<div class="lines">${"<div></div>".repeat(n)}</div>`:"";
   const faecher=d.faecher.map(f=>`<tr><td>${esc(f.fach)}</td><td class="pips">${pips(f.band)}</td><td>${zeilen(f.text)}</td></tr>`).join("");
-  return `<section class="page leg">${kopf("Lernentwicklungsgespräch")}
+  const selbst=L.selbst.filter(x=>x.trim());
+  const teil=b=>{switch(b.typ){
+    case "pers":return d.persoenlich.trim()?`<p style="margin:8px 0 0;font-style:italic">${esc(d.persoenlich).replace(/\n/g,"<br>")}</p>`:"";
+    case "stark":return h4(b)+li(d.stark);
+    case "ueben":return h4(b)+li(d.ueben);
+    case "faecher":return `${h4(b)}<table><tr><th style="width:19%">Fach</th><th style="width:9%">Stand</th><th>Rückmeldung</th></tr>${faecher||'<tr><td colspan="3">– noch keine Einträge –</td></tr>'}</table>
+  <div style="font-size:8.5pt;color:#666;margin-top:3px">●○○○ noch nicht / mit Hilfe · ●●○○ teilweise sicher · ●●●○ sicher · ●●●● sicher und übertragend</div>`;
+    case "selbst":return selbst.length?`${h4(b)}<table class="faces"><tr><th style="text-align:left;width:70%">&nbsp;</th><th>😀</th><th>🙂</th><th>😕</th></tr>
+  ${selbst.map(t=>`<tr><td style="text-align:left;font-size:10.5pt">${esc(t)}</td><td>☐</td><td>☐</td><td>☐</td></tr>`).join("")}</table>`:"";
+    case "ziele":return `${h4(b)}${d.ziele.length?`<ul>${d.ziele.map(z=>`<li>${esc(z)}</li>`).join("")}</ul>`:""}${linien(1)}`;
+    case "vereinb":return h4(b)+(d.vereinbarung.trim()?`<p style="margin:2px 0">${esc(d.vereinbarung).replace(/\n/g,"<br>")}</p>${linien(1)}`:linien(2));
+    case "frei":{const t=platzhalterFuellen(b.text||"",kid,P,d).trim();return h4(b)+(t?`<p style="margin:2px 0">${esc(t).replace(/\n/g,"<br>")}</p>`:"")+linien(b.linien)}
+    case "unterschrift":return `<div class="sig"><div>Schülerin/Schüler</div><div>Erziehungsberechtigte</div><div>Klassenleitung${S.meta.lehrkraft?" ("+esc(S.meta.lehrkraft)+")":""}</div></div>`;
+    default:return "";
+  }};
+  // Stärken und Übungsfelder stehen nebeneinander, wenn sie direkt aufeinander folgen
+  const B=L.bloecke.filter(b=>b.an&&b.typ!=="verlauf");let html="";
+  for(let i=0;i<B.length;i++){const b=B[i],n=B[i+1];
+    if((b.typ==="stark"||b.typ==="ueben")&&n&&(n.typ==="stark"||n.typ==="ueben")){html+=`<div class="two"><div>${teil(b)}</div><div>${teil(n)}</div></div>`;i++}
+    else html+=teil(b)}
+  return `<section class="page leg">${kopf("Lernentwicklungsgespräch","leg")}
   <h2>${name}</h2><div style="font-size:10pt;color:#555">${geb}Jahrgangsstufe ${kid.jgst}${kid.klasse?" · Klasse "+esc(kid.klasse):""} · Gespräch am ____________</div>
-  ${d.persoenlich.trim()?`<p style="margin:8px 0 0;font-style:italic">${esc(d.persoenlich).replace(/\n/g,"<br>")}</p>`:""}
-  <div class="two"><div><h4>${esc(T.stark)}</h4>${li(d.stark)}</div><div><h4>${esc(T.ueben)}</h4>${li(d.ueben)}</div></div>
-  ${Z.faecher?`<h4>${esc(T.faecher)}</h4>
-  <table><tr><th style="width:19%">Fach</th><th style="width:9%">Stand</th><th>Rückmeldung</th></tr>${faecher||'<tr><td colspan="3">– noch keine Einträge –</td></tr>'}</table>
-  <div style="font-size:8.5pt;color:#666;margin-top:3px">●○○○ noch nicht / mit Hilfe · ●●○○ teilweise sicher · ●●●○ sicher · ●●●● sicher und übertragend</div>`:""}
-  ${Z.selbst&&L.selbst.filter(x=>x.trim()).length?`<h4>${esc(T.selbst)}</h4>
-  <table class="faces"><tr><th style="text-align:left;width:70%">&nbsp;</th><th>😀</th><th>🙂</th><th>😕</th></tr>
-  ${L.selbst.filter(x=>x.trim()).map(t=>`<tr><td style="text-align:left;font-size:10.5pt">${esc(t)}</td><td>☐</td><td>☐</td><td>☐</td></tr>`).join("")}</table>`:""}
-  <h4>${esc(T.ziele)}</h4>${d.ziele.length?`<ul>${d.ziele.map(z=>`<li>${esc(z)}</li>`).join("")}</ul>`:""}
-  <div class="lines"><div></div></div>
-  <h4>${esc(T.vereinb)}</h4>${d.vereinbarung.trim()?`<p style="margin:2px 0">${esc(d.vereinbarung).replace(/\n/g,"<br>")}</p><div class="lines"><div></div></div>`:`<div class="lines"><div></div><div></div></div>`}
-  ${Z.unterschrift?`<div class="sig"><div>Schülerin/Schüler</div><div>Erziehungsberechtigte</div><div>Klassenleitung${S.meta.lehrkraft?" ("+esc(S.meta.lehrkraft)+")":""}</div></div>`:""}
-  </section>${Z.verlauf?verlaufSeite(kid):""}`;
+  ${html}${fuss("leg")}
+  </section>${legAn("verlauf")?verlaufSeite(kid):""}`;
 }
 function verlaufSeite(kid){
   return `<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – Lernverlauf</h2>
   <div style="font-size:9pt;color:#555;margin:2px 0 8px">Linie = aktueller Stand (Mittel der letzten drei Einträge) · gestrichelt = Erwartung für Jgst. ${kid.jgst}${begabtFaecher(kid).length?` (★ in ${esc(begabtFaecher(kid).join(", "))}: Jgst. ${Math.min(4,+kid.jgst+1)})`:""} · Skala 1–9</div>
-  <div class="minis">${verlaufFaecher(kid,true)}</div></section>`;
+  <div class="minis">${verlaufFaecher(kid,true)}</div>${fuss()}</section>`;
 }
 function berichtSeite(kid){
   const t=berichtText(kid);
-  return `<section class="page">${kopf("Bericht – Entwurf")}
+  return `<section class="page">${kopf("Bericht – Entwurf","bericht")}
   <h2>${esc(kid.vorname||kid.id)}</h2><div style="font-size:10pt;color:#555;margin-bottom:10px">Jahrgangsstufe ${kid.jgst}</div>
   ${t.split(/\n\s*\n/).map(p=>`<p class="bp">${esc(p).replace(/\n/g,"<br>")}</p>`).join("")}
-  <div class="foot">Entwurf als Grundlage für das Zeugnisformular bzw. den LEG-Dokumentationsbogen der Schule.</div></section>`;
+  <div class="foot">Entwurf als Grundlage für das Zeugnisformular bzw. den LEG-Dokumentationsbogen der Schule.</div>${fuss("bericht")}</section>`;
 }
 function notenSeite(){
   const kids=sortedKids("alle").filter(mitNoten).sort((a,b)=>a.jgst-b.jgst||a.id.localeCompare(b.id));
@@ -3235,13 +3311,13 @@ function notenSeite(){
   return `<section class="page">${kopf("Notenvorschläge")}
   <h2>Notenvorschläge (ab Jahrgangsstufe 2)</h2>
   <p style="font-size:9.5pt">Vorschlag aus dem Fachwert (1–9). Grenzen: ${S.meta.notenGrenzen.map((g,i)=>`${i+1} ab ${fmt(g)}`).join(" · ")} · darunter 6. * = mind. eine Kompetenz mit weniger als 3 Einträgen. <b>Keine automatische Notenbildung</b> – pädagogische Gesamtbewertung durch die Lehrkraft.</p>
-  <table style="font-size:9pt"><tr><th>Kürzel</th><th>Name</th><th>Jgst.</th>${benoteteFaecher().map(f=>`<th>${esc(f)}</th>`).join("")}</tr>${rows||'<tr><td colspan="12">Keine Kinder ab Jgst. 2</td></tr>'}</table></section>`;
+  <table style="font-size:9pt"><tr><th>Kürzel</th><th>Name</th><th>Jgst.</th>${benoteteFaecher().map(f=>`<th>${esc(f)}</th>`).join("")}</tr>${rows||'<tr><td colspan="12">Keine Kinder ab Jgst. 2</td></tr>'}</table>${fuss()}</section>`;
 }
 function asvBemerkungSeite(filter){
   const kids=sortedKids(filter);
   return `<section class="page">${kopf("Bemerkungen ASV")}<h2>Bemerkungen zum Sozial- sowie Lern- und Arbeitsverhalten</h2>
   ${kids.map(k=>{const t=berichtText(k).split(/\n\s*\n/).filter(p=>/^(Sozialverhalten|Lern- und Arbeitsverhalten):/.test(p));
-   return `<div style="margin-top:10px"><b>${esc(k.vorname||k.id)}</b> (Jgst. ${k.jgst})<br>${t.map(esc).join("<br>")||"– keine Beobachtungen –"}</div>`}).join("")}</section>`;
+   return `<div style="margin-top:10px"><b>${esc(k.vorname||k.id)}</b> (Jgst. ${k.jgst})<br>${t.map(esc).join("<br>")||"– keine Beobachtungen –"}</div>`}).join("")}${fuss()}</section>`;
 }
 function drucke(html){
   $("#print-root").innerHTML=html;
@@ -3253,7 +3329,7 @@ window.addEventListener("afterprint",()=>{$("#print-root").innerHTML=""});
 const UI = {tab:"heute",mode:"beob",fach:"Deutsch",komp:null,jgst:"alle",datum:today(),gruppe:suggestedGroup(),asvGruppe:"ABCDE"[isoWeek()%5],
   uFach:"Alle",uJgst:"alle",kind:null,jKat:"Allgemein",vMode:"fach",vFach:"Deutsch",uEbene:2,vEbene:3,rZu:{},rFachZu:{},bOffen:null,legTmp:null,ki:{von:"",bis:"",frei:true,kurz:true,kenn:true,auftrag:true,text:null,stats:null,ok:false},expTab:"bericht",showNames:false,lastEntry:null,expJgst:"alle"};
 const TABS=[["heute","Heute"],["erfassen","Erfassen"],["uebersicht","Übersicht"],["kind","Kind"],["export","Sammelexport"]];
-const EINST=[["klasse","Klasse","Kinder, Parallelklassen, Fokustage"],["team","Fachlehrkräfte","Fachpakete und Rückmeldungen"],["pakete","Fachpakete","Klassen und Rückmeldungen"],["schuljahr","Schuljahr","Assistent für den Schuljahresbeginn"],["raster","Fächer & Raster","Fächer, Kompetenzen, Erfassungsort"],["bausteine","Textbausteine","Berichte und LEG-Bogen"],["daten","Daten & Sicherheit","Sicherungskopie, Passwort, CSV"]];
+const EINST=[["klasse","Klasse","Kinder, Parallelklassen, Fokustage"],["team","Fachlehrkräfte","Fachpakete und Rückmeldungen"],["pakete","Fachpakete","Klassen und Rückmeldungen"],["schuljahr","Schuljahr","Assistent für den Schuljahresbeginn"],["raster","Fächer & Raster","Fächer, Kompetenzen, Erfassungsort"],["bausteine","Textbausteine","Texte für Berichte und LEG-Bogen"],["dokumente","Dokumente","Briefkopf, Aufbau des LEG-Bogens"],["daten","Daten & Sicherheit","Sicherungskopie, Passwort, CSV"]];
 
 /* ---------- Bildschirme ---------- */
 function screenStart(msg="",beendet=""){
@@ -3547,7 +3623,7 @@ function foerderSeite(){
   return `<section class="page">${kopf(art==="ueber"?"Forder-Gruppen":"Fördergruppen")}
    <h2>${art==="ueber"?"Forder-Gruppen":"Fördergruppen"} ${esc(UI.fgFach)} – ${EBENEN_PL[UI.fgEb]}</h2>
    <p style="font-size:9pt">Stand ${fmtDate(today())}. ${art==="ueber"?"Kinder klar über der Erwartung ihrer Jahrgangsstufe.":"Kinder mehr als einen Punkt unter der Erwartung ihrer Jahrgangsstufe; ● = deutlich darunter."} Nur zur internen Unterrichtsplanung.</p>
-   <table style="font-size:9.5pt"><tr><th style="width:42%">Bereich</th><th>Kinder (Stand)</th></tr>${gs.map(g=>`<tr><td><b>${esc(g.r.text)}</b><br><span style="color:#666">${esc(g.r.id)}</span></td><td>${g.ks.map(x=>`${x.deutlich&&art==="unter"?"● ":""}${esc(UI.showNames&&x.k.vorname?kurzName(x.k):x.k.id)} (${fmt(x.v)})`).join(", ")}</td></tr>`).join("")}</table></section>`;
+   <table style="font-size:9.5pt"><tr><th style="width:42%">Bereich</th><th>Kinder (Stand)</th></tr>${gs.map(g=>`<tr><td><b>${esc(g.r.text)}</b><br><span style="color:#666">${esc(g.r.id)}</span></td><td>${g.ks.map(x=>`${x.deutlich&&art==="unter"?"● ":""}${esc(UI.showNames&&x.k.vorname?kurzName(x.k):x.k.id)} (${fmt(x.v)})`).join(", ")}</td></tr>`).join("")}</table>${fuss()}</section>`;
 }
 /* ---------- Datenlage ---------- */
 function hjFenster(){const y=parseInt(String(S.meta.schuljahr).slice(0,4),10)||new Date().getFullYear();return S.meta.halbjahr==2?[`${y+1}-02-01`,`${y+1}-08-31`]:[`${y}-08-01`,`${y+1}-02-28`]}
@@ -3713,7 +3789,7 @@ hilfe(){
    <li><b>Kind → LEG-Bogen:</b> Stärken, Übungsfelder, Ziele prüfen. Beim Drucken werden Nachname und Geburtsdatum für den Kopf abgefragt (vorausgefüllt).</li>
    <li><b>${go("export","Sammelexport")}:</b> alle LEG-Bögen, Berichte, Notenliste oder ASV-Bemerkungen auf einmal – im Druckdialog „Als PDF speichern“.</li>
    <li><b>KI-Auswertung:</b> nur mit Kürzeln, Namen und Muster werden geschwärzt. Text vollständig lesen und bestätigen, nur schulisch freigegebene KI nutzen.</li></ol>
-   <p class="small muted">Texte und Aufbau passt du unter ${go("bausteine","Textbausteine")} an: beobachtbar statt Etikett, Stärke zuerst.</p></section>
+   <p class="small muted">Texte passt du unter ${go("bausteine","Textbausteine")} an: beobachtbar statt Etikett, Stärke zuerst. Briefkopf der Schule und Aufbau des LEG-Bogens (Abschnitte, eigene Freitexte mit Platzhaltern) stellst du unter ${go("dokumente","Dokumente")} ein.</p></section>
 
   <section class="card" id="h-jahr"><h3>Schuljahresbeginn</h3>
    <p>Der ${go("schuljahr","Schuljahres-Assistent")} führt in 11 Schritten durch den Wechsel:</p>
@@ -3907,11 +3983,7 @@ bausteine(){
   <h3>Fächer (Einleitungssatz nach Fachwert)</h3>
   <details class="bs" open><summary>Alle Fächer</summary><div>${grid("bausteine.fach",B.fach,false)}</div></details>
   <h3>LEG-Bogen: Aufbau</h3>
-  <div class="card stack"><p class="small muted" style="margin:0">Gilt für alle Bögen. Die Inhalte je Kind passt du unter „Kind → LEG-Bogen“ an.</p>
-   <div class="legedit">${Object.entries({stark:"Stärken",ueben:"Übungsfelder",faecher:"Fächertabelle",selbst:"Selbsteinschätzung",ziele:"Ziele",vereinb:"Vereinbarung"}).map(([k,l])=>`<label class="f">Überschrift ${l}<input type="text" value="${esc(S.meta.leg.titel[k])}" data-bind="meta.leg.titel.${k}"></label>`).join("")}</div>
-   <label class="f">Sätze zur Selbsteinschätzung (ein Satz pro Zeile, das Kind kreuzt 😀 🙂 😕 an)<textarea rows="5" data-chg="legSelbst">${esc(S.meta.leg.selbst.join("\n"))}</textarea></label>
-   <div class="row">${[["faecher","Fächertabelle zeigen"],["selbst","Selbsteinschätzung zeigen"],["unterschrift","Unterschriftenzeile zeigen"],["verlauf","Seite „Lernverlauf“ (Diagramme) anhängen"]].map(([k,l])=>`<label class="row small" style="gap:.35rem"><input type="checkbox" ${S.meta.leg.zeigen[k]?"checked":""} data-bind="meta.leg.zeigen.${k}" data-type="bool"> ${l}</label>`).join("")}</div>
-   <button class="btn" data-act="legTitelReset" style="align-self:flex-start">LEG-Aufbau zurücksetzen</button></div>
+  <div class="card row"><p class="small muted" style="margin:0">Abschnitte, Überschriften, eigene Freitexte und den Briefkopf der Schule stellst du unter „Dokumente“ ein – mit Vorschau.</p><span class="spacer"></span><button class="btn" data-act="tab" data-v="dokumente">Zu „Dokumente“</button></div>
   <h3>Notiz-Bausteine</h3>
   <div class="card stack"><p class="small muted" style="margin:0">Erscheinen als Klick-Bausteine im Freitext-Fenster und bei der Spontanbeobachtung. Ein Baustein pro Zeile, am besten als beobachtbares Verhalten formuliert.</p>
    <textarea rows="7" data-chg="notizBausteine">${esc((B.notizen||[]).join("\n"))}</textarea></div>
@@ -3941,6 +4013,37 @@ schuljahr(){
    <p class="muted" style="margin:0">Einmal im Jahr, Schritt für Schritt. Haken setzt du selbst – sie werden je Schuljahr gespeichert.</p>
    <ol class="sjlist">${steps.map(([id,t,d,st,btn],i)=>`<li class="sjstep ${chk[id]?"ok":""}"><label class="sjcheck"><input type="checkbox" ${chk[id]?"checked":""} data-chg="sjCheck" data-v="${id}"><span class="sjnum">${i+1}</span></label>
      <div class="sjbody"><b>${t}</b><p class="small" style="margin:.15rem 0">${d}</p>${st?`<p class="small muted" style="margin:0">Status: ${st}</p>`:""}</div><div class="sjact">${btn}</div></li>`).join("")}</ol></div>`;
+},
+dokumente(){
+  const K=S.meta.kopf,L=S.meta.leg,n=L.bloecke.length;
+  const abschnitt=(b,i)=>{const A=LEG_ABSCHNITTE[b.typ],pfad="meta.leg.bloecke."+i;
+    return `<li class="dabs${b.an?"":" aus"}"><div class="row" style="gap:.5rem;flex-wrap:nowrap">
+     <label class="row small" style="gap:.4rem;flex:1;min-width:0"><input type="checkbox" ${b.an?"checked":""} data-bind="${pfad}.an" data-rerender aria-label="${esc(A.name)} zeigen"> <b>${esc(A.name)}</b>${A.info?` <span class="muted">· ${esc(A.info)}</span>`:""}</label>
+     <button class="btn ghost small" data-act="legAbschnitt" data-v="hoch" data-i="${i}" ${i?"":"disabled"} title="nach oben" aria-label="${esc(A.name)} nach oben">↑</button><button class="btn ghost small" data-act="legAbschnitt" data-v="runter" data-i="${i}" ${i<n-1?"":"disabled"} title="nach unten" aria-label="${esc(A.name)} nach unten">↓</button>
+     ${b.typ==="frei"?`<button class="btn ghost danger small" data-act="legAbschnitt" data-v="weg" data-i="${i}" title="Abschnitt entfernen" aria-label="Abschnitt entfernen">✕</button>`:""}</div>
+     ${b.titel!=null?`<input type="text" value="${esc(b.titel)}" data-bind="${pfad}.titel" placeholder="Überschrift (leer = ohne Überschrift)" aria-label="Überschrift ${esc(A.name)}">`:""}
+     ${b.typ==="frei"?`<textarea rows="3" data-bind="${pfad}.text" placeholder="z. B. Liebe Eltern von {Vorname}, …" aria-label="Text des Abschnitts">${esc(b.text)}</textarea>
+      <label class="row small" style="gap:.4rem">Schreiblinien darunter <select data-bind="${pfad}.linien" data-type="num" data-rerender>${[0,1,2,3,4,5,6].map(x=>`<option ${b.linien===x?"selected":""}>${x}</option>`).join("")}</select></label>`:""}
+     ${b.typ==="selbst"?`<label class="f small">Sätze (ein Satz pro Zeile, das Kind kreuzt 😀 🙂 😕 an)<textarea rows="4" data-chg="legSelbst">${esc(L.selbst.join("\n"))}</textarea></label>`:""}</li>`};
+  const kids=sortedKids("alle"),kid=kidById(UI.dokKind)||kids[0],art=UI.dokArt==="bericht"?"bericht":"leg";
+  return `<div class="stack"><h2>Dokumente</h2>
+  <p class="muted" style="margin:0">Hier legst du fest, wie LEG-Bögen, Berichte und Listen gedruckt aussehen. Die Inhalte je Kind bearbeitest du unter „Kind“.</p>
+  <div class="dokwrap"><div class="stack dokedit">
+  <div class="card stack"><h3 style="margin:0">Briefkopf der Schule</h3>
+   <p class="small muted" style="margin:0">Schulname aus der Klassenliste: <b>${esc(S.meta.schule||"noch nicht eingetragen")}</b>${S.meta.schule?"":` – <a href="#" data-act="tab" data-v="klasse">eintragen</a>`}. Logo und Anschrift werden verschlüsselt mit deinen Daten gespeichert.</p>
+   <div class="row">${LOGO_RE.test(K.logo)?`<img class="dok-logo" src="${K.logo}" alt="Logo der Schule"><button class="btn" data-act="kopfLogo">Anderes Logo …</button><button class="btn ghost danger" data-act="kopfLogoWeg">Logo entfernen</button>`:`<button class="btn" data-act="kopfLogo">Logo wählen …</button><span class="small muted">PNG oder JPG</span>`}</div>
+   <label class="f">Anschrift und Kontakt (mehrere Zeilen möglich)<textarea id="kopfAnschrift" rows="3" data-bind="meta.kopf.anschrift" placeholder="Schulstraße 1 · 12345 Musterstadt&#10;Tel. 01234 5678 · sekretariat@…">${esc(K.anschrift)}</textarea></label>
+   <label class="f">Fußzeile (optional)<input type="text" value="${esc(K.fuss)}" data-bind="meta.kopf.fuss" placeholder="z. B. Vertraulich – nur für das Gespräch mit den Eltern"></label>
+   <div class="row small" style="gap:1rem"><span>Verwenden für:</span>${[["leg","LEG-Bogen"],["bericht","Berichte"],["liste","Listen, Verlauf, Proben"]].map(([k,l])=>`<label class="row" style="gap:.35rem"><input type="checkbox" ${K[k]?"checked":""} data-bind="meta.kopf.${k}" data-rerender> ${l}</label>`).join("")}</div></div>
+  <div class="card stack"><h3 style="margin:0">LEG-Bogen: Abschnitte</h3>
+   <p class="small muted" style="margin:0">Haken = wird gedruckt. Mit ↑ ↓ änderst du die Reihenfolge; Stärken und Übungsfelder stehen nebeneinander, wenn sie direkt aufeinander folgen.</p>
+   <ol class="dabslist">${L.bloecke.map(abschnitt).join("")}</ol>
+   <div class="note small">Platzhalter für Freitexte: ${PLATZHALTER.map(x=>`<code>{${x}}</code>`).join(" ")}<br>Beispiel: „Liebe Eltern, am {Datum} sprechen wir über die Lernentwicklung von {Vorname}.“</div>
+   <div class="row"><button class="btn" data-act="legFrei">+ Freitext-Abschnitt</button><span class="spacer"></span><button class="btn ghost" data-act="legTitelReset">Aufbau zurücksetzen</button></div></div>
+  </div>
+  <div class="dokprev"><div class="row" style="margin-bottom:.6rem"><div class="seg">${[["leg","LEG-Bogen"],["bericht","Bericht"]].map(([k,l])=>`<button class="${art===k?"on":""}" data-act="dokArt" data-v="${k}">${l}</button>`).join("")}</div><span class="spacer"></span>
+   ${kids.length?`<label class="row small" style="gap:.4rem">Kind <select data-chg="dokKind">${kids.map(k=>`<option value="${esc(k.id)}" ${k===kid?"selected":""}>${esc(UI.showNames&&k.vorname?kurzName(k):k.id)}</option>`).join("")}</select></label>`:""}</div>
+   <div class="preview" id="dokPrev">${dokVorschau()}</div></div></div></div>`;
 },
 klasse(){
   const m=S.meta;
@@ -4183,7 +4286,7 @@ function probeSeite(p){
   const kids=probeKinder(p).filter(k=>!p.fehlt[k.id]&&probeGesamt(p,k.id));
   return `<section class="page">${kopf("Probe")}<h2>${esc(p.name||"Probe")} – ${esc(p.fach)}</h2><p style="font-size:9pt">${fmtDate(p.datum)} · ${kids.length} Kinder</p>
    <table style="font-size:9pt"><tr><th>Kind</th>${p.items.map(it=>`<th>${esc((knoten(it.c)||{}).text||it.c)}${p.art==="punkte"?` (${it.max} P.)`:""}</th>`).join("")}<th>Gesamt</th></tr>
-   ${kids.map(k=>{const g=probeGesamt(p,k.id);return `<tr><td>${esc(UI.showNames&&k.vorname?kurzName(k):k.id)}</td>${p.items.map(it=>{const v=(p.werte[k.id]||{})[it.c];const pc=pPct(p,it,v);return `<td style="text-align:center">${pc==null?"–":(p.art==="punkte"?fmtP(v)+" P. · ":"")+Math.round(pc)+" % · "+pct2skala(pc)}</td>`}).join("")}<td style="text-align:center"><b>${Math.round(g.pct)} %</b></td></tr>`}).join("")}</table></section>`;
+   ${kids.map(k=>{const g=probeGesamt(p,k.id);return `<tr><td>${esc(UI.showNames&&k.vorname?kurzName(k):k.id)}</td>${p.items.map(it=>{const v=(p.werte[k.id]||{})[it.c];const pc=pPct(p,it,v);return `<td style="text-align:center">${pc==null?"–":(p.art==="punkte"?fmtP(v)+" P. · ":"")+Math.round(pc)+" % · "+pct2skala(pc)}</td>`}).join("")}<td style="text-align:center"><b>${Math.round(g.pct)} %</b></td></tr>`}).join("")}</table>${fuss()}</section>`;
 }
 function probeSpeichern(){
   const p=UI.probe;if(!p)return;
@@ -4289,16 +4392,17 @@ document.addEventListener("pointerout",e=>{if(e.target.closest&&e.target.closest
 /* ---------- LEG-Editor ---------- */
 function legEditor(kid){
   const d=legInhalt(kid), o=legOverride(kid), lines=a=>esc(a.join("\n"));
+  const lt=typ=>esc(legTitel(typ)||LEG_ABSCHNITTE[typ].name)+(legAn(typ)?"":` <span class="muted">(nicht auf dem Bogen)</span>`);
   return `<div class="row" style="margin:.4rem 0 .8rem"><span class="small ${o?"":"muted"}">${o?"<b>Individuell angepasst</b>"+(o.geaendert?" am "+fmtTs(o.geaendert):""):"Automatischer Entwurf aus den Textbausteinen – alles hier ist frei änderbar."}</span><span class="spacer"></span>
    ${o?`<button class="btn" data-act="legReset">Auf Entwurf zurücksetzen</button>`:""}<button class="btn primary" data-act="legSave">Änderungen speichern</button><button class="btn" data-act="printOne" data-v="leg">Drucken</button></div>
   <div class="legedit">
-   <label class="f full">Persönliche Worte oben auf dem Bogen (optional)<textarea id="le-pers" rows="2" placeholder="z. B. Liebe Anna, ich freue mich, dass du so gerne liest!">${esc(d.persoenlich)}</textarea></label>
-   <label class="f">${esc(S.meta.leg.titel.stark)} – ein Punkt pro Zeile<textarea id="le-stark" rows="6">${lines(d.stark)}</textarea></label>
-   <label class="f">${esc(S.meta.leg.titel.ueben)} – ein Punkt pro Zeile<textarea id="le-ueben" rows="6">${lines(d.ueben)}</textarea></label>
-   ${S.meta.leg.zeigen.faecher?`<div class="full small muted" style="margin-top:.2rem">Fächer – erste Zeile ist die Rückmeldung, weitere Zeilen erscheinen klein darunter. Feld leeren = Fach ausblenden.</div>
+   <label class="f full"><span>Persönliche Worte oben auf dem Bogen (optional)${legAn("pers")?"":` <span class="muted">(nicht auf dem Bogen)</span>`}</span><textarea id="le-pers" rows="2" placeholder="z. B. Liebe Anna, ich freue mich, dass du so gerne liest!">${esc(d.persoenlich)}</textarea></label>
+   <label class="f"><span>${lt("stark")} – ein Punkt pro Zeile</span><textarea id="le-stark" rows="6">${lines(d.stark)}</textarea></label>
+   <label class="f"><span>${lt("ueben")} – ein Punkt pro Zeile</span><textarea id="le-ueben" rows="6">${lines(d.ueben)}</textarea></label>
+   ${legAn("faecher")?`<div class="full small muted" style="margin-top:.2rem">Fächer – erste Zeile ist die Rückmeldung, weitere Zeilen erscheinen klein darunter. Feld leeren = Fach ausblenden.</div>
    ${legEntwurf(kid).faecher.map(f=>{const cur=(legOverride(kid)&&legOverride(kid).faecher&&legOverride(kid).faecher[f.fach]!=null)?legOverride(kid).faecher[f.fach]:f.text;return `<label class="f"><span><span class="pips">${pips(f.band)}</span> ${esc(f.fach)}</span><textarea data-lefach="${esc(f.fach)}" rows="3">${esc(cur)}</textarea></label>`}).join("")}`:""}
-   <label class="f">${esc(S.meta.leg.titel.ziele)} – ein Ziel pro Zeile<textarea id="le-ziele" rows="3">${lines(d.ziele)}</textarea></label>
-   <label class="f">${esc(S.meta.leg.titel.vereinb)} – Vorbelegung (optional)<textarea id="le-ver" rows="3" placeholder="leer lassen = Linien zum Ausfüllen im Gespräch">${esc(d.vereinbarung)}</textarea></label>
+   <label class="f"><span>${lt("ziele")} – ein Ziel pro Zeile</span><textarea id="le-ziele" rows="3">${lines(d.ziele)}</textarea></label>
+   <label class="f"><span>${lt("vereinb")} – Vorbelegung (optional)</span><textarea id="le-ver" rows="3" placeholder="leer lassen = Linien zum Ausfüllen im Gespräch">${esc(d.vereinbarung)}</textarea></label>
   </div>
   <h3>Vorschau</h3><div class="preview">${legSeite(kid)}</div>`;
 }
@@ -5360,10 +5464,21 @@ const ACT = {
   fachMove:a=>{const i=+a.dataset.i,j=i+ +a.dataset.v,F=S.meta.faecher;if(j<0||j>=F.length)return;[F[i],F[j]]=[F[j],F[i]];save();render()},
   vMode:a=>{UI.vMode=a.dataset.v;render()},
   vFach:a=>{UI.vFach=a.dataset.v;render()},
-  printVerlauf:()=>{const kid=kidById(UI.kind);drucke(verlaufSeite(kid)+(UI.vMode==="thema"?`<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – ${esc(UI.vFach==="ASV"?"Arbeits- und Sozialverhalten":UI.vFach)} je Thema</h2><div class="minis" style="margin-top:8px">${verlaufThemen(kid,UI.vFach)}</div></section>`:""))},
+  printVerlauf:()=>{const kid=kidById(UI.kind);drucke(verlaufSeite(kid)+(UI.vMode==="thema"?`<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – ${esc(UI.vFach==="ASV"?"Arbeits- und Sozialverhalten":UI.vFach)} je Thema</h2><div class="minis" style="margin-top:8px">${verlaufThemen(kid,UI.vFach)}</div>${fuss()}</section>`:""))},
   legSave:()=>{legCollect(kidById(UI.kind));render();toast("LEG-Bogen gespeichert.",2000)},
   legReset:async()=>{if(!await frage("Alle individuellen Änderungen am LEG-Bogen verwerfen?"))return;const kid=kidById(UI.kind),t=S.texte[textKey(kid)];if(t){delete t.leg;if(!t.bericht)delete S.texte[textKey(kid)]}save();render()},
-  legTitelReset:async()=>{if(await frage("Überschriften, Selbsteinschätzung und Anzeige des LEG-Bogens auf Standard zurücksetzen?")){S.meta.leg=DEFAULT_LEG();save();render()}},
+  legTitelReset:async()=>{if(await frage("Aufbau des LEG-Bogens auf Standard zurücksetzen? Überschriften, Reihenfolge und Sätze zur Selbsteinschätzung werden zurückgesetzt, eigene Freitext-Abschnitte entfernt.")){S.meta.leg=DEFAULT_LEG();save();render()}},
+  legAbschnitt:a=>{const L=S.meta.leg.bloecke,i=+a.dataset.i,b=L[i];if(!b)return;
+    if(a.dataset.v==="weg"){L.splice(i,1)}
+    else{const j=a.dataset.v==="hoch"?i-1:i+1;if(j<0||j>=L.length)return;L[i]=L[j];L[j]=b}
+    save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  legFrei:()=>{S.meta.leg.bloecke.push({typ:"frei",an:true,titel:"Neuer Abschnitt",text:"",linien:2,id:neueId()});save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  dokArt:a=>{UI.dokArt=a.dataset.v;const y=window.scrollY;render();window.scrollTo(0,y)},
+  kopfLogo:async()=>{const f=await pickFile("image/png,image/jpeg,image/webp");if(!f)return;
+    if(f.size>8e6)return info("Das Bild ist zu groß. Bitte eine Datei unter 8 MB wählen.");
+    try{S.meta.kopf.logo=await logoVerkleinern(f);save();render();toast("Logo übernommen.",2000)}
+    catch(e){info("Das Bild ließ sich nicht lesen. Bitte eine PNG- oder JPG-Datei wählen.")}},
+  kopfLogoWeg:()=>{S.meta.kopf.logo="";save();render()},
   noteKid:a=>noteDialog(a.dataset.k,null),
   editNote:a=>{const n=S.notizen.find(x=>x.id===a.dataset.id);if(n)noteDialog(n.k,n)},
   delNote:async a=>{const n=S.notizen.find(x=>x.id===a.dataset.id);if(!n||!await frage(`Freitext vom ${fmtTs(n.ts)} löschen?`))return;S.notizen=S.notizen.filter(x=>x!==n);save();render()},
@@ -5821,7 +5936,7 @@ const CHG = {
     fo.name=nu;S.raster.forEach(r=>{if(r.fach===old)r.fach=nu});S.notizen.forEach(n=>{if(n.kat===old)n.kat=nu});
     for(const t of Object.values(S.texte))if(t.leg&&t.leg.faecher&&old in t.leg.faecher){t.leg.faecher[nu]=t.leg.faecher[old];delete t.leg.faecher[old]}
     if(UI.fach===old)UI.fach=nu;if(UI.uFach===old)UI.uFach=nu;if(UI.vFach===old)UI.vFach=nu;save();render()},
-  legSelbst:el=>{S.meta.leg.selbst=el.value.split("\n").map(x=>x.trim()).filter(Boolean);save()},
+  legSelbst:el=>{S.meta.leg.selbst=el.value.split("\n").map(x=>x.trim()).filter(Boolean);save();const p=$("#dokPrev");if(p)p.innerHTML=dokVorschau()},
   kiOpt:el=>{UI.ki[el.dataset.o]=el.checked},
   kiDate:el=>{UI.ki[el.dataset.o]=el.value},
   kiOk:el=>{UI.ki.ok=el.checked;const ta=$("#kiTA");if(ta)UI.ki.text=ta.value;document.querySelectorAll('[data-act=kiDownload],[data-act=kiCopy]').forEach(b=>b.disabled=!el.checked)},
@@ -5853,6 +5968,7 @@ const CHG = {
     else{delete r.hier;toast("Die Unterbereiche werden wieder einzeln bewertet.",3000)}
     DV++;save();render()},
   namenSwitch:el=>{UI.showNames=el.checked;render()},
+  dokKind:el=>{UI.dokKind=el.value;const p=$("#dokPrev");if(p)p.innerHTML=dokVorschau()},
   rAlleF:el=>{UI.rAlleF=el.checked;render()},
   rFilter:el=>{UI.rFilter=el.value;const y=window.scrollY;render();window.scrollTo(0,y)},
   nodeSicht:el=>{const r=knoten(el.dataset.v);if(!r)return;r.aus=!el.checked;save();const y=window.scrollY;render();window.scrollTo(0,y)}
@@ -5886,6 +6002,11 @@ document.addEventListener("keydown",e=>{if(e.target.id==="jText"&&e.key==="Enter
 window.addEventListener("scroll",()=>document.body.classList.toggle("scrolled",window.scrollY>40),{passive:true});
 // Formulare ohne eigenes Absenden (ersetzt onsubmit="return false" – Inline-Handler sind per CSP gesperrt)
 document.addEventListener("submit",e=>{if(e.target&&e.target.hasAttribute&&e.target.hasAttribute("data-nosubmit"))e.preventDefault()});
+/* ---------- Einstellungen → Dokumente: Vorschau beim Tippen ---------- */
+let dokTimer=null;
+document.addEventListener("input",e=>{const t=e.target;if(!S||!t||!t.dataset||!t.dataset.bind||t.type==="checkbox"||!t.closest||!t.closest(".dokedit"))return;
+  const path=t.dataset.bind.split(".");let o=S;for(let i=0;i<path.length-1;i++)o=o[path[i]];o[path[path.length-1]]=t.value;
+  clearTimeout(dokTimer);dokTimer=setTimeout(()=>{dokTimer=null;save();const p=$("#dokPrev");if(p)p.innerHTML=dokVorschau()},250)});
 /* ---------- Bericht und LEG-Bogen beim Tippen übernehmen (ein Kindwechsel verwirft sonst ungespeicherten Text) ---------- */
 let legTimer=null,legKid=null;
 function legFlush(){if(!legTimer)return;clearTimeout(legTimer);legTimer=null;if(S&&legKid&&$("#le-stark"))legCollect(legKid)}

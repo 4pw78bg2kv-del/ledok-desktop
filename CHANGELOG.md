@@ -10,6 +10,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 ## Unveröffentlicht
 
 **Neu**
+- Unter **Einstellungen → Dokumente** gibt es einen **Briefkopf der Schule**: Logo, Anschrift und eine Fußzeile. Du legst fest, ob er auf LEG-Bögen, Berichten oder Listen erscheint.
+- Den **LEG-Bogen** baust du dort aus Abschnitten zusammen. Du schaltest Abschnitte ein und aus, benennst sie um und änderst ihre Reihenfolge. Eigene **Freitext-Abschnitte** können Platzhalter wie {Vorname}, {Datum} oder {Stärken} enthalten und Schreiblinien bekommen. Eine Vorschau zeigt sofort, wie der Bogen aussieht.
 - Arbeiten Klassenlehrkraft und Fachlehrkraft am selben Rechner mit je einem eigenen LeDoK, braucht es für die Rückmeldung keinen USB-Stick mehr. Das LeDoK der Fachlehrkraft legt ihre Bewertungen verschlüsselt bereit, und dein LeDoK bietet sie beim Öffnen zum Übernehmen an. Deine eigenen Bewertungen bleiben unberührt.
 - Werte, in denen Bewertungen einer Fachlehrkraft stecken, tragen ein kleines Kürzel mit ihrem Namen.
 - Bevor LeDoK Daten löscht, eine Sicherungskopie einspielt oder ein neues Schuljahr beginnt, legt es automatisch eine Sicherung an. Zum Löschen tippst du zur Bestätigung „LÖSCHEN“ ein.
@@ -17,6 +19,7 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 - Die Beispielklasse ist beim Anlegen nicht mehr vorausgewählt. Solange sie da ist, zeigt ein Hinweis oben, wie du sie mit einem Klick wieder entfernst.
 
 **Geändert**
+- Der Aufbau des LEG-Bogens ist von **Textbausteine** nach **Dokumente** umgezogen. Deine bisherigen Überschriften und Einstellungen werden übernommen.
 - Fragen und Hinweise erscheinen in LeDoK-eigenen Fenstern statt in Browser-Meldungen.
 - Gespeicherte Daten sind deutlich kleiner. Ältere LeDoK-Versionen können neue Sicherungskopien deshalb nicht öffnen.
 - Wenn du dein Passwort änderst, verschlüsselt LeDoK die Daten mit einem neuen Schlüssel.
