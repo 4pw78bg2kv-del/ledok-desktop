@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nxIjCEfXJCsxyGm4aE3CjyCP3ap9hlTcLkCNZO+9/L4='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-MAXEjqcOp0GmNtllOHSXW6yY4d8nRJUc4MkCF1LLMSc='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -5516,15 +5516,18 @@ async function ueberDialog(msg=""){
   if(di){
     zeilen.push(`<tr><td>Programm</td><td>LeDoK für ${di.os==="darwin"?"macOS":di.os==="win32"?"Windows":"Linux"} · Programmversion ${esc(di.shell)}</td></tr>`);
     if(di.aktualisiert)zeilen.push(`<tr><td>Update</td><td>eingespielt am ${esc(datStr(di.updateDatum))} (ausgeliefert war ${esc(di.mitgeliefert)})</td></tr>`);
+    if(di.ausgelassen)zeilen.push(`<tr><td>Zurückgekehrt</td><td>Versionen bis ${esc(di.ausgelassen)} werden nicht mehr automatisch angeboten, erst eine neuere.</td></tr>`);
     zeilen.push(`<tr><td>Update-Schlüssel</td><td>${di.updateKey?`<code>${esc(di.updateKey)}</code>`:"<i>nicht hinterlegt – Updates per Datei sind deaktiviert</i>"}</td></tr>`);
   }
+  // Eine Stufe zurück gibt es erst mit neueren Installern; ist die vorherige Version die ausgelieferte, reicht der Knopf dafür
+  const vorStufe=!!(di&&DESKTOP.updateVorherige&&di.vorherigeVersion&&di.vorherigeVersion!==di.mitgeliefert);
   const d=dialog(`<div class="lockhead" style="margin-bottom:.6rem">${LOGO_SVG}<div><h2 style="margin:0">LeDoK</h2><div class="tag">Lernentwicklungsdokumentation Grundschule</div></div></div>
    ${msg?`<div class="note small">${msg}</div>`:""}
    <table class="small" style="width:100%;border-collapse:collapse"><tbody>${zeilen.join("")}</tbody></table>
    ${di?`<h3 style="margin:1rem 0 .3rem">Update einspielen</h3>
      <p class="small">Neue Versionen kommen als Datei <code>LeDoK-x.y.z.ledok-update</code> – per Stick, Mail oder Schulserver. ${DESKTOP.updateSuchen?"Liegt sie im Download-Ordner oder im Update-Ordner, findet LeDoK sie selbst. ":""}LeDoK prüft die Signatur des Herstellers, sichert vorher deine Daten und startet danach neu. Eine Internetverbindung ist nicht nötig, deine Daten bleiben unverändert auf diesem Rechner.</p>
      ${UPD_GEFUNDEN?`<div class="supbox an"><b>Update ${esc(UPD_GEFUNDEN.version)} verfügbar</b> <span class="small">(${UPD_GEFUNDEN.online?"von GitHub":"in "+esc(UPD_GEFUNDEN.ort)})</span> <button class="btn primary small" type="button" id="updJetzt">Jetzt einspielen …</button></div>`:""}
-     <div class="row"><button class="btn primary" type="button" id="updWahl" ${di.updateKey?"":"disabled"}>Update-Datei wählen …</button>${di.aktualisiert?`<button class="btn ghost" type="button" id="updReset">Zur ausgelieferten Version ${esc(di.mitgeliefert)} zurück</button>`:""}<button class="btn ghost" type="button" id="updOrdner">Sicherungen anzeigen</button></div>
+     <div class="row"><button class="btn primary" type="button" id="updWahl" ${di.updateKey?"":"disabled"}>Update-Datei wählen …</button>${vorStufe?`<button class="btn ghost" type="button" id="updVorher">Zur vorherigen Version ${esc(di.vorherigeVersion)} zurück</button>`:""}${di.aktualisiert?`<button class="btn ghost" type="button" id="updReset">Zur ausgelieferten Version ${esc(di.mitgeliefert)} zurück</button>`:""}<button class="btn ghost" type="button" id="updOrdner">Sicherungen anzeigen</button></div>
      ${DESKTOP.updateSuchen?`<h3 style="margin:1rem 0 .3rem">Automatisch suchen</h3>
      <p class="small">LeDoK sucht beim Start, nach der Anmeldung und stündlich im Download-Ordner${di.updateSuchordner?` und in <code>${esc(di.updateSuchordner)}</code>`:""} nach einer neueren Update-Datei und fragt dich, bevor es sie einspielt. ${onlineFrei()?"Deine Schule hat außerdem die <b>Online-Suche</b> eingeschaltet: Höchstens zweimal am Tag fragt LeDoK bei GitHub nach einer neuen Version.":"Eine Internetverbindung stellt LeDoK dafür nicht her."}</p>
      <div class="row"><button class="btn" type="button" id="updSuchen" ${di.updateKey?"":"disabled"}>Jetzt suchen</button><button class="btn ghost" type="button" id="updOrdnerWahl">${di.updateSuchordner?"Anderen Update-Ordner wählen …":"Update-Ordner wählen …"}</button>${di.updateSuchordner?`<button class="btn ghost" type="button" id="updOrdnerWeg">Update-Ordner entfernen</button>`:""}</div>`
@@ -5547,6 +5550,11 @@ async function ueberDialog(msg=""){
     const r2=await DESKTOP.updateInstallieren(txt,storeRaw()||"");
     if(!r2.ok)return ueberDialog(`<b>Update nicht möglich:</b> ${esc(r2.fehler)}`);
   };
+  const vs=$("#updVorher");if(vs)vs.onclick=async()=>{
+    if(!await frage(`Zur vorherigen Version ${di.vorherigeVersion} zurückkehren? Version ${APP_VERSION} wird danach nicht mehr automatisch angeboten, erst eine neuere. Deine Daten bleiben erhalten, vorher wird eine Sicherung angelegt. LeDoK startet neu.`))return;
+    if(S)await saveNow();
+    const r=await DESKTOP.updateVorherige(storeRaw()||"");
+    if(r&&!r.ok)ueberDialog(`<b>Zurück nicht möglich:</b> ${esc(r.fehler)}`)};
   const rs=$("#updReset");if(rs)rs.onclick=async()=>{
     if(!await frage(`Das eingespielte Update entfernen und zur ausgelieferten Version ${di.mitgeliefert} zurückkehren? Deine Daten bleiben erhalten. LeDoK startet neu.`))return;
     if(S)await saveNow();await DESKTOP.updateZuruecksetzen(storeRaw()||"")};

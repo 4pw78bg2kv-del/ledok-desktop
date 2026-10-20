@@ -245,7 +245,7 @@ S = {
 | `vor-kind-loeschen` | ein Kind löschen (nur Desktop-App) |
 | `vor-einspielen` | „Kopie einspielen“ |
 | `vor-aufraeumen` | „Aufräumen“ in der Datenprüfung |
-| `vor-update-<version>`, `vor-zuruecksetzen-<version>` | Update einspielen bzw. zurücksetzen (im Hauptprozess) |
+| `vor-update-<version>`, `vor-zuruecksetzen-<version>`, `vor-zurueck-<version>` | Update einspielen, zur ausgelieferten bzw. zur vorherigen Version zurück (im Hauptprozess) |
 | `notfall` | Sperren, obwohl das Speichern fehlgeschlagen ist |
 
 Der Hauptprozess behält je Anlass die 15 neuesten Dateien (`AUFHEBEN`) und löscht ältere. Gelöscht wird nur nach dem Muster `ledok-sicherung-<anlass>-<Datum>.lernstand`.
@@ -389,8 +389,8 @@ Versionen in `package.json` (fest): Electron 44.9.0, electron-builder 26.17.0, P
 | `ledok:datenSpeichern` | prüfen (`app`, `ct`), `.vorher` anlegen, atomar schreiben |
 | `ledok:datenLoeschen` | Datei und `.vorher` löschen |
 | `ledok:sicherung` | Sicherung nach `Dokumente/LeDoK-Sicherungen`, ausdünnen |
-| `ledok:info` | Programmversion, Betriebssystem, aktive und ausgelieferte Version, Update-Datum, Fingerabdruck des Update-Schlüssels, gewählter Update-Ordner (`updateSuchordner`) |
-| `ledok:updatePruefen`, `ledok:updateInstallieren`, `ledok:updateZuruecksetzen` | siehe Kapitel 10 |
+| `ledok:info` | Programmversion, Betriebssystem, aktive und ausgelieferte Version, Update-Datum, Fingerabdruck des Update-Schlüssels, gewählter Update-Ordner (`updateSuchordner`), Ziel für „eine Stufe zurück“ (`vorherigeVersion`), ausgelassene Version (`ausgelassen`) |
+| `ledok:updatePruefen`, `ledok:updateInstallieren`, `ledok:updateZuruecksetzen`, `ledok:updateVorherige` | siehe Kapitel 10 |
 | `ledok:updateSuchen`, `ledok:updateOnlineSuchen`, `ledok:updateGefundenInstallieren` | automatische Suche, siehe Kapitel 10 |
 | `ledok:updateOrdnerWaehlen`, `ledok:updateOrdnerEntfernen` | Update-Ordner festlegen (`userData/update-suche.json`) |
 | `ledok:sicherungenOeffnen` | Sicherungsordner im Dateimanager öffnen |
@@ -424,9 +424,11 @@ Versionen in `package.json` (fest): Electron 44.9.0, electron-builder 26.17.0, P
 
 ### Einspielen
 
-- `updateInstallieren`: nur wenn neuer als die aktive Version. Erst Sicherung `vor-update-<alt>`, dann `userData/update/paket.ledok-update` und `info.json` atomar schreiben, Neustart.
+- `updateInstallieren`: nur wenn neuer als die aktive Version. Erst Sicherung `vor-update-<alt>`, dann das bisher aktive Paket nach `userData/update/vorher.ledok-update` kopieren (war die ausgelieferte Version aktiv, wird `vorher` gelöscht), dann `paket.ledok-update` und `info.json` atomar schreiben, `update-ausgelassen.json` löschen, Neustart.
 - Bei **jedem Start** prüft `eingespieltesUpdate()` die abgelegte Datei erneut (der Benutzerordner ist für jedes Programm des Benutzers beschreibbar). Das Ergebnis wird nach Größe und Änderungszeit zwischengespeichert. Ist die Datei ungültig oder nicht neuer als die ausgelieferte Version, gilt `app/LeDoK.html`.
 - `updateZuruecksetzen`: Sicherung, Ordner `update` löschen, Neustart.
+- `updateVorherige` (eine Stufe zurück, ab Installer mit dieser Funktion): Sicherung `vor-zurueck-<version>`. Besteht `vorher.ledok-update` die Prüfung und ist neuer als die ausgelieferte Version, wird es wieder `paket.ledok-update`, sonst gilt die ausgelieferte Version. `ledok:info` meldet die Zielversion als `vorherigeVersion`.
+- Nach beiden Wegen zurück steht die verlassene Version in `userData/update-ausgelassen.json` (bleibt die höchste). Die automatische Suche, auch online, bietet diese und ältere Versionen nicht mehr an, erst eine neuere. „Update-Datei wählen …“ spielt sie trotzdem ein; jedes Einspielen löscht den Vermerk.
 
 ### Wann ein neuer Installer nötig ist
 

@@ -86,6 +86,7 @@ Was passiert im Detail?
 - Manipulierte Dateien und solche mit fremder Signatur werden abgelehnt.
 - Eine ältere Version lässt sich nicht einspielen.
 - Über denselben Dialog geht es auf Wunsch zurück zur ausgelieferten Version, die Daten bleiben dabei erhalten.
+- Mit einem neueren Installer geht es außerdem **eine Stufe zurück**, also zur Version vor dem letzten Update („Zur vorherigen Version x.y.z zurück“). Gedacht ist das für den Fall, dass ein Update einen Fehler hat. Vorher wird eine Sicherung angelegt. Die verlassene Version bietet LeDoK danach nicht mehr automatisch an, erst eine neuere mit der Fehlerbehebung.
 
 **Wann ist doch ein neuer Installer nötig?** Nur wenn sich die Programm-Hülle ändert (Ordner `desktop/`, Electron-Version, Symbol) oder ein neuer Update-Schlüssel kommt. Ein neuer Installer ersetzt das Programm; die Daten bleiben erhalten. Etwa einmal im Jahr ist ein neuer Installer sinnvoll, damit die eingebaute Browser-Technik aktuell bleibt.
 

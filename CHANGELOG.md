@@ -16,6 +16,7 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 - Unter **Klassenbuch → Lernziele** siehst du je Fach, welche Kompetenzerwartungen im Schuljahr oder Halbjahr schon behandelt wurden, wie oft und wann zuletzt, was noch offen ist und bei wie vielen Kindern du dazu schon etwas bewertet hast. Die Übersicht kannst du drucken.
 - Auf **Heute** zeigt die Karte **Klassenbuch** die Stunden des Tages. Ein Klick öffnet den Eintrag.
 - **Auslosen:** Unter **Listen → Auslosen** ziehst du mit einem Klick ein oder mehrere Kinder, bildest zufällige **Gruppen** (eine Anzahl Gruppen oder Kinder je Gruppe) oder lost eine **Reihenfolge** aus. Mit „gerecht ziehen“ kommt jedes Kind einmal dran, bevor eine neue Runde beginnt, und wer heute fehlt, wird übersprungen. Eigene Los-Listen enthalten die ganze Klasse, ausgewählte Kinder oder eigene Lose wie Stationen und Aufgaben. Die **Großanzeige** zeigt den Namen groß für Beamer oder Tafel, die Leertaste zieht. Schnell erreichbar über **🎲 Auslosen** auf **Heute** oder die Schnellsuche.
+- Unter **Hilfe → Über LeDoK** gibt es nach einem Update den Knopf **Zur vorherigen Version zurück**. Hat ein Update einen Fehler, kehrst du damit zur Version davor zurück; deine Daten bleiben erhalten und werden vorher gesichert. Die fehlerhafte Version bietet LeDoK dann nicht mehr an, erst die nächste. Der Knopf erscheint, sobald dein Rechner einen neuen Installer bekommen hat.
 
 ## 1.1.3 (Beta)
 

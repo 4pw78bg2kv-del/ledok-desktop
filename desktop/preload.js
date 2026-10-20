@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("ledokDesktop", {
   updateOrdnerWaehlen: () => ipcRenderer.invoke("ledok:updateOrdnerWaehlen"),
   updateOrdnerEntfernen: () => ipcRenderer.invoke("ledok:updateOrdnerEntfernen"),
   updateZuruecksetzen: (daten) => ipcRenderer.invoke("ledok:updateZuruecksetzen", String(daten || "")),
+  updateVorherige: (daten) => ipcRenderer.invoke("ledok:updateVorherige", String(daten || "")),
   sicherungenOeffnen: () => ipcRenderer.invoke("ledok:sicherungenOeffnen"),
   // Verschlüsselte Daten je Speicherschlüssel als Datei im Benutzerordner (Lesen synchron, weil die App beim Start sofort prüft, ob Daten da sind)
   datenLaden: (key) => ipcRenderer.sendSync("ledok:datenLaden", String(key)),
