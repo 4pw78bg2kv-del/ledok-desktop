@@ -10,6 +10,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 ## Unveröffentlicht
 
 **Neu**
+- Unter **Einstellungen → Daten & Sicherheit** gibt es die **Datenprüfung**. Sie findet Bewertungen, Notizen, Texte und Förderpläne, die zu keinem Kind oder Thema mehr gehören, und räumt sie auf Wunsch auf. Vorher legt LeDoK automatisch eine Sicherung an.
+- Unter **Einstellungen → Dokumente → Druckbild** stellst du für alle Ausdrucke die **Schriftgröße** (klein bis sehr groß) und die **Schriftart** (mit oder ohne Serifen) ein. Auf Wunsch druckt LeDoK Logo und Diagramme in **Graustufen**, das spart Farbe am Schulkopierer.
 - **Schnellsuche:** Mit Strg+K (Mac: ⌘K) oder dem Knopf ⌕ oben findest du ein Kind, ein Thema oder eine Einstellung und springst direkt hin.
 - **Druckvorschau:** Vor jedem Druck zeigt LeDoK eine Vorschau der Seiten. Erst mit „Drucken …“ öffnet sich der Druckdialog.
 - **Förderpläne:** Unter **Kind → Förderplan** hältst du Ausgangslage, Ziele, Maßnahmen, Zuständige, Termine und den Stand der Überprüfung fest. Mit einem Klick übernimmst du Übungsfelder und Ziele aus dem LEG-Bogen. Der Plan wird mit Briefkopf gedruckt, alle Förderpläne der Klasse druckst du unter **Export** auf einmal.
