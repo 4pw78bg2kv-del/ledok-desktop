@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-DaGp/fSWfzl5l+cdj5nvTOSLFKCJBpTlDveQswZ4oxU='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wk+1ipNgWuR3CziEhfO6m8q2tHB+sVrEnkkjpvOQ0xg='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -2717,9 +2717,27 @@ const DEFAULT_LEG = ()=>({
 });
 const DEFAULT_KOPF = ()=>({logo:"",anschrift:"",fuss:"",leg:true,bericht:true,liste:false});
 const LOGO_RE=/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-const legBlock=typ=>S.meta.leg.bloecke.find(b=>b.typ===typ);
-const legAn=typ=>{const b=legBlock(typ);return !!(b&&b.an)};
-const legTitel=typ=>{const b=legBlock(typ);return b&&b.titel!=null?b.titel:(LEG_ABSCHNITTE[typ].titel||"")};
+const legBlock=(typ,L=S.meta.leg)=>L.bloecke.find(b=>b.typ===typ);
+const legAn=(typ,L)=>{const b=legBlock(typ,L);return !!(b&&b.an)};
+const legTitel=(typ,L)=>{const b=legBlock(typ,L);return b&&b.titel!=null?b.titel:(LEG_ABSCHNITTE[typ].titel||"")};
+/* Weitere LEG-Vorlagen (S.meta.legVorlagen) gelten für die gewählten Jahrgangsstufen; sonst gilt die Standardvorlage S.meta.leg */
+const legVorlage=id=>id==="std"?S.meta.leg:S.meta.legVorlagen.find(v=>v.id===id);
+const legFuer=kid=>S.meta.legVorlagen.find(v=>v.jgst.includes(+kid.jgst))||S.meta.leg;
+const legVorlageName=L=>L===S.meta.leg?"Standard":L.name;
+function legVorlageBereinigen(v){
+  const L=legMigration(v);
+  L.id=idOk(L.id)&&L.id!=="std"?L.id:neueId();
+  L.name=typeof L.name==="string"&&L.name.trim()?L.name.trim().slice(0,60):"Vorlage";
+  L.jgst=[...new Set((Array.isArray(L.jgst)?L.jgst:[]).map(Number).filter(j=>j>=1&&j<=4))].sort();
+  return L;
+}
+function kopfBereinigen(k){
+  const K=Object.assign(DEFAULT_KOPF(),k&&typeof k==="object"?k:{});
+  if(typeof K.logo!=="string"||!LOGO_RE.test(K.logo))K.logo="";
+  for(const f of ["anschrift","fuss"])K[f]=typeof K[f]==="string"?K[f]:"";
+  for(const f of ["leg","bericht","liste"])K[f]=!!K[f];
+  return {logo:K.logo,anschrift:K.anschrift,fuss:K.fuss,leg:K.leg,bericht:K.bericht,liste:K.liste};
+}
 /* Ältere Daten (Überschriften + Schalter) in Abschnitte überführen und alles in gültiger Form halten */
 function legMigration(L){
   const dl=DEFAULT_LEG();L=L&&typeof L==="object"?L:dl;
@@ -2749,7 +2767,7 @@ Regeln: wertschätzend und beobachtungsnah formulieren, keine Diagnosen, keine S
 function defaultState(){
   return {
     version:1,
-    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
+    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
     kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[]
   };
 }
@@ -2965,7 +2983,8 @@ function migrate(st){
   st.meta.asvModus=st.meta.asvModus||{};
   for(const r of st.raster)if(!st.meta.faecher.some(f=>f.name===r.fach))st.meta.faecher.push({name:r.fach,kurz:r.fach,prefix:"X",aktiv:true,benotet:true});
   st.meta.leg=legMigration(st.meta.leg);
-  {const K=Object.assign(DEFAULT_KOPF(),st.meta.kopf||{});if(!LOGO_RE.test(K.logo))K.logo="";for(const f of ["anschrift","fuss"])K[f]=typeof K[f]==="string"?K[f]:"";for(const f of ["leg","bericht","liste"])K[f]=!!K[f];st.meta.kopf=K}
+  st.meta.kopf=kopfBereinigen(st.meta.kopf);
+  st.meta.legVorlagen=(Array.isArray(st.meta.legVorlagen)?st.meta.legVorlagen:[]).filter(v=>v&&typeof v==="object").map(legVorlageBereinigen);
   st.proben=Array.isArray(st.proben)?st.proben:[];
   st.kinder=st.kinder||[];st.kinder.forEach(k=>{if(k.klasse==null)k.klasse="";if(!Array.isArray(k.faecherNur))k.faecherNur=[];if(!Array.isArray(k.begabt))k.begabt=[]});st.notizen=st.notizen||[];st.raster=st.raster||d.raster;st.eintraege=st.eintraege||[];st.texte=st.texte||{};
   if(st.raster.some(r=>r.ebene==null))baumMigration(st);
@@ -3206,13 +3225,14 @@ function legDruck(kids){
   const d=dialog(`<form id="ldf"><h2>LEG-Bogen drucken</h2><p class="small muted">Nachname und Geburtsdatum erscheinen im Kopf des Bogens. Fehlende Angaben kannst du hier ergänzen.</p>
    <div class="tw" style="max-height:52vh"><table class="edit"><tr><th>Kind</th><th>Nachname</th><th>Geburtsdatum</th></tr>
    ${kids.map(k=>`<tr><td><b>${esc(k.vorname||k.id)}</b> <span class="muted small">${esc(k.id)}</span></td><td><input type="text" id="ln-${k.id}" value="${esc(k.nachname||"")}" autocomplete="off"></td><td><input type="date" id="lg-${k.id}" value="${esc(k.geburt||"")}"></td></tr>`).join("")}</table></div>
+   ${S.meta.legVorlagen.length?`<label class="f" style="margin-top:.7rem">Vorlage<select id="ldVorlage"><option value="">automatisch nach Jahrgangsstufe</option><option value="std">Standard</option>${S.meta.legVorlagen.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join("")}</select></label>`:""}
    <label class="row small" style="gap:.4rem;margin-top:.7rem"><input type="checkbox" id="ldSave" checked> für künftige Ausdrucke verschlüsselt speichern</label>
    <p class="small muted">Ohne Haken werden die Angaben nur für diesen Ausdruck verwendet. Nachnamen und Geburtsdaten erscheinen nie im CSV- oder KI-Export; im KI-Export werden gespeicherte Nachnamen zusätzlich geschwärzt.</p>
    <div class="row"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Drucken</button></div></form>`,true);
   const first=$(`#ln-${kids[0].id}`);if(first)first.focus();
   $("#ldf").onsubmit=e=>{e.preventDefault();const tmp={},sp=$("#ldSave").checked;
     for(const k of kids){const n=$("#ln-"+k.id).value.trim(),g=$("#lg-"+k.id).value;tmp[k.id]={nachname:n,geburt:g};if(sp){k.nachname=n;k.geburt=g}}
-    if(sp)save();d.close();UI.legTmp=tmp;const html=kids.map(legSeite).join("");UI.legTmp=null;drucke(html)};
+    if(sp)save();d.close();UI.legTmp=tmp;const wahl=$("#ldVorlage")?legVorlage($("#ldVorlage").value):null;const html=kids.map(k=>legSeite(k,wahl||legFuer(k))).join("");UI.legTmp=null;drucke(html)};
 }
 
 /* ---------- Druckseiten ---------- */
@@ -3238,12 +3258,28 @@ function legInhalt(kid){
   return {persoenlich:o.persoenlich||"",stark:o.stark||[],ueben:o.ueben||[],ziele:o.ziele||[],vereinbarung:o.vereinbarung||"",
     faecher:g.faecher.map(f=>({...f,text:o.faecher&&o.faecher[f.fach]!=null?o.faecher[f.fach]:f.text})).filter(f=>f.text.trim()!=="")};
 }
+/* Vorlage, die unter Einstellungen → Dokumente gerade bearbeitet wird */
+function legBearbeitet(){const L=legVorlage(UI.legV||"std");if(!L)UI.legV="std";return L||S.meta.leg}
+const legPfad=L=>L===S.meta.leg?"meta.leg":"meta.legVorlagen."+S.meta.legVorlagen.indexOf(L);
+/* Austauschdatei .ledok-vorlage: Aufbau des LEG-Bogens und auf Wunsch der Briefkopf – keine Schülerdaten */
+function vorlageDatei(L,mitKopf){
+  const d={app:"ledok-vorlage",v:1,name:legVorlageName(L),schule:S.meta.schule||"",erstellt:new Date().toISOString(),leg:{bloecke:JSON.parse(JSON.stringify(L.bloecke)),selbst:[...L.selbst]}};
+  if(mitKopf)d.kopf=kopfBereinigen(S.meta.kopf);
+  return d;
+}
+function vorlageEinlesen(d){
+  if(!d||d.app!=="ledok-vorlage"||!d.leg||typeof d.leg!=="object")throw new Error("Das ist keine LeDoK-Vorlage.");
+  const namen=new Set(["Standard",...S.meta.legVorlagen.map(v=>v.name)]);
+  let name=typeof d.name==="string"&&d.name.trim()?d.name.trim().slice(0,50):"Vorlage",n=name,i=2;while(namen.has(n))n=`${name} (${i++})`;
+  const L=legVorlageBereinigen({name:n,jgst:[],bloecke:d.leg.bloecke,selbst:Array.isArray(d.leg.selbst)?d.leg.selbst.filter(x=>typeof x==="string").map(x=>x.slice(0,200)):undefined});
+  return {L,kopf:d.kopf?kopfBereinigen(d.kopf):null};
+}
 /* Vorschau unter Einstellungen → Dokumente; im Kürzel-Modus ohne Namen */
 function dokVorschau(){
   const k=kidById(UI.dokKind)||sortedKids("alle")[0];
   if(!k)return `<p class="muted">Lege zuerst Kinder an, dann siehst du hier die Vorschau.</p>`;
   const kid=UI.showNames?k:{...k,vorname:k.id,nachname:"",geburt:""};
-  return UI.dokArt==="bericht"?berichtSeite(kid):legSeite(kid);
+  return UI.dokArt==="bericht"?berichtSeite(kid):legSeite(kid,legBearbeitet());
 }
 /* Logo verkleinern (höchstens 600 × 240 Pixel), damit die Daten klein bleiben */
 function logoVerkleinern(file){
@@ -3260,8 +3296,9 @@ function platzhalterFuellen(text,kid,P,d){
     Lehrkraft:m.lehrkraft,Datum:fmtDate(today()),"Stärken":joinList(d.stark),"Übungsfelder":joinList(d.ueben),Ziele:joinList(d.ziele)};
   return String(text).replace(/\{([^{}]+)\}/g,(x,k)=>w[k]!=null?w[k]:x);
 }
-function legSeite(kid){
-  const d=legInhalt(kid), L=S.meta.leg, P=(UI.legTmp&&UI.legTmp[kid.id])||kid;
+function legSeite(kid,L){
+  if(!L||!Array.isArray(L.bloecke))L=legFuer(kid); // auch als kids.map(legSeite) aufrufbar
+  const d=legInhalt(kid), P=(UI.legTmp&&UI.legTmp[kid.id])||kid;
   const name=esc([kid.vorname||kid.id,P.nachname||""].join(" ").trim()), geb=P.geburt?"geb. "+fmtDate(P.geburt)+" · ":"";
   const li=a=>a.length?`<ul>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:`<p style="color:#888">– noch keine Beobachtungen –</p>`;
   const zeilen=t=>{const [h,...r]=String(t).split("\n");return esc(h)+r.map(x=>`<br><small>${esc(x)}</small>`).join("")};
@@ -3291,7 +3328,7 @@ function legSeite(kid){
   return `<section class="page leg">${kopf("Lernentwicklungsgespräch","leg")}
   <h2>${name}</h2><div style="font-size:10pt;color:#555">${geb}Jahrgangsstufe ${kid.jgst}${kid.klasse?" · Klasse "+esc(kid.klasse):""} · Gespräch am ____________</div>
   ${html}${fuss("leg")}
-  </section>${legAn("verlauf")?verlaufSeite(kid):""}`;
+  </section>${legAn("verlauf",L)?verlaufSeite(kid):""}`;
 }
 function verlaufSeite(kid){
   return `<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – Lernverlauf</h2>
@@ -4015,8 +4052,8 @@ schuljahr(){
      <div class="sjbody"><b>${t}</b><p class="small" style="margin:.15rem 0">${d}</p>${st?`<p class="small muted" style="margin:0">Status: ${st}</p>`:""}</div><div class="sjact">${btn}</div></li>`).join("")}</ol></div>`;
 },
 dokumente(){
-  const K=S.meta.kopf,L=S.meta.leg,n=L.bloecke.length;
-  const abschnitt=(b,i)=>{const A=LEG_ABSCHNITTE[b.typ],pfad="meta.leg.bloecke."+i;
+  const K=S.meta.kopf,L=legBearbeitet(),n=L.bloecke.length,std=L===S.meta.leg,V=S.meta.legVorlagen;
+  const abschnitt=(b,i)=>{const A=LEG_ABSCHNITTE[b.typ],pfad=legPfad(L)+".bloecke."+i;
     return `<li class="dabs${b.an?"":" aus"}"><div class="row" style="gap:.5rem;flex-wrap:nowrap">
      <label class="row small" style="gap:.4rem;flex:1;min-width:0"><input type="checkbox" ${b.an?"checked":""} data-bind="${pfad}.an" data-rerender aria-label="${esc(A.name)} zeigen"> <b>${esc(A.name)}</b>${A.info?` <span class="muted">· ${esc(A.info)}</span>`:""}</label>
      <button class="btn ghost small" data-act="legAbschnitt" data-v="hoch" data-i="${i}" ${i?"":"disabled"} title="nach oben" aria-label="${esc(A.name)} nach oben">↑</button><button class="btn ghost small" data-act="legAbschnitt" data-v="runter" data-i="${i}" ${i<n-1?"":"disabled"} title="nach unten" aria-label="${esc(A.name)} nach unten">↓</button>
@@ -4035,7 +4072,15 @@ dokumente(){
    <label class="f">Anschrift und Kontakt (mehrere Zeilen möglich)<textarea id="kopfAnschrift" rows="3" data-bind="meta.kopf.anschrift" placeholder="Schulstraße 1 · 12345 Musterstadt&#10;Tel. 01234 5678 · sekretariat@…">${esc(K.anschrift)}</textarea></label>
    <label class="f">Fußzeile (optional)<input type="text" value="${esc(K.fuss)}" data-bind="meta.kopf.fuss" placeholder="z. B. Vertraulich – nur für das Gespräch mit den Eltern"></label>
    <div class="row small" style="gap:1rem"><span>Verwenden für:</span>${[["leg","LEG-Bogen"],["bericht","Berichte"],["liste","Listen, Verlauf, Proben"]].map(([k,l])=>`<label class="row" style="gap:.35rem"><input type="checkbox" ${K[k]?"checked":""} data-bind="meta.kopf.${k}" data-rerender> ${l}</label>`).join("")}</div></div>
-  <div class="card stack"><h3 style="margin:0">LEG-Bogen: Abschnitte</h3>
+  <div class="card stack"><h3 style="margin:0">LEG-Bogen: Vorlagen</h3>
+   <div class="row"><label class="row small" style="gap:.4rem">Bearbeiten<select data-chg="legV" aria-label="Vorlage bearbeiten"><option value="std" ${std?"selected":""}>Standard</option>${V.map(v=>`<option value="${esc(v.id)}" ${v===L?"selected":""}>${esc(v.name)}</option>`).join("")}</select></label>
+    <span class="spacer"></span><button class="btn" data-act="legVNeu">+ Neue Vorlage</button>${std?"":`<button class="btn ghost danger" data-act="legVWeg">Vorlage löschen</button>`}</div>
+   ${std?`<p class="small muted" style="margin:0">Die Standardvorlage gilt für alle Kinder, für deren Jahrgangsstufe keine andere Vorlage gewählt ist.${V.length?" Weitere: "+V.map(v=>`${esc(v.name)} (${v.jgst.length?"Jgst. "+v.jgst.join(", "):"keine Jgst."})`).join(" · "):""}</p>`
+    :`<label class="f">Name<input type="text" value="${esc(L.name)}" data-bind="${legPfad(L)}.name" data-rerender maxlength="60"></label>
+     <div class="row small" style="gap:1rem"><span>Gilt für Jahrgangsstufe:</span>${[1,2,3,4].map(j=>`<label class="row" style="gap:.35rem"><input type="checkbox" ${L.jgst.includes(j)?"checked":""} data-chg="legVJgst" data-v="${j}"> ${j}</label>`).join("")}</div>
+     <p class="small muted" style="margin:0">Beim Drucken lässt sich auch eine andere Vorlage wählen.</p>`}
+   <div class="row"><button class="btn" data-act="vorlageExport">Vorlage exportieren …</button><button class="btn" data-act="vorlageImport">Vorlage importieren …</button></div></div>
+  <div class="card stack"><h3 style="margin:0">LEG-Bogen: Abschnitte${V.length?` <span class="small muted">· Vorlage „${esc(legVorlageName(L))}“</span>`:""}</h3>
    <p class="small muted" style="margin:0">Haken = wird gedruckt. Mit ↑ ↓ änderst du die Reihenfolge; Stärken und Übungsfelder stehen nebeneinander, wenn sie direkt aufeinander folgen.</p>
    <ol class="dabslist">${L.bloecke.map(abschnitt).join("")}</ol>
    <div class="note small">Platzhalter für Freitexte: ${PLATZHALTER.map(x=>`<code>{${x}}</code>`).join(" ")}<br>Beispiel: „Liebe Eltern, am {Datum} sprechen wir über die Lernentwicklung von {Vorname}.“</div>
@@ -4392,19 +4437,19 @@ document.addEventListener("pointerout",e=>{if(e.target.closest&&e.target.closest
 /* ---------- LEG-Editor ---------- */
 function legEditor(kid){
   const d=legInhalt(kid), o=legOverride(kid), lines=a=>esc(a.join("\n"));
-  const lt=typ=>esc(legTitel(typ)||LEG_ABSCHNITTE[typ].name)+(legAn(typ)?"":` <span class="muted">(nicht auf dem Bogen)</span>`);
+  const L=legFuer(kid),lt=typ=>esc(legTitel(typ,L)||LEG_ABSCHNITTE[typ].name)+(legAn(typ,L)?"":` <span class="muted">(nicht auf dem Bogen)</span>`);
   return `<div class="row" style="margin:.4rem 0 .8rem"><span class="small ${o?"":"muted"}">${o?"<b>Individuell angepasst</b>"+(o.geaendert?" am "+fmtTs(o.geaendert):""):"Automatischer Entwurf aus den Textbausteinen – alles hier ist frei änderbar."}</span><span class="spacer"></span>
    ${o?`<button class="btn" data-act="legReset">Auf Entwurf zurücksetzen</button>`:""}<button class="btn primary" data-act="legSave">Änderungen speichern</button><button class="btn" data-act="printOne" data-v="leg">Drucken</button></div>
   <div class="legedit">
-   <label class="f full"><span>Persönliche Worte oben auf dem Bogen (optional)${legAn("pers")?"":` <span class="muted">(nicht auf dem Bogen)</span>`}</span><textarea id="le-pers" rows="2" placeholder="z. B. Liebe Anna, ich freue mich, dass du so gerne liest!">${esc(d.persoenlich)}</textarea></label>
+   <label class="f full"><span>Persönliche Worte oben auf dem Bogen (optional)${legAn("pers",L)?"":` <span class="muted">(nicht auf dem Bogen)</span>`}</span><textarea id="le-pers" rows="2" placeholder="z. B. Liebe Anna, ich freue mich, dass du so gerne liest!">${esc(d.persoenlich)}</textarea></label>
    <label class="f"><span>${lt("stark")} – ein Punkt pro Zeile</span><textarea id="le-stark" rows="6">${lines(d.stark)}</textarea></label>
    <label class="f"><span>${lt("ueben")} – ein Punkt pro Zeile</span><textarea id="le-ueben" rows="6">${lines(d.ueben)}</textarea></label>
-   ${legAn("faecher")?`<div class="full small muted" style="margin-top:.2rem">Fächer – erste Zeile ist die Rückmeldung, weitere Zeilen erscheinen klein darunter. Feld leeren = Fach ausblenden.</div>
+   ${legAn("faecher",L)?`<div class="full small muted" style="margin-top:.2rem">Fächer – erste Zeile ist die Rückmeldung, weitere Zeilen erscheinen klein darunter. Feld leeren = Fach ausblenden.</div>
    ${legEntwurf(kid).faecher.map(f=>{const cur=(legOverride(kid)&&legOverride(kid).faecher&&legOverride(kid).faecher[f.fach]!=null)?legOverride(kid).faecher[f.fach]:f.text;return `<label class="f"><span><span class="pips">${pips(f.band)}</span> ${esc(f.fach)}</span><textarea data-lefach="${esc(f.fach)}" rows="3">${esc(cur)}</textarea></label>`}).join("")}`:""}
    <label class="f"><span>${lt("ziele")} – ein Ziel pro Zeile</span><textarea id="le-ziele" rows="3">${lines(d.ziele)}</textarea></label>
    <label class="f"><span>${lt("vereinb")} – Vorbelegung (optional)</span><textarea id="le-ver" rows="3" placeholder="leer lassen = Linien zum Ausfüllen im Gespräch">${esc(d.vereinbarung)}</textarea></label>
   </div>
-  <h3>Vorschau</h3><div class="preview">${legSeite(kid)}</div>`;
+  <h3>Vorschau${S.meta.legVorlagen.length?` <span class="small muted">· Vorlage „${esc(legVorlageName(L))}“</span>`:""}</h3><div class="preview">${legSeite(kid)}</div>`;
 }
 
 /* ---------- Kompetenzbaum je Kind ---------- */
@@ -5467,12 +5512,30 @@ const ACT = {
   printVerlauf:()=>{const kid=kidById(UI.kind);drucke(verlaufSeite(kid)+(UI.vMode==="thema"?`<section class="page">${kopf("Lernverlauf")}<h2>${esc(kid.vorname||kid.id)} – ${esc(UI.vFach==="ASV"?"Arbeits- und Sozialverhalten":UI.vFach)} je Thema</h2><div class="minis" style="margin-top:8px">${verlaufThemen(kid,UI.vFach)}</div>${fuss()}</section>`:""))},
   legSave:()=>{legCollect(kidById(UI.kind));render();toast("LEG-Bogen gespeichert.",2000)},
   legReset:async()=>{if(!await frage("Alle individuellen Änderungen am LEG-Bogen verwerfen?"))return;const kid=kidById(UI.kind),t=S.texte[textKey(kid)];if(t){delete t.leg;if(!t.bericht)delete S.texte[textKey(kid)]}save();render()},
-  legTitelReset:async()=>{if(await frage("Aufbau des LEG-Bogens auf Standard zurücksetzen? Überschriften, Reihenfolge und Sätze zur Selbsteinschätzung werden zurückgesetzt, eigene Freitext-Abschnitte entfernt.")){S.meta.leg=DEFAULT_LEG();save();render()}},
-  legAbschnitt:a=>{const L=S.meta.leg.bloecke,i=+a.dataset.i,b=L[i];if(!b)return;
+  legTitelReset:async()=>{if(await frage("Aufbau dieser LEG-Vorlage auf den Auslieferungszustand zurücksetzen? Überschriften, Reihenfolge und Sätze zur Selbsteinschätzung werden zurückgesetzt, eigene Freitext-Abschnitte entfernt.")){Object.assign(legBearbeitet(),DEFAULT_LEG());save();render()}},
+  legAbschnitt:a=>{const L=legBearbeitet().bloecke,i=+a.dataset.i,b=L[i];if(!b)return;
     if(a.dataset.v==="weg"){L.splice(i,1)}
     else{const j=a.dataset.v==="hoch"?i-1:i+1;if(j<0||j>=L.length)return;L[i]=L[j];L[j]=b}
     save();const y=window.scrollY;render();window.scrollTo(0,y)},
-  legFrei:()=>{S.meta.leg.bloecke.push({typ:"frei",an:true,titel:"Neuer Abschnitt",text:"",linien:2,id:neueId()});save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  legFrei:()=>{legBearbeitet().bloecke.push({typ:"frei",an:true,titel:"Neuer Abschnitt",text:"",linien:2,id:neueId()});save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  legVNeu:async()=>{const name=await askText("Neue LEG-Vorlage","Name der Vorlage, z. B. „LEG Jgst. 1 kindgerecht“. Sie startet als Kopie der gerade gezeigten Vorlage.","");if(!name||!name.trim())return;
+    const q=legBearbeitet(),v=legVorlageBereinigen({name,jgst:[],bloecke:JSON.parse(JSON.stringify(q.bloecke)),selbst:[...q.selbst]});
+    S.meta.legVorlagen.push(v);UI.legV=v.id;save();render();toast(`Vorlage „${esc(v.name)}“ angelegt. Wähle unten, für welche Jahrgangsstufen sie gilt.`,4000)},
+  legVWeg:async()=>{const L=legBearbeitet();if(L===S.meta.leg)return;if(!await frage(`Vorlage „${L.name}“ löschen? Kinder ihrer Jahrgangsstufen bekommen dann die Standardvorlage.`))return;
+    S.meta.legVorlagen=S.meta.legVorlagen.filter(v=>v!==L);UI.legV="std";save();render()},
+  vorlageExport:()=>{const L=legBearbeitet(),K=S.meta.kopf,hatKopf=LOGO_RE.test(K.logo)||!!K.anschrift.trim()||!!K.fuss.trim();
+    const d=dialog(`<form id="vexf"><h2>Vorlage exportieren</h2><p class="small">Die Datei enthält den Aufbau der Vorlage „${esc(legVorlageName(L))}“: Abschnitte, Überschriften, Freitexte und Sätze zur Selbsteinschätzung. <b>Schülerdaten sind nicht enthalten.</b> Kolleginnen und Kollegen lesen sie unter Einstellungen → Dokumente → „Vorlage importieren …“ ein.</p>
+      ${hatKopf?`<label class="row small" style="gap:.4rem"><input type="checkbox" id="vexKopf" checked> Briefkopf der Schule mitgeben (Logo, Anschrift, Fußzeile)</label>`:""}
+      <div class="row" style="margin-top:1rem"><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Datei speichern</button></div></form>`);
+    $("#vexf").onsubmit=e=>{e.preventDefault();const mit=!!($("#vexKopf")&&$("#vexKopf").checked);d.close();
+      const n=legVorlageName(L).replace(/[^A-Za-z0-9ÄÖÜäöüß_-]+/g,"-").replace(/^-+|-+$/g,"")||"Vorlage";
+      download(`LeDoK-Vorlage-${n}.ledok-vorlage`,JSON.stringify(vorlageDatei(L,mit),null,1),"application/json");toast("Vorlage gespeichert.",2500)}},
+  vorlageImport:async()=>{const f=await pickFile(".ledok-vorlage,.json,application/json");if(!f)return;
+    if(f.size>3e6)return info("Diese Datei ist zu groß für eine Vorlage.");
+    let r;try{r=vorlageEinlesen(JSON.parse(await f.text()))}catch(e){return info("Diese Datei kann nicht gelesen werden. Bitte eine Datei mit der Endung .ledok-vorlage wählen.")}
+    S.meta.legVorlagen.push(r.L);UI.legV=r.L.id;
+    if(r.kopf&&(r.kopf.logo||r.kopf.anschrift.trim()||r.kopf.fuss.trim())&&await frage("Die Datei enthält auch einen Briefkopf (Logo, Anschrift, Fußzeile). Soll er deinen bisherigen Briefkopf ersetzen?",{ja:"Briefkopf übernehmen",nein:"Nur die Vorlage"}))S.meta.kopf=r.kopf;
+    save();render();toast(`Vorlage „${esc(r.L.name)}“ übernommen. Wähle, für welche Jahrgangsstufen sie gilt.`,4500)},
   dokArt:a=>{UI.dokArt=a.dataset.v;const y=window.scrollY;render();window.scrollTo(0,y)},
   kopfLogo:async()=>{const f=await pickFile("image/png,image/jpeg,image/webp");if(!f)return;
     if(f.size>8e6)return info("Das Bild ist zu groß. Bitte eine Datei unter 8 MB wählen.");
@@ -5936,7 +5999,7 @@ const CHG = {
     fo.name=nu;S.raster.forEach(r=>{if(r.fach===old)r.fach=nu});S.notizen.forEach(n=>{if(n.kat===old)n.kat=nu});
     for(const t of Object.values(S.texte))if(t.leg&&t.leg.faecher&&old in t.leg.faecher){t.leg.faecher[nu]=t.leg.faecher[old];delete t.leg.faecher[old]}
     if(UI.fach===old)UI.fach=nu;if(UI.uFach===old)UI.uFach=nu;if(UI.vFach===old)UI.vFach=nu;save();render()},
-  legSelbst:el=>{S.meta.leg.selbst=el.value.split("\n").map(x=>x.trim()).filter(Boolean);save();const p=$("#dokPrev");if(p)p.innerHTML=dokVorschau()},
+  legSelbst:el=>{legBearbeitet().selbst=el.value.split("\n").map(x=>x.trim()).filter(Boolean);save();const p=$("#dokPrev");if(p)p.innerHTML=dokVorschau()},
   kiOpt:el=>{UI.ki[el.dataset.o]=el.checked},
   kiDate:el=>{UI.ki[el.dataset.o]=el.value},
   kiOk:el=>{UI.ki.ok=el.checked;const ta=$("#kiTA");if(ta)UI.ki.text=ta.value;document.querySelectorAll('[data-act=kiDownload],[data-act=kiCopy]').forEach(b=>b.disabled=!el.checked)},
@@ -5968,6 +6031,10 @@ const CHG = {
     else{delete r.hier;toast("Die Unterbereiche werden wieder einzeln bewertet.",3000)}
     DV++;save();render()},
   namenSwitch:el=>{UI.showNames=el.checked;render()},
+  legV:el=>{UI.legV=el.value;const y=window.scrollY;render();window.scrollTo(0,y)},
+  legVJgst:el=>{const L=legBearbeitet(),j=+el.dataset.v;if(L===S.meta.leg)return;
+    if(el.checked){for(const v of S.meta.legVorlagen)v.jgst=v.jgst.filter(x=>x!==j);L.jgst=[...L.jgst,j].sort()}else L.jgst=L.jgst.filter(x=>x!==j);
+    save();const y=window.scrollY;render();window.scrollTo(0,y)},
   dokKind:el=>{UI.dokKind=el.value;const p=$("#dokPrev");if(p)p.innerHTML=dokVorschau()},
   rAlleF:el=>{UI.rAlleF=el.checked;render()},
   rFilter:el=>{UI.rFilter=el.value;const y=window.scrollY;render();window.scrollTo(0,y)},
