@@ -11,6 +11,10 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 **Neu**
 - **Dienste:** Unter **Listen → Dienste** verteilst du Klassendienste wie Tafeldienst, Austeildienst oder Blumendienst reihum an alle Kinder, jede Woche, alle zwei Wochen oder jeden Schultag. LeDoK rechnet selbst aus, wer dran ist, und lässt die Dienste nach jedem Durchlauf weiterrücken, damit jedes Kind mal jeden Dienst hat. Du kannst die Reihenfolge auslosen, einzelne Kinder pausieren lassen und für eine Runde Kinder tauschen. **Aushang drucken** druckt den Plan in großer Schrift für die Klasse. Auf **Heute** zeigt die Karte **Dienste**, wer dran ist, und nennt für fehlende Kinder eine Vertretung.
+- Im neuen Reiter **Klassenbuch** führst du das Klassenbuch deiner Klasse. Die Woche zeigt Montag bis Freitag mit den Stunden aus deinem Stundenplan. Zu jeder Stunde trägst du Fach, Thema, Hausaufgabe und eine Bemerkung ein, zu jedem Tag eine Bemerkung wie „Wandertag“. Wer gefehlt hat, übernimmt LeDoK aus den Fehltagen. Mit **Woche drucken** bekommst du die Klassenbuchseite zum Abheften.
+- Jede Stunde verknüpfst du mit den passenden **Lernzielen aus dem LehrplanPLUS**: anklicken, suchen oder mit „wie letzte Stunde“ übernehmen. Auf Wunsch werden sie gleich ★ aktuelles Unterrichtsthema und erscheinen in der Beobachtung.
+- Unter **Klassenbuch → Lernziele** siehst du je Fach, welche Kompetenzerwartungen im Schuljahr oder Halbjahr schon behandelt wurden, wie oft und wann zuletzt, was noch offen ist und bei wie vielen Kindern du dazu schon etwas bewertet hast. Die Übersicht kannst du drucken.
+- Auf **Heute** zeigt die Karte **Klassenbuch** die Stunden des Tages. Ein Klick öffnet den Eintrag.
 
 ## 1.1.3 (Beta)
 

@@ -1107,3 +1107,76 @@ test("Dienste: Daten aus Dateien werden bereinigt", async ({ page }) => {
   expect(r).toMatchObject({ rhythmus: "woche", start: "", versatz: 3, reihe: ["S01"], aus: [], tausch: { 2: { "a1|0": "S03" } } });
   expect(Object.keys(r.tausch)).toEqual(["2"]);
 });
+
+test("Klassenbuch: Stunde mit Lernzielen eintragen, Lehrplanbezug ansehen und drucken @handy", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00")); // ein Dienstag
+  await neueKlasse(page);
+  await page.evaluate(() => { S.klassenbuch = S.klassenbuch.filter((e) => e.d < "2026-10-20"); render(); });
+  const karte = page.locator("#klassenbuchHeute");
+  await expect(karte).toContainText("0 von 5 eingetragen");
+  await karte.locator('[data-act="kbEdit"][data-s="1"]').click();
+  await expect(page.locator("#kbFach")).toHaveValue("Mathematik");
+  await page.fill("#kbThema", "Zehnerübergang mit dem Rechenschiff");
+  await page.fill("#kbHa", "Arbeitsheft S. 14");
+  await page.fill("#kbQ", "Zahlen zerlegen");
+  await page.locator("#kbL .kbit").first().click();
+  await expect(page.locator("#kbSel .kblz")).toHaveCount(1);
+  await page.click('#kbf button[type="submit"]');
+  const e = await page.evaluate(() => { const e = kbVon("2026-10-20", 1); return { e, akt: istAktuell(knoten(e.lz[0])) }; });
+  expect(e.e).toMatchObject({ fach: "Mathematik", thema: "Zehnerübergang mit dem Rechenschiff", ha: "Arbeitsheft S. 14", lz: ["M-1.1.6"] });
+  expect(e.akt).toBe(true);
+  await expect(karte).toContainText("1 von 5 eingetragen");
+
+  // „wie letzte Stunde“ übernimmt die Lernziele der letzten Mathestunde
+  await karte.locator('[data-act="kbNeu"]').click();
+  await page.fill("#kbFach", "Mathe");
+  await page.click("#kbLetzte");
+  await expect(page.locator("#kbSel .kblz")).toHaveCount(1);
+  await page.click('#dlg [data-act="closeDlg"]');
+
+  // Woche und Lernziele
+  await page.click('[data-act="kbGo"]');
+  await expect(page.locator(".kbtag.heute .kbrow.ein")).toContainText("Zehnerübergang");
+  await page.click('[data-act="kbTab"][data-v="lernziele"]');
+  await page.click('[data-act="kbFach"][data-v="Mathematik"]');
+  const zeile = page.locator('[data-act="kbLzInfo"][data-v="M-1.1.6"]');
+  await expect(zeile).not.toHaveClass(/offen/);
+  await zeile.click();
+  await expect(page.locator("#dlg")).toContainText("Zehnerübergang mit dem Rechenschiff");
+  await page.click("#kbBeob");
+  expect(await page.evaluate(() => ({ tab: UI.tab, fach: UI.fach }))).toEqual({ tab: "erfassen", fach: "Mathematik" });
+
+  // Druck: Woche und Lehrplanbezug vollständig
+  const html = await page.evaluate(() => kbWocheSeite("2026-10-19") + kbLzSeite("Mathematik", "sj") + kbLzSeite("Deutsch", "2"));
+  expect(html).not.toMatch(/undefined|NaN|\[object /);
+  expect(html).toContain("Zehnerübergang mit dem Rechenschiff");
+  expect(html).toContain("Zahlen zerlegen und Zerlegungen erklären");
+  expect((html.match(/<section class="page/g) || []).length).toBe(3);
+
+  // Bemerkung zum Tag und Löschen eines Eintrags
+  await page.evaluate(() => { UI.tab = "klassenbuch"; UI.kbTab = "woche"; render(); });
+  await page.locator('.kbtag.heute [data-act="kbEdit"][data-s="0"]').click();
+  await page.fill("#kbN", "Wandertag ab der 3. Stunde");
+  await page.click('#kbf button[type="submit"]');
+  await expect(page.locator(".kbtag.heute .kbbem")).toContainText("Wandertag");
+  await page.locator('.kbtag.heute [data-act="kbEdit"][data-s="1"]').click();
+  await page.click("#kbWeg");
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => kbVon("2026-10-20", 1))).toBeNull();
+});
+
+test("Klassenbuch: Daten aus Dateien werden bereinigt und Kürzel im Raster wandern mit", async ({ page }) => {
+  await neueKlasse(page, { demo: false });
+  const r = await page.evaluate(() => klassenbuchBereinigen([null, "x", { d: "gestern", thema: "a" }, { d: "2026-10-20", std: 99, fach: " Mathe ", lz: ["M-1.1.1", "M-1.1.1", "<b>", 5] },
+    { d: "2026-10-20", std: 8, thema: "doppelt" }, { d: "2026-10-19", std: 2 }, { id: "k1", d: "2026-10-19", std: -3, n: "Wandertag" }]));
+  expect(r).toEqual([
+    { id: "k1", d: "2026-10-19", std: 0, fach: "", thema: "", ha: "", n: "Wandertag", lz: [] },
+    { id: expect.stringMatching(/^[0-9a-f]{16}$/), d: "2026-10-20", std: 8, fach: "Mathe", thema: "", ha: "", n: "", lz: ["M-1.1.1"] },
+  ]);
+  const lz = await page.evaluate(() => {
+    S.klassenbuch = [{ id: "k1", d: "2026-10-20", std: 1, fach: "Mathematik", thema: "", ha: "", n: "", lz: ["M-1.1.1"] }];
+    CHG.compId({ dataset: { i: S.raster.findIndex((x) => x.id === "M-1.1.1") }, value: "M-1.1.1x" });
+    return S.klassenbuch[0].lz;
+  });
+  expect(lz).toEqual(["M-1.1.1x"]);
+});
