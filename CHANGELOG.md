@@ -9,6 +9,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+## 1.1.2 (Beta)
+
 **Neu**
 - Im neuen Reiter **Listen** sammelst du **Geld** ein oder hakst Rückmeldezettel und Unterschriften ab. Bei Geldlisten trägst du je Kind „bar“, „überwiesen“ oder „erlassen“ ein und siehst, wie viel schon da ist und wer noch fehlt. Für alle, die noch nicht bezahlt haben, druckst du **Zahlungsbriefe** an die Eltern. Ist unter **Klassenkasse** eine Bankverbindung eingetragen, steht auf dem Brief ein **GiroCode**: Die Eltern scannen ihn mit der Banking-App, Betrag und Verwendungszweck sind dann schon ausgefüllt.
 - Unter **Listen → Klassenkasse** führst du das **Kassenbuch** der Klasse mit Einnahmen, Ausgaben und Belegnummern. Das Geld aus den Sammellisten wird automatisch gebucht, der Kassenstand läuft mit. Das Kassenbuch kannst du für den Elternbeirat drucken.

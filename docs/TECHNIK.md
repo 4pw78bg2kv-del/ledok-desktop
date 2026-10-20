@@ -1,6 +1,6 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 20.10.2026 · `main` nach PR #25 · App-Version 1.1.0 Beta (mit unveröffentlichten Änderungen)
+Stand: 20.10.2026 · Branch `klassenorga` · App-Version 1.1.2 Beta
 
 Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung ([`docs/LeDoK-Bedienungsanleitung.docx`](LeDoK-Bedienungsanleitung.docx), auch in der App unter Hilfe), Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
