@@ -10,6 +10,7 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 ## Unveröffentlicht
 
 **Neu**
+- **Förderpläne:** Unter **Kind → Förderplan** hältst du Ausgangslage, Ziele, Maßnahmen, Zuständige, Termine und den Stand der Überprüfung fest. Mit einem Klick übernimmst du Übungsfelder und Ziele aus dem LEG-Bogen. Der Plan wird mit Briefkopf gedruckt, alle Förderpläne der Klasse druckst du unter **Export** auf einmal.
 - Unter **Einstellungen → Dokumente** gibt es einen **Briefkopf der Schule**: Logo, Anschrift und eine Fußzeile. Du legst fest, ob er auf LEG-Bögen, Berichten oder Listen erscheint.
 - Den **LEG-Bogen** baust du dort aus Abschnitten zusammen. Du schaltest Abschnitte ein und aus, benennst sie um und änderst ihre Reihenfolge. Eigene **Freitext-Abschnitte** können Platzhalter wie {Vorname}, {Datum} oder {Stärken} enthalten und Schreiblinien bekommen. Eine Vorschau zeigt sofort, wie der Bogen aussieht.
 - Für den LEG-Bogen kannst du **mehrere Vorlagen** anlegen, zum Beispiel eine kindgerechte für Jahrgangsstufe 1. Jede Vorlage gilt für die Jahrgangsstufen, die du auswählst, für alle anderen Kinder gilt die Standardvorlage. Beim Drucken kannst du auch eine andere Vorlage wählen.
