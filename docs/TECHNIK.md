@@ -1,6 +1,6 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 19.10.2026 · `main` nach PR #10 · App-Version 1.0.0 Beta (mit unveröffentlichten Änderungen)
+Stand: 20.10.2026 · `main` nach PR #13 · App-Version 1.0.0 Beta (mit unveröffentlichten Änderungen)
 
 Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung, Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
@@ -81,26 +81,28 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 
 | Zeilen (ca.) | Abschnitt |
 |---|---|
-| 1–590 | `<head>`, CSP-Meta, CSS (helles und dunkles Farbschema über `:root`-Variablen, Druck-CSS) |
-| 592 | `<script>` (genau ein Skriptblock; sein Hash steht in der CSP) |
-| 595–630 | Konstanten: `STORE_BASE`, `PROFIL_KEY`, ASV-Merkmale, Skala, `QUELLE` |
-| 631 | `LP_VORLAGE`: LehrplanPLUS 1/2, 3/4 und DaZ 1–4, ca. 3.700 Texte |
-| 2614–2717 | Migration des alten flachen Rasters, `defaultState()` |
-| 2743–2913 | Kryptografie, Speicher, Profile, Sicherungen |
-| 2914–2974 | `migrate()`, `datenBereinigen()` |
-| 2975–3101 | Berechnungen: Kompetenzbaum, `evalNode`, Fachwert, Note, Lernniveau, Jahrgangsstufen |
-| 3102–3251 | Textgenerierung (Bericht, LEG), Druckseiten |
-| 3252–3655 | UI-Zustand, Startbildschirm, Einrichtung, `render()`, Einstellungen, Raster-Teilansichten |
-| 3655–4435 | `VIEWS` (Hilfe, Heute, Erfassen, Übersicht, Kind, Sammelexport, Einstellungsseiten), Proben, Diagramme, KI-Export |
-| 4436–5012 | Rollen: Schulschlüssel, LeDoK-Admin, Hersteller-Bereich, Fachpakete, Rückmeldungen, Rückmeldung am selben Rechner |
-| 5013–5132 | Version und Updates, Problem melden |
-| 5133–5208 | Dialoge: `dialog`, `askText`, `frage`, `info`, `askPassword`, `pickFile`, `askFile` |
-| 5209–5811 | `ACT` (Aktionen), Übergabe/Import/CSV, Lehrplan-CSV |
-| 5812–5966 | Ereignisse, automatische Sperre, Beispieldaten, Start |
+| 1–605 | `<head>`, CSP-Meta, CSS (helles und dunkles Farbschema über `:root`-Variablen, Druck-CSS) |
+| 606 | `<script>` (genau ein Skriptblock; sein Hash steht in der CSP) |
+| 607–644 | Konstanten: `STORE_BASE`, `PROFIL_KEY`, ASV-Merkmale, Skala, `QUELLE` |
+| 645 | `LP_VORLAGE`: LehrplanPLUS 1/2, 3/4 und DaZ 1–4, ca. 3.700 Texte |
+| 2618–2756 | Migration des alten flachen Rasters, LEG-Abschnitte (`LEG_ABSCHNITTE`, `legMigration`), Briefkopf (`DEFAULT_KOPF`), `defaultState()` |
+| 2782–2955 | Kryptografie, Speicher, Profile, Sicherungen |
+| 2956–3012 | `migrate()`, `datenBereinigen()` |
+| 3013–3139 | Berechnungen: Kompetenzbaum, `evalNode`, Fachwert, Note, Lernniveau, Jahrgangsstufen |
+| 3140–3327 | Textgenerierung (Bericht, LEG), Druckseiten mit Briefkopf (`kopf`, `fuss`), Platzhalter, Dokument-Vorschau, Logo verkleinern |
+| 3328–3730 | UI-Zustand, Startbildschirm, Einrichtung, `render()`, Einstellungen, Raster-Teilansichten |
+| 3731–4574 | `VIEWS` (Hilfe, Heute, Erfassen, Übersicht, Kind, Sammelexport, Einstellungsseiten), Proben, Diagramme, LEG-Editor, KI-Export |
+| 4575–5116 | Rollen: Schulschlüssel, LeDoK-Admin, Hersteller-Bereich, Fachpakete, Rückmeldungen, Rückmeldung am selben Rechner |
+| 5117–5236 | Version und Updates, Problem melden |
+| 5237–5312 | Dialoge: `dialog`, `askText`, `frage`, `info`, `askPassword`, `pickFile`, `askFile` |
+| 5313–5926 | `ACT` (Aktionen), Übergabe/Import/CSV, Lehrplan-CSV |
+| 5927–6086 | Ereignisse, Vorschau beim Tippen, automatische Sperre, Beispieldaten, Start |
+
+Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen mit Kommentaren der Form `/* ---------- Name ---------- */`, nach denen du suchen kannst.
 
 ### Oberfläche
 
-- `render()` baut die Hauptansicht per `innerHTML` neu auf. Seiten liegen in `VIEWS` (`heute`, `erfassen`, `uebersicht`, `kind`, `export`, `hilfe` und die Einstellungsseiten `klasse`, `team`, `pakete`, `schuljahr`, `raster`, `bausteine`, `daten`). `ROLLEN_VIEWS` wird in `VIEWS` gemischt.
+- `render()` baut die Hauptansicht per `innerHTML` neu auf. Seiten liegen in `VIEWS` (`heute`, `erfassen`, `uebersicht`, `kind`, `export`, `hilfe` und die Einstellungsseiten `klasse`, `team`, `pakete`, `schuljahr`, `raster`, `bausteine`, `dokumente`, `daten`). `ROLLEN_VIEWS` wird in `VIEWS` gemischt.
 - Ereignisse sind delegiert: `data-act="x"` → `ACT.x(el)`, `data-chg="x"` → `CHG.x(el)`, `data-bind="pfad"` schreibt direkt in `S`. `ADMIN_ACT` und `ROLLEN_ACT` werden in `ACT` gemischt.
 - Inline-Handler (`onclick=` im HTML) sind durch die CSP gesperrt. Handler werden nach dem Rendern in JS gesetzt.
 - Alle Texte aus Daten laufen durch `esc()`.
@@ -133,7 +135,7 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg, faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, kopf{}, faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
@@ -152,6 +154,9 @@ S = {
 - `q` (Quelle): `b` Beobachtung, `l` Probe, `f` Fokuswoche.
 - `vp`/`von`: Eintrag stammt aus der Rückmeldung einer Fachlehrkraft (bei der Klassenlehrkraft). `ext:1`: Eintrag der Klassenlehrkraft, der als Verlauf im Fachpaket kam (bei der Fachlehrkraft); er wird nie zurückgemeldet.
 - `S.meta.protokoll`: höchstens 60 Einträge `{ts, text}`, für die Lehrkraft sichtbar unter Daten & Sicherheit.
+
+- `S.meta.leg`: Aufbau des LEG-Bogens als Folge von Abschnitten, `bloecke: [{typ, an, titel?, id?, text?, linien?}]`, dazu `selbst[]` (Sätze der Selbsteinschätzung). `typ` ist einer aus `LEG_ABSCHNITTE`: `pers`, `stark`, `ueben`, `faecher`, `selbst`, `ziele`, `vereinb`, `frei`, `unterschrift`, `verlauf`. Nur `frei` darf mehrfach vorkommen; es hat eine `id`, einen `text` mit Platzhaltern und 0–6 Schreiblinien. `legMigration()` überführt ältere `titel`/`zeigen`-Einstellungen ohne Verlust, sortiert ungültige oder doppelte Abschnitte aus und ergänzt fehlende Standardabschnitte. Platzhalter (`PLATZHALTER`, gefüllt von `platzhalterFuellen`): `{Vorname}`, `{Name}`, `{Klasse}`, `{Jgst}`, `{Schule}`, `{Schuljahr}`, `{Halbjahr}`, `{Lehrkraft}`, `{Datum}`, `{Stärken}`, `{Übungsfelder}`, `{Ziele}`.
+- `S.meta.kopf`: Briefkopf `{logo, anschrift, fuss, leg, bericht, liste}`. `logo` ist eine Data-URL, die nur gerendert wird, wenn sie auf `LOGO_RE` passt (PNG, JPEG oder WebP in Base64). Beim Einlesen verkleinert `logoVerkleinern()` das Bild auf höchstens 600 × 240 px und speichert es als PNG. Die drei Schalter legen fest, für welche Druckart der Briefkopf gilt.
 
 ### Migration
 
@@ -433,10 +438,14 @@ npm run dist:win | dist:mac | dist:linux
 | Fachlehrkraft startet ohne Klasse | Willkommensseite |
 | Versionsdialog und Problembericht ohne Schülernamen | Bericht enthält keine Namen |
 | Rückmeldung einer Fachlehrkraft am selben Rechner … | Rundlauf über `ledok.post.*` mit Bestätigung |
+| Dokumente: Briefkopf und Fußzeile … | Logo-Upload, Speichern, Briefkopf auf LEG-Bogen und Bericht |
+| Dokumente: LEG-Abschnitte ausschalten, verschieben und Freitext … | Reihenfolge, Schalter, Platzhalter werden gefüllt |
+| Dokumente: ältere LEG-Einstellungen werden übernommen | `legMigration()` |
+| Druck: alle Dokumente der Beispielklasse … | keine `undefined`/`NaN`/Platzhalter-Reste, Seitenzahl, PDF entsteht |
 
 CI: `.github/workflows/tests.yml` bei jedem Push und Pull Request; bei Fehlern liegt ein Artefakt „testbericht“ am Lauf.
 
-Nicht automatisch getestet: echte Installation unter Windows und macOS, Update-Einspielen in einer gepackten App, Drucken.
+Nicht automatisch getestet: echte Installation unter Windows und macOS, Update-Einspielen in einer gepackten App, der Druckdialog des Betriebssystems.
 
 ## 13 · Content-Security-Policy und Skript-Hash
 
