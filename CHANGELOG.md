@@ -9,7 +9,14 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- Im neuen Reiter **Listen** sammelst du **Geld** ein oder hakst Rückmeldezettel und Unterschriften ab. Bei Geldlisten trägst du je Kind „bar“, „überwiesen“ oder „erlassen“ ein und siehst, wie viel schon da ist und wer noch fehlt. Für alle, die noch nicht bezahlt haben, druckst du **Zahlungsbriefe** an die Eltern. Ist unter **Klassenkasse** eine Bankverbindung eingetragen, steht auf dem Brief ein **GiroCode**: Die Eltern scannen ihn mit der Banking-App, Betrag und Verwendungszweck sind dann schon ausgefüllt.
+- Unter **Listen → Klassenkasse** führst du das **Kassenbuch** der Klasse mit Einnahmen, Ausgaben und Belegnummern. Das Geld aus den Sammellisten wird automatisch gebucht, der Kassenstand läuft mit. Das Kassenbuch kannst du für den Elternbeirat drucken.
+- **Fehltage:** Auf **Heute** tippst du unter „Wer fehlt heute?“ die Kinder an, die fehlen. Ein zweiter Klick ändert die Angaben (teilweise, unentschuldigt, Bemerkung). Wer fehlt, zählt beim Fokustag nicht mit und ist in Erfassen und auf der Kind-Seite markiert. Unter **Listen → Fehltage** siehst du die Summen je Kind für das Halbjahr, zum Beispiel für das Zeugnis, und kannst sie drucken.
+- **Stundenplan:** Unter **Einstellungen → Stundenplan** trägst du die Fächer je Stunde ein, auf Wunsch mit Uhrzeiten. Auf **Heute** zeigt LeDoK dann die Stunden des Tages, hebt die laufende Stunde hervor und schlägt passende ★-Themen zum Beobachten vor. „beobachten“ öffnet das Fach direkt in der Beobachtung.
+
 **Geändert**
+- Auf kleineren Bildschirmen stehen die Reiter jetzt in einer eigenen Zeile unter dem Logo, damit keiner abgeschnitten wird.
 - Findet „Jetzt suchen“ kein Update, nennt LeDoK jetzt die durchsuchten Ordner und den Grund, warum eine Datei abgelehnt wurde oder ein Ordner nicht lesbar war. Auf dem Mac fragt LeDoK beim ersten Mal um Erlaubnis für den Download-Ordner (ab dem nächsten Installer).
 
 ## 1.1.1 (Beta)

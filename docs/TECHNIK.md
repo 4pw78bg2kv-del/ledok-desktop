@@ -99,6 +99,7 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 | 3882–4741 | `VIEWS` (Hilfe, Heute, Erfassen, Übersicht, Kind, Sammelexport, Einstellungsseiten), Proben, Diagramme, LEG-Editor, KI-Export |
 | 4742–5310 | Rollen: Schulschlüssel, LeDoK-Admin, Hersteller-Bereich, Fachpakete, Rückmeldungen, Rückmeldung am selben Rechner |
 | 5311–5475 | Version und Updates, Problem melden |
+| ca. 5560–5985 | QR-Encoder (`qrMatrix`, `qrSvg`) und Klassenorganisation: Sammellisten, Klassenkasse, Fehltage, Stundenplan (`ORGA_VIEWS`, `ORGA_ACT`, `ORGA_CHG`) |
 | 5476–5579 | Dialoge: `dialog`, `askText`, `frage`, `info`, `askPassword`, `pickFile`, `askFile`; Schnellsuche |
 | 5580–6238 | `ACT` (Aktionen), Übergabe/Import/CSV, Lehrplan-CSV |
 | 6239–6411 | Ereignisse, Speichern beim Tippen (Förderplan, Dokumente, Bericht/LEG), automatische Sperre, Beispieldaten, Start |
@@ -107,8 +108,8 @@ Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen 
 
 ### Oberfläche
 
-- `render()` baut die Hauptansicht per `innerHTML` neu auf. Seiten liegen in `VIEWS` (`heute`, `erfassen`, `uebersicht`, `kind`, `export`, `hilfe` und die Einstellungsseiten `klasse`, `team`, `pakete`, `schuljahr`, `raster`, `bausteine`, `dokumente`, `daten`). `ROLLEN_VIEWS` wird in `VIEWS` gemischt.
-- Ereignisse sind delegiert: `data-act="x"` → `ACT.x(el)`, `data-chg="x"` → `CHG.x(el)`, `data-bind="pfad"` schreibt direkt in `S`. `ADMIN_ACT` und `ROLLEN_ACT` werden in `ACT` gemischt.
+- `render()` baut die Hauptansicht per `innerHTML` neu auf. Seiten liegen in `VIEWS` (`heute`, `erfassen`, `uebersicht`, `kind`, `export`, `hilfe` und die Einstellungsseiten `klasse`, `team`, `pakete`, `schuljahr`, `raster`, `bausteine`, `dokumente`, `daten`). `ROLLEN_VIEWS` und `ORGA_VIEWS` (`listen`, `stundenplan`) werden in `VIEWS` gemischt.
+- Ereignisse sind delegiert: `data-act="x"` → `ACT.x(el)`, `data-chg="x"` → `CHG.x(el)`, `data-bind="pfad"` schreibt direkt in `S`. `ADMIN_ACT`, `ROLLEN_ACT` und `ORGA_ACT` werden in `ACT` gemischt, `ORGA_CHG` in `CHG`.
 - Inline-Handler (`onclick=` im HTML) sind durch die CSP gesperrt. Handler werden nach dem Rendern in JS gesetzt.
 - Alle Texte aus Daten laufen durch `esc()`.
 - `UI` hält den flüchtigen Zustand (aktiver Reiter, Filter, Namen-Schalter). Er wird nicht gespeichert.
@@ -116,6 +117,9 @@ Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen 
 - **Dein Tag** (Heute): `tagesFortschritt()` fasst Fokustag und Fokuswoche zu einem Balken zusammen. Ein Kind des Fokustags zählt als erledigt, wenn alle seine Fokus-Themen bewertet sind; dazu kommen die erledigten Kinder der Fokuswoche. Bei 100 % bekommt die Karte die Klasse `fertig` (grün). Nicht an Wochenenden, nicht für Fachlehrkräfte und nicht, wenn `S.meta.tagesbalken === false`.
 - **Bedienungsanleitung:** Der Knopf „Bedienungsanleitung (Word)“ in der Hilfe und die gleichnamige Aktion der Schnellsuche rufen `ACT.anleitungLaden`. Es dekodiert den Inhalt von `#anleitung-docx` und lädt ihn über `download()` als `LeDoK-Bedienungsanleitung-<APP_VERSION>.docx` herunter. Fehlt der Block, erscheint ein Hinweis.
 - **Druck:** Jeder Druck läuft über `drucke(html)`. Es zeigt zuerst eine Vorschau in `#dlg`; erst „Drucken …“ schreibt das HTML in `#print-root` und ruft `window.print()`. Nach `afterprint` wird `#print-root` geleert.
+- **Kopfzeile:** Bis 1800 px Breite stehen die sechs Reiter in einer eigenen Zeile unter Logo und Knöpfen (`@media (max-width:1800px)`), damit nichts abgeschnitten wird.
+- **Listen** (Reiter, `VIEWS.listen`, Unterseiten über `UI.lTab`): Sammellisten (`listenView`), Klassenkasse (`kasseView`) und Fehltage (`fehltageView`). Auf **Heute** kommen dazu `anwesenheitCard` („Wer fehlt heute?“), `stundenplanCard` (Stunden des Tages, laufende Stunde hervorgehoben, „beobachten“ springt per `goFach` in die Beobachtung, dazu bis zu zwei ★-Themen je Fach mit den wenigsten Beobachtungen der letzten 14 Tage) und `listenCard` (offene Listen).
+- **Zahlungsbrief:** `zahlbriefSeite(l, kid)` füllt den Text der Liste ({Zweck}, {Betrag}, {Frist} und die üblichen Platzhalter). Ist die Bankverbindung gültig (`kontoOk`: Inhaber und IBAN mit Prüfziffer, deutsche IBAN 22 Zeichen), druckt er Überweisungsdaten und einen GiroCode: `epcText()` baut die EPC-Nutzlast (Version 002, UTF-8, ohne BIC zulässig), `qrSvg()` zeichnet sie. Der QR-Encoder ist eigener Code ohne Bibliothek (Byte-Modus, Fehlerkorrektur M, Versionen 1–20, Maskenwahl nach Strafpunkten). Ohne gültiges Konto gibt es stattdessen einen Abschnitt zum Zurückgeben mit dem Bargeld.
 - Darstellung hell/dunkel: pro Gerät in `localStorage` (`themeLesen`), nicht in den Daten.
 
 ### Berechnungen
@@ -157,7 +161,11 @@ S = {
   texte:     { "S01|2026/27|1": { bericht, leg, termin: {d, z, ok} } },
   foerderplaene: { S01: { zeitraum, anlass, beteiligt, geaendert,
                  ziele: [ { id, text, massnahmen, wer, bis, stand: "offen"|"teilweise"|"erreicht" } ] } },
-  proben:    [ { id, name, datum, fach, jg, art: "punkte"|…, items[], werte{}, fehlt{} } ]
+  proben:    [ { id, name, datum, fach, jg, art: "punkte"|…, items[], werte{}, fehlt{} } ],
+  listen:    [ { id, titel, d, betrag /*Cent je Kind, 0 = nur abhaken*/, frist, kasse, zu, text,
+                 st: { S01: { w: "ok"|"bar"|"ue"|"frei", b /*Cent*/, d } }, alt /*Cent*/ } ],
+  kasse:     { konto: { inhaber, iban, bic }, buchungen: [ { id, d, text, b /*Cent, − = Ausgabe*/, beleg } ] },
+  fehltage:  [ { k, d, ganz, ent, std, n, sj, hj } ]
 }
 ```
 
@@ -173,6 +181,11 @@ S = {
 - `S.foerderplaene`: Förderpläne nach Kind-ID (Kind → Förderplan, Sammeldruck im Export). `fpBereinigen()` säubert sie beim Laden und Einlesen (gültige IDs, Datum `bis` nur im Format JJJJ-MM-TT, Stand aus `FP_STAND`). `kindLoeschen()`, das Umbenennen ungültiger Kürzel in `datenBereinigen()` und „Schülerdaten löschen“ ziehen die Pläne mit. Die Übergabedatei eines Kindes (`kindPaket`) enthält keinen Förderplan.
 - `S.meta.druck`: Druckbild `{groesse, schrift, grau}` für alle Ausdrucke. `groesse` ist einer aus `DRUCK_GROESSEN` (90, 100, 110, 125 Prozent), `schrift` `serif` oder `sans`, `grau` druckt Logo und Diagramme in Graustufen. `druckBereinigen()` säubert den Wert beim Laden und Einlesen; `druckKlassen()` liefert die Klassen `d-sans` und `d-grau` für `#print-root` und die Vorschau, `druckZoom()` den `zoom`-Stil.
 - `S.meta.tagesbalken`: `false` blendet den Balken „Dein Tag“ auf **Heute** aus (`ACT.tagesbalkenAus`/`tagesbalkenAn`); fehlt der Wert, wird er gezeigt.
+- `S.listen`: Sammellisten. Mit `betrag > 0` ist es eine Geldliste (`w` = `bar`, `ue` überwiesen, `frei` erlassen, Betrag `b` je Kind änderbar), sonst eine Liste zum Abhaken (`w` = `ok`). Ein fehlender Eintrag in `st` heißt „offen“. `kasse` bucht die Einnahmen ins Kassenbuch, `zu` schließt die Liste ab. Verlässt ein Kind die Klasse (`kindLoeschen`, „Schülerdaten löschen“), schiebt `listenKindWeg()` seine Zahlung nach `alt`, damit Summe und Kassenbuch stimmen. Beträge sind immer ganze Cent; `centAus()` liest Eingaben wie „8,50“ oder „1.234,50 €“.
+- `S.kasse`: Bankverbindung für Zahlungsbriefe und manuelle Buchungen. `kassenbuch()` mischt sie mit einer Zeile je Geldliste (`kasse: true`) und rechnet den laufenden Saldo; die Listenzeilen werden nicht gespeichert, sondern jedes Mal berechnet.
+- `S.fehltage`: höchstens ein Eintrag je Kind und Tag (`fehltagSetzen`). `ganz` ganzer Tag, sonst `std` versäumte Stunden (0–10); `ent` entschuldigt; `n` kurze Bemerkung (ohne Gesundheitsangaben). `sj`/`hj` werden beim Eintragen gesetzt (vor Schuljahresbeginn aus dem Datum, Halbjahr ab 15. Februar), damit `fehlSumme()` je Halbjahr zählt. Wer heute fehlt, zählt beim Fokustag und im Balken „Dein Tag“ nicht mit; in Erfassen und auf der Kind-Seite steht „fehlt“.
+- `S.meta.stundenplan`: `{n, zeiten[8], A–E[8]}`, je Wochentag ein Fach oder freier Text je Stunde, `zeiten` optional als „HH:MM“. `spFach()` ordnet einen Eintrag einem Fach zu (Name, Kürzel oder mindestens drei Anfangsbuchstaben); was nicht passt (z. B. „Religion“, „AG“), wird nur angezeigt. Einstellungsseite `stundenplan` (nicht für Fachlehrkräfte).
+- Die neuen Bereiche säubern `listenBereinigen`, `kasseBereinigen`, `fehltageBereinigen` und `stundenplanBereinigen` bei jedem `migrate()`. `datenBereinigen` zieht umbenannte Kürzel in Fehltagen und Listen mit, die Datenprüfung meldet Fehltage ohne Kind. Weil nur neue Felder dazukamen, bleibt `SCHEMA` bei 2: ältere Versionen lassen unbekannte Felder beim Speichern stehen.
 - `S.meta.kopf`: Briefkopf `{logo, anschrift, fuss, leg, bericht, liste}`. `logo` ist eine Data-URL, die nur gerendert wird, wenn sie auf `LOGO_RE` passt (PNG, JPEG oder WebP in Base64). Beim Einlesen verkleinert `logoVerkleinern()` das Bild auf höchstens 600 × 240 px und speichert es als PNG. Die drei Schalter legen fest, für welche Druckart der Briefkopf gilt.
 
 ### Migration
@@ -181,7 +194,7 @@ S = {
 
 - Skala 1–10 → 1–9 (`meta.skala9`), altes flaches Raster → Baum (`baumMigration`), fehlende Felder aus `defaultState()`.
 - Rechtschreibkorrekturen 2026 in gespeicherten Rastern und Bausteinen (`RS_FIX`, Flag `meta.rs2026`).
-- **Datenprüfung** (Daten & Sicherheit, `ACT.datenPruefen`): `datenPruefung()` zählt Einträge ohne Kind, Einträge ohne Thema (weder Knoten noch ASV-Merkmal), Notizen, Texte und Förderpläne ohne Kind sowie Einträge mit Datum in der Zukunft. Nach Rückfrage legt sie eine Sicherung `vor-aufraeumen` an und entfernt mit `datenAufraeumen()` die Reste ohne Kind oder Thema; Einträge in der Zukunft werden nur gemeldet.
+- **Datenprüfung** (Daten & Sicherheit, `ACT.datenPruefen`): `datenPruefung()` zählt Einträge ohne Kind, Einträge ohne Thema (weder Knoten noch ASV-Merkmal), Notizen, Texte, Förderpläne und Fehltage ohne Kind sowie Einträge mit Datum in der Zukunft. Nach Rückfrage legt sie eine Sicherung `vor-aufraeumen` an und entfernt mit `datenAufraeumen()` die Reste ohne Kind oder Thema; Einträge in der Zukunft werden nur gemeldet.
 - `datenBereinigen(st)`: verwirft ungültige Einträge, Notizen und IDs (`ID_RE` erlaubt keine `<>"'`&\` und Steuerzeichen) und vergibt bei Bedarf neue Kürzel. Das schützt vor eingeschleustem Code aus Dateien anderer Personen.
 - `meta.schema = SCHEMA` (derzeit 2). Daten mit höherem Schema öffnet eine ältere App nicht („neuer“), statt sie falsch zu lesen.
 
@@ -479,12 +492,19 @@ npm run dist:win | dist:mac | dist:linux
 | Dokumente: Einladungstext anpassen mit Vorschau | `S.meta.einladung`, Vorschau „Einladung“ |
 | Dokumente: Druckbild mit Schriftgröße, Schriftart und Graustufen | `S.meta.druck`, Klassen und Zoom in Vorschau und Druck |
 | Datenprüfung: findet Reste ohne Kind oder Thema und räumt sie auf | `datenPruefung`, `datenAufraeumen`, Sicherung vorher |
+| Sammelliste: Geld einsammeln, Zahlungsbriefe mit GiroCode und Kassenbuch (`@handy`) | Betrag, bar/überwiesen/erlassen, geänderter Betrag, Kassenbuchzeile, ein Brief mit GiroCode je offenem Kind, EPC-Nutzlast, Geld bleibt nach `kindLoeschen` in `alt` |
+| Sammelliste: Liste zum Abhaken und offene Listen auf „Heute“ | Abhaken, keine Kassenbuchzeile, Karte „Offene Listen“, Sprung zur Liste |
+| Klassenkasse: Bankverbindung prüfen, Beträge lesen und Buchungen mit Saldo | `centAus`, `ibanOk`, `euro`, Buchung mit Saldo, Brief ohne GiroCode bei ungültiger IBAN |
+| Fehltage: auf „Heute“ eintragen, Fokustag ohne fehlende Kinder, … | Klick auf „Wer fehlt heute?“, Fokustag zählt das Kind nicht, Dialog teilweise/unentschuldigt, `fehlSumme`, „Doch anwesend“, Datenprüfung |
+| Stundenplan: Fächer erkennen, „Heute“ zeigt den Tag … | `spFach`, Karte am Dienstag, `goFach`, Eintrag in den Einstellungen |
+| Klassenorganisation: Daten aus Dateien werden bereinigt | `listenBereinigen`, `kasseBereinigen`, `fehltageBereinigen`, `stundenplanBereinigen` |
+| GiroCode: QR-Code hat Größe, Suchmuster, Taktlinien und Formatinformation … | Version je Länge, feste Muster, beide Formatkopien gleich, zu langer Text → `null` |
 | Desktop: gefundenes Update wird erst nach Zustimmung eingespielt | `updateAnbieten`, Hinweis unten rechts |
 | Desktop mit älterem Installer: Versionsdialog ohne automatische Suche | kein Abschnitt „Automatisch suchen“ ohne `updateSuchen` |
 
 CI: `.github/workflows/tests.yml` bei jedem Push und Pull Request; bei Fehlern liegt ein Artefakt „testbericht“ am Lauf.
 
-Nicht automatisch getestet: echte Installation unter Windows und macOS, Update-Einspielen in einer gepackten App, der Druckdialog des Betriebssystems.
+Nicht automatisch getestet: das Einlesen des GiroCodes in echten Banking-Apps (bei der Entwicklung für die Versionen 1–20 mit dem Decoder jsQR geprüft), echte Installation unter Windows und macOS, Update-Einspielen in einer gepackten App, der Druckdialog des Betriebssystems.
 
 ## 13 · Content-Security-Policy und Skript-Hash
 

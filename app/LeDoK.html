@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-OUd+83A1FC9uBz4n57RzIX9sMwfy20zhmTEZYwZMtrk='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZXBVm4H/YPAFt9L0w6ND/VI3jddBEyF3X7sh0GhEhd0='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -206,6 +206,29 @@ details.bs>div{padding:0 .9rem .9rem}
 .lock input[type=password]{width:100%}
 .err{color:var(--danger);font-size:.9rem;min-height:1.2em}
 
+/* Listen, Kasse, Fehltage, Stundenplan */
+.lwrap{display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr);gap:1rem;align-items:start}
+@media (max-width:860px){.lwrap{grid-template-columns:minmax(0,1fr)}}
+.lside{display:flex;flex-direction:column;gap:.6rem}
+.lit{display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:.45rem .65rem;color:var(--ink);margin-bottom:4px}
+.lit.on{border-color:var(--accent);background:var(--accent-soft)}.lit.zu{opacity:.65}.ltt{font-weight:600}
+.lform label.f{flex:1 1 9rem}.lform label.f:first-child{flex:3 1 14rem}
+.eurin{width:6rem;text-align:right}
+.ltab tr.lok td:first-child{color:var(--muted)}.ltab td{vertical-align:middle}.zseg button{padding:.25rem .55rem;min-height:30px;font-size:.85rem}
+.kform{align-items:flex-end}.kstand{font-size:2rem;font-weight:700;color:var(--accent)}.kstand.neg{color:var(--danger)}
+.ktab td,.ftab td{padding:.35rem .5rem;border-bottom:1px solid var(--line)}.ktab .num,.ftab .num{text-align:right;white-space:nowrap}
+.fchip{border:1px solid var(--line);background:var(--surface2);border-radius:99px;padding:.1rem .5rem;font-size:.8rem;margin:1px;color:var(--ink)}.fchip.u{border-color:var(--danger)}
+.fehltb{display:inline-block;margin-left:.35rem;font-size:.72rem;font-weight:600;padding:0 .4rem;border-radius:99px;background:var(--low);color:var(--danger);vertical-align:middle}
+.achips{display:flex;flex-wrap:wrap;gap:.3rem}.achip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:.25rem .65rem;min-height:32px;color:var(--ink);font-size:.88rem}
+.achip.fehlt{background:var(--low);border-color:var(--danger);color:var(--danger);font-weight:600}
+
+.splist{display:flex;flex-direction:column;gap:2px}.sprow{display:grid;grid-template-columns:1.6rem 3rem minmax(0,1fr) auto;gap:.4rem;align-items:center;padding:.15rem .3rem;border-radius:6px;font-size:.92rem}
+.sprow.jetzt{background:var(--accent-soft);font-weight:600}.spn{color:var(--muted)}
+.sptab input[type=text]{min-width:7rem}.sptab input.spok{border-color:var(--accent);background:var(--accent-soft)}.sptab input[type=time]{min-height:32px}
+.page .zbox{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;border:1px solid #999;border-radius:6px;padding:10px 12px;margin-top:18px;font-family:system-ui,Arial,sans-serif;font-size:9.5pt}
+.page .ztab{margin-top:4px;font-size:9.5pt}.page .ztab td{border:0;padding:2px 10px 2px 0;vertical-align:top}.page .ztab td:first-child{color:#555;white-space:nowrap}
+.page .zqr{text-align:center;font-size:8pt;color:#555;flex:none}.page .zqr svg{display:block;margin:0 auto 3px}
+
 /* Toast & Dialog */
 .toast{position:fixed;left:50%;bottom:1rem;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:10px;padding:.55rem .6rem .55rem 1rem;display:flex;gap:.6rem;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:50;max-width:calc(100% - 2rem)}
 .toast button{background:transparent;border:1px solid color-mix(in srgb,var(--bg) 35%,transparent);color:var(--bg);border-radius:7px;padding:.25rem .6rem}
@@ -383,6 +406,8 @@ body.scrolled .topbar .btn{min-height:32px;padding-top:.25rem;padding-bottom:.25
 .topbar nav.tabs{flex:1 1 0;min-width:0;overflow-x:auto}
 @media (max-width:1100px){.topbar nav.tabs{flex:1 1 100%}}
 @media (max-width:420px){.topbar nav.tabs button{padding:.5rem .45rem;font-size:.92rem}}
+/* Sechs Reiter passen erst auf sehr breiten Bildschirmen neben die Knöpfe – darunter bekommen sie eine eigene Zeile */
+@media (max-width:1800px){.topbar nav.tabs{order:10;flex:1 1 100%}}
 @media (max-width:640px){
  .nurbreit{display:none!important}.nurmobil{display:flex}
  #saveStatus.nurbreit:has(.bad){display:inline-flex!important}
@@ -2797,8 +2822,9 @@ Regeln: wertschätzend und beobachtungsnah formulieren, keine Diagnosen, keine S
 function defaultState(){
   return {
     version:1,
-    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),druck:DEFAULT_DRUCK(),tagesbalken:true,faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
-    kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[], foerderplaene:{}
+    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),druck:DEFAULT_DRUCK(),tagesbalken:true,stundenplan:DEFAULT_STUNDENPLAN(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
+    kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[], foerderplaene:{},
+    listen:[], kasse:kasseBereinigen(), fehltage:[]
   };
 }
 
@@ -3018,6 +3044,7 @@ function migrate(st){
   {const e=Object.assign(DEFAULT_EINLADUNG(),st.meta.einladung||{});for(const f of ["titel","text"])if(typeof e[f]!=="string")e[f]=DEFAULT_EINLADUNG()[f];e.rueck=!!e.rueck;st.meta.einladung=e}
   st.meta.legVorlagen=(Array.isArray(st.meta.legVorlagen)?st.meta.legVorlagen:[]).filter(v=>v&&typeof v==="object").map(legVorlageBereinigen);
   st.proben=Array.isArray(st.proben)?st.proben:[];
+  st.meta.stundenplan=stundenplanBereinigen(st.meta.stundenplan);st.listen=listenBereinigen(st.listen);st.kasse=kasseBereinigen(st.kasse);st.fehltage=fehltageBereinigen(st.fehltage);
   st.kinder=st.kinder||[];st.kinder.forEach(k=>{if(k.klasse==null)k.klasse="";if(!Array.isArray(k.faecherNur))k.faecherNur=[];if(!Array.isArray(k.begabt))k.begabt=[]});st.notizen=st.notizen||[];st.foerderplaene=fpBereinigen(st.foerderplaene);st.raster=st.raster||d.raster;st.eintraege=st.eintraege||[];st.texte=st.texte||{};
   if(st.raster.some(r=>r.ebene==null))baumMigration(st);
   st.bausteine=st.bausteine||d.bausteine;
@@ -3064,6 +3091,8 @@ function datenBereinigen(st){
     for(const P of (st.meta.pakete||[]))for(const [o,l] of Object.entries(P.map||{}))if(umb[l])P.map[o]=umb[l];
     for(const key of Object.keys(st.texte)){const [k,...rest]=key.split("|");if(umb[k]){st.texte[[umb[k],...rest].join("|")]=st.texte[key];delete st.texte[key]}}
     if(st.foerderplaene)for(const k of Object.keys(st.foerderplaene))if(umb[k]){st.foerderplaene[umb[k]]=st.foerderplaene[k];delete st.foerderplaene[k]}
+    for(const f of (st.fehltage||[]))if(umb[f.k])f.k=umb[f.k];
+    for(const l of (st.listen||[]))for(const k of Object.keys(l.st||{}))if(umb[k]){l.st[umb[k]]=l.st[k];delete l.st[k]}
   }
   st.kinder.forEach(k=>{k.jgst=Math.min(4,Math.max(1,+k.jgst||1))});
   st.eintraege=st.eintraege.map(eintragOk).filter(Boolean);
@@ -3076,13 +3105,14 @@ function datenPruefung(){
   const kids=new Set(S.kinder.map(k=>k.id)),thema=c=>!!knoten(c)||ASV.some(a=>a.id===c),heute=today();
   const ohneKind=S.eintraege.filter(e=>!kids.has(e.k)),ohneThema=S.eintraege.filter(e=>kids.has(e.k)&&!thema(e.c));
   const notizen=S.notizen.filter(n=>!kids.has(n.k)),texte=Object.keys(S.texte).filter(key=>!kids.has(key.split("|")[0]));
-  const fp=Object.keys(S.foerderplaene).filter(k=>!kids.has(k)),zukunft=S.eintraege.filter(e=>e.d>heute);
+  const fp=Object.keys(S.foerderplaene).filter(k=>!kids.has(k)),zukunft=S.eintraege.filter(e=>e.d>heute),fehl=S.fehltage.filter(f=>!kids.has(f.k));
   return [
     {n:ohneKind.length,text:"Bewertungen zu Kindern, die es nicht mehr gibt",weg:true},
     {n:ohneThema.length,text:"Bewertungen zu Themen, die nicht mehr im Raster stehen",weg:true},
     {n:notizen.length,text:"Notizen zu Kindern, die es nicht mehr gibt",weg:true},
     {n:texte.length,text:"Berichte und LEG-Texte zu Kindern, die es nicht mehr gibt",weg:true},
     {n:fp.length,text:"Förderpläne zu Kindern, die es nicht mehr gibt",weg:true},
+    {n:fehl.length,text:"Fehltage zu Kindern, die es nicht mehr gibt",weg:true},
     {n:zukunft.length,text:"Bewertungen mit einem Datum in der Zukunft (bitte unter „Kind“ prüfen)",weg:false}
   ].filter(x=>x.n);
 }
@@ -3092,6 +3122,7 @@ function datenAufraeumen(){
   S.notizen=S.notizen.filter(n=>kids.has(n.k));
   for(const key of Object.keys(S.texte))if(!kids.has(key.split("|")[0]))delete S.texte[key];
   for(const k of Object.keys(S.foerderplaene))if(!kids.has(k))delete S.foerderplaene[k];
+  S.fehltage=S.fehltage.filter(f=>kids.has(f.k));
   DV++;
 }
 
@@ -3513,8 +3544,8 @@ window.addEventListener("afterprint",()=>{$("#print-root").innerHTML=""});
 /* ---------- UI-Zustand ---------- */
 const UI = {tab:"heute",mode:"beob",fach:"Deutsch",komp:null,jgst:"alle",datum:today(),gruppe:suggestedGroup(),asvGruppe:"ABCDE"[isoWeek()%5],
   uFach:"Alle",uJgst:"alle",kind:null,jKat:"Allgemein",vMode:"fach",vFach:"Deutsch",uEbene:2,vEbene:3,rZu:{},rFachZu:{},bOffen:null,legTmp:null,ki:{von:"",bis:"",frei:true,kurz:true,kenn:true,auftrag:true,text:null,stats:null,ok:false},expTab:"bericht",showNames:false,lastEntry:null,expJgst:"alle"};
-const TABS=[["heute","Heute"],["erfassen","Erfassen"],["uebersicht","Übersicht"],["kind","Kind"],["export","Sammelexport"]];
-const EINST=[["klasse","Klasse","Kinder, Parallelklassen, Fokustage"],["team","Fachlehrkräfte","Fachpakete und Rückmeldungen"],["pakete","Fachpakete","Klassen und Rückmeldungen"],["schuljahr","Schuljahr","Assistent für den Schuljahresbeginn"],["raster","Fächer & Raster","Fächer, Kompetenzen, Erfassungsort"],["bausteine","Textbausteine","Texte für Berichte und LEG-Bogen"],["dokumente","Dokumente","Briefkopf, Aufbau des LEG-Bogens"],["daten","Daten & Sicherheit","Sicherungskopie, Passwort, CSV"]];
+const TABS=[["heute","Heute"],["erfassen","Erfassen"],["uebersicht","Übersicht"],["kind","Kind"],["export","Sammelexport"],["listen","Listen"]];
+const EINST=[["klasse","Klasse","Kinder, Parallelklassen, Fokustage"],["stundenplan","Stundenplan","Fächer je Stunde für „Heute“"],["team","Fachlehrkräfte","Fachpakete und Rückmeldungen"],["pakete","Fachpakete","Klassen und Rückmeldungen"],["schuljahr","Schuljahr","Assistent für den Schuljahresbeginn"],["raster","Fächer & Raster","Fächer, Kompetenzen, Erfassungsort"],["bausteine","Textbausteine","Texte für Berichte und LEG-Bogen"],["dokumente","Dokumente","Briefkopf, Aufbau des LEG-Bogens"],["daten","Daten & Sicherheit","Sicherungskopie, Passwort, CSV"]];
 
 /* ---------- Bildschirme ---------- */
 function screenStart(msg="",beendet=""){
@@ -3933,7 +3964,7 @@ hilfe(){
   const k=(...x)=>x.map(t=>`<kbd>${t}</kbd>`).join("");
   const dot=v=>`<span class="hdot" style="background:var(--b${v})"></span>`;
   const go=(v,t)=>`<a href="#" data-act="tab" data-v="${v}">${t}</a>`;
-  const kap=[["h-tag","Ein Tag mit LeDoK"],["h-skala","Skala 1–9"],["h-erfassen","Erfassen"],["h-tasten","Tastenkürzel"],["h-auswerten","Auswerten"],["h-berichte","Berichte & LEG"],["h-jahr","Schuljahresbeginn"],["h-rollen","Rollen & Zusammenarbeit"],["h-schutz","Datenschutz & Sicherung"],["h-probleme","Wenn etwas nicht klappt"]];
+  const kap=[["h-tag","Ein Tag mit LeDoK"],["h-skala","Skala 1–9"],["h-erfassen","Erfassen"],["h-tasten","Tastenkürzel"],["h-auswerten","Auswerten"],["h-berichte","Berichte & LEG"],["h-listen","Listen, Kasse & Fehltage"],["h-jahr","Schuljahresbeginn"],["h-rollen","Rollen & Zusammenarbeit"],["h-schutz","Datenschutz & Sicherung"],["h-probleme","Wenn etwas nicht klappt"]];
   return `<div class="stack hilfe">
   <div class="row" style="align-items:baseline;flex-wrap:wrap"><h2 style="margin:0">Hilfe</h2><span class="muted">Kurzanleitung zu LeDoK – funktioniert offline</span><span class="spacer"></span><button class="btn small" data-act="anleitungLaden" title="Die ausführliche Bedienungsanleitung mit Bildern als Word-Datei">Bedienungsanleitung (Word)</button><button class="btn small" data-act="hilfeDruck">Drucken</button></div>
   <nav class="htoc">${kap.map(([id,t])=>`<button class="chip" data-act="hJump" data-v="${id}">${t}</button>`).join("")}</nav>
@@ -3990,6 +4021,15 @@ hilfe(){
    <li><b>KI-Auswertung:</b> nur mit Kürzeln, Namen und Muster werden geschwärzt. Text vollständig lesen und bestätigen, nur schulisch freigegebene KI nutzen.</li></ol>
    <p class="small muted">Texte passt du unter ${go("bausteine","Textbausteine")} an: beobachtbar statt Etikett, Stärke zuerst. Briefkopf der Schule und Aufbau des LEG-Bogens (Abschnitte, eigene Freitexte mit Platzhaltern) stellst du unter ${go("dokumente","Dokumente")} ein.</p></section>
 
+  <section class="card" id="h-listen"><h3>Listen, Kasse, Fehltage &amp; Stundenplan</h3>
+   <dl class="hdl">
+    <dt>${go("listen","Listen")} → Sammellisten</dt><dd><b>＋ Geld einsammeln</b> (Betrag je Kind) oder <b>＋ Liste zum Abhaken</b> (z. B. Einverständnis, Unterschrift). Je Kind „bar“, „überwiesen“ oder „erlassen“ bzw. „erledigt“. <b>Zahlungsbriefe drucken</b> erzeugt einen Elternbrief für jedes Kind, das noch offen ist.</dd>
+    <dt>Klassenkasse</dt><dd>Kassenstand und Kassenbuch. Einnahmen aus Geldlisten bucht LeDoK selbst; Ausgaben und andere Einnahmen trägst du ein. Mit Bankverbindung bekommen Zahlungsbriefe einen <b>GiroCode</b>, den Eltern mit der Banking-App scannen.</dd>
+    <dt>Fehltage</dt><dd>Auf ${go("heute","Heute")} unter „Wer fehlt heute?“ ein Kind antippen. Nachtragen und die Summen je Halbjahr (für Zeugnis und ASV) unter Listen → Fehltage.</dd>
+    <dt>${go("stundenplan","Stundenplan")}</dt><dd>Fächer je Stunde eintragen. ${go("heute","Heute")} zeigt dann den Plan des Tages und ★-Themen dieser Fächer, die noch wenig beobachtet sind.</dd>
+   </dl>
+   <p class="small muted">Alles bleibt verschlüsselt ${AM_RECHNER}. Bankdaten der Eltern und Gesundheitsangaben speichert LeDoK nicht.</p></section>
+
   <section class="card" id="h-jahr"><h3>Schuljahresbeginn</h3>
    <p>Der ${go("schuljahr","Schuljahres-Assistent")} führt in 11 Schritten durch den Wechsel:</p>
    <ol class="small"><li>Kopie des alten Jahres</li><li>Berichte/LEG sichern</li><li>Wechsel: Abgänger entfernen, alle rücken vor</li><li>Neue Kinder aufnehmen</li><li>Lernniveau prüfen</li><li>Lehrplan einspielen</li><li>Fächer prüfen</li><li>Fokustage verteilen</li><li>Halbjahr auf 1</li><li>★ zurücksetzen</li><li>Kopie des neuen Stands</li></ol>
@@ -4035,9 +4075,10 @@ heute(){
   const [von,bis]=wocheVon(t);
   // Fokustag
   const fk=S.kinder.filter(k=>k.gruppe===g).sort((a,b)=>a.id.localeCompare(b.id));
-  const fst=fk.map(k=>({k,st:fokusStatus(k,t,t)})), fFertig=fst.filter(x=>x.st.total&&x.st.done>=x.st.total).length;
-  const cardF=`<div class="card hcard"><div class="hh"><h3>Fokustag ${schultag?TAGE[g]:""}</h3><span class="badge">${schultag?`${fFertig} von ${fk.length} fertig`:"kein Schultag"}</span></div>
-   ${schultag?(fk.length?`<div class="hlist">${fst.map(({k,st})=>`<div class="hrow"><span>${kidLabel(k)}${klasseBadge(k)}</span><span class="pbar"><span style="width:${st.total?Math.round(st.done/st.total*100):0}%"></span></span><span class="small muted">${st.done}/${st.total}</span></div>`).join("")}</div>`:`<p class="small muted">Heute ist kein Kind eingeteilt.</p>`)
+  // Kinder, die heute fehlen, zählen beim Fokustag nicht mit
+  const fst=fk.map(k=>({k,st:fokusStatus(k,t,t),fehlt:!!fehltagVon(k.id,t)})), fDa=fst.filter(x=>!x.fehlt), fFertig=fDa.filter(x=>x.st.total&&x.st.done>=x.st.total).length;
+  const cardF=`<div class="card hcard"><div class="hh"><h3>Fokustag ${schultag?TAGE[g]:""}</h3><span class="badge">${schultag?`${fFertig} von ${fDa.length} fertig`:"kein Schultag"}</span></div>
+   ${schultag?(fk.length?`<div class="hlist">${fst.map(({k,st,fehlt})=>`<div class="hrow"><span>${kidLabel(k)}${klasseBadge(k)}${fehlt?fehltBadge(k,t):""}</span><span class="pbar"><span style="width:${st.total?Math.round(st.done/st.total*100):0}%"></span></span><span class="small muted">${st.done}/${st.total}</span></div>`).join("")}</div>`:`<p class="small muted">Heute ist kein Kind eingeteilt.</p>`)
      :`<p class="small muted">Am Wochenende gibt es keinen Fokustag. Am Montag sind ${S.kinder.filter(k=>k.gruppe==="A").length} Kinder dran.</p>`}
    <button class="btn primary" data-act="goFokus" data-v="${schultag?g:"A"}">Fokustag ${schultag?"starten":"ansehen"}</button></div>`;
   // Fokuswoche
@@ -4065,8 +4106,8 @@ heute(){
   const cardS=`<div class="card hcard"><div class="hh"><h3>Sicherung</h3>${days==null||days>7?'<span class="badge warn">fällig</span>':'<span class="badge">ok</span>'}</div>
    <p class="small">${days==null?"Noch keine Sicherungskopie heruntergeladen.":days===0?"Letzte Sicherungskopie: heute.":`Letzte Sicherungskopie vor ${days} ${days===1?"Tag":"Tagen"}.`} Heute ${heuteN} ${heuteN===1?"Eintrag":"Einträge"} erfasst.</p>
    <button class="btn" data-act="backup">Sicherungskopie herunterladen</button></div>`;
-  return `<div class="stack"><div class="row" style="align-items:baseline"><h2 style="margin:0">Heute</h2><span class="muted">${new Date(t+"T12:00:00").toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})} · ${S.meta.halbjahr}. Halbjahr</span>${S.meta.tagesbalken===false&&!istFL()?`<span class="spacer"></span><button class="btn ghost small" data-act="tagesbalkenAn" id="tagesbalkenAn">Tagesfortschritt einblenden</button>`:""}</div>
-   ${tagesFortschritt(schultag,fst,cols.length?wk:[],wDone,heuteN)}<div class="hgrid">${teamCard()}${cardF}${cardW}${heuteFallend()}${heuteProbleme()}${cardA}${cardL}${cardS}</div></div>`;
+  return `<div class="stack"><div class="row" style="align-items:baseline"><h2 style="margin:0">Heute</h2><span class="muted">${new Date(t+"T12:00:00").toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})} · ${S.meta.halbjahr}. Halbjahr</span>${spLeer()&&!istFL()?`<button class="btn ghost small" data-act="tab" data-v="stundenplan" title="Mit Stundenplan zeigt „Heute“ deine Fächer und passende Themen zum Beobachten">Stundenplan eintragen</button>`:""}${S.meta.tagesbalken===false&&!istFL()?`<span class="spacer"></span><button class="btn ghost small" data-act="tagesbalkenAn" id="tagesbalkenAn">Tagesfortschritt einblenden</button>`:""}</div>
+   ${tagesFortschritt(schultag,fDa,cols.length?wk:[],wDone,heuteN)}<div class="hgrid">${teamCard()}${anwesenheitCard(t,schultag)}${stundenplanCard(t)}${cardF}${cardW}${listenCard()}${heuteFallend()}${heuteProbleme()}${cardA}${cardL}${cardS}</div></div>`;
 },
 erfassen(){
   if(!S.kinder.length)return `<div class="card"><h2>Noch keine Kinder angelegt</h2><p>Lege unter <a href="#" data-act="tab" data-v="klasse">Einstellungen → Klasse</a> deine Schülerinnen und Schüler an.</p></div>`;
@@ -4130,7 +4171,7 @@ kind(){
   <div class="row"><button class="btn" data-act="kidNav" data-v="${kids[(i-1+kids.length)%kids.length].id}">‹</button>
   <select data-chg="kind">${kids.map(k=>`<option value="${k.id}" ${k.id===kid.id?"selected":""}>${esc(k.id)}${UI.showNames&&k.vorname?" – "+esc(kurzName(k)):""} (Jgst. ${k.jgst})</option>`).join("")}</select>
   <button class="btn" data-act="kidNav" data-v="${kids[(i+1)%kids.length].id}">›</button>
-  <button class="btn small" data-act="spontan" data-k="${kid.id}" title="Thema suchen, Wert und Notiz in einem Schritt">＋ Beobachtung</button><span class="spacer"></span><span class="badge">Jgst. ${kid.jgst}</span>${begabtFaecher(kid).length?`<span class="badge" style="background:#fdf0cf;color:#8a5a00" title="Erwartungswerte (Soll) und Einordnung nach Jgst. ${Math.min(4,+kid.jgst+1)}">↑ Lernniveau Jgst. ${Math.min(4,+kid.jgst+1)}: ${esc(begabtListe(kid).includes("*")?"alle Fächer":begabtFaecher(kid).map(f=>fachObj(f).kurz||f).join(", "))}</span>`:""}${kid.klasse?`<span class="badge">Klasse ${esc(kid.klasse)}</span>`:""}<span class="badge">Fokustag ${TAGE[kid.gruppe]||"–"}</span>${kid.faecherNur&&kid.faecherNur.length?`<span class="badge">nur ${esc(kid.faecherNur.join(", "))}</span>`:""}<span class="badge">${S.eintraege.filter(e=>e.k===kid.id).length} Einträge</span><span class="badge">${S.notizen.filter(n=>n.k===kid.id).length} Freitexte</span></div>
+  <button class="btn small" data-act="spontan" data-k="${kid.id}" title="Thema suchen, Wert und Notiz in einem Schritt">＋ Beobachtung</button><span class="spacer"></span><span class="badge">Jgst. ${kid.jgst}</span>${begabtFaecher(kid).length?`<span class="badge" style="background:#fdf0cf;color:#8a5a00" title="Erwartungswerte (Soll) und Einordnung nach Jgst. ${Math.min(4,+kid.jgst+1)}">↑ Lernniveau Jgst. ${Math.min(4,+kid.jgst+1)}: ${esc(begabtListe(kid).includes("*")?"alle Fächer":begabtFaecher(kid).map(f=>fachObj(f).kurz||f).join(", "))}</span>`:""}${kid.klasse?`<span class="badge">Klasse ${esc(kid.klasse)}</span>`:""}<span class="badge">Fokustag ${TAGE[kid.gruppe]||"–"}</span>${kid.faecherNur&&kid.faecherNur.length?`<span class="badge">nur ${esc(kid.faecherNur.join(", "))}</span>`:""}<span class="badge">${S.eintraege.filter(e=>e.k===kid.id).length} Einträge</span><span class="badge">${S.notizen.filter(n=>n.k===kid.id).length} Freitexte</span>${(f=>f.n?`<button class="badge" data-act="lTab" data-v="fehltage" title="Fehltage im ${S.meta.halbjahr}. Halbjahr – Klick öffnet die Übersicht">Fehltage ${S.meta.halbjahr}. HJ: ${f.tage}${f.tageU?` (${f.tageU} unentsch.)`:""}${f.teil?` + ${f.teil}× teilweise`:""}</button>`:"")(fehlSumme(kid.id))}</div>
   <div class="grid2">
    <div class="card"><h3 style="margin-top:0">Fächer</h3><div class="tw"><table><tr><th>Fach</th><th class="num">Wert</th><th>Stufe</th><th class="num">Trend</th><th class="num">Note*</th><th>Daten</th></tr>${fRows}</table></div>
    <p class="small muted">* Notenvorschlag ab Jgst. 2 – keine automatische Notenbildung.</p></div>
@@ -4354,7 +4395,7 @@ function viewBeob(){
     const s=knoten(UI.komp)?evalNode(k.id,UI.komp):stand(k.id,UI.komp), heute=S.eintraege.filter(e=>e.k===k.id&&e.c===UI.komp&&e.d===UI.datum).pop();
     const last=eintraegeFuer(k.id,UI.komp).filter(e=>e.d<UI.datum).pop(), nNot=S.notizen.filter(n=>n.k===k.id).length;
     return `<div class="frow brow ${heute?"hat":""} ${UI.kb===k.id?"kb":""}" id="kid-${k.id}" data-k="${k.id}" data-c="${esc(UI.komp)}">
-     <span class="fkid">${kidLabel(k)}${klasseBadge(k)}</span>
+     <span class="fkid">${kidLabel(k)}${klasseBadge(k)}${fehltBadge(k,UI.datum)}</span>
      <button class="bstand" data-act="hist" data-k="${k.id}" data-c="${esc(UI.komp)}" title="Stand = Mittel der letzten 3 Einträge – Klick zeigt alle Einträge">${s.n?`<b>${fmt(s.v)}</b>${s.n>=2?` ${trendPfeil(s.trend)}`:""}<span class="small muted"> · ${s.n} ${s.n===1?"Eintrag":"Einträge"}</span>`:`<span class="small muted">noch nicht bewertet</span>`}</button>
      <span class="fbtn">${W9.map(w=>`<button class="mst b${band(w)} ${heute&&heute.w===w?"sel":""} ${last&&last.w===w&&!heute?"prev":""}" data-act="rate" data-k="${k.id}" data-w="${w}" title="${w} – ${STUFE10[w]}">${w}</button>`).join("")}</span>
      <span class="bextra"><button class="btn ghost small" data-act="noteKid" data-k="${k.id}" title="Freitext${nNot?` (${nNot} vorhanden)`:""}">✎${nNot?`<span class="small muted"> ${nNot}</span>`:""}</button><button class="btn ghost small" data-act="spontan" data-k="${k.id}" title="Spontanbeobachtung zu einem anderen Thema">＋</button></span></div>`};
@@ -4405,11 +4446,11 @@ function viewFokusGen(scope){
       const fh=it.fach!==fach?`<h3 class="ghead">${esc(it.fach)}</h3>`:"";fach=it.fach;
       return fh+`<div class="fcard tcard ${d>=ks.length?"komplett":""}"><div class="thead"><span class="fid">${esc(it.id)}</span><div class="ttx"><b>${esc(it.text)}</b>${it.r&&vorfahren(it.r).length?`<span class="fpfad">${esc(pfad(it.r))}</span>`:""}${teilaspekte(it)}</div>
         <span class="fprog"><span class="pbar"><span style="width:${Math.round(d/ks.length*100)}%"></span></span>${d} / ${ks.length}</span></div>
-        <div class="fbody">${ks.map(k=>zeile(k,it,`<span class="fkid">${kidLabel(k)}${klasseBadge(k)}<span class="jg">J${k.jgst}</span></span>`)).join("")}</div></div>`}).join("");
+        <div class="fbody">${ks.map(k=>zeile(k,it,`<span class="fkid">${kidLabel(k)}${klasseBadge(k)}<span class="jg">J${k.jgst}</span>${fehltBadge(k,UI.datum)}</span>`)).join("")}</div></div>`}).join("");
   }else{
     body=kids.map(k=>{const it=listen.get(k.id), st={done:it.filter(x=>wertIn(k.id,x.id,scope)).length,total:it.length};
       const gr=[...new Set(it.map(x=>x.fach))].map(f=>`<div class="fsec"><div class="fsh">${esc(f)}</div>${it.filter(x=>x.fach===f).map(x=>zeile(k,x,`<span class="fid">${esc(x.id)}</span><span class="ftx" title="${esc(x.r?pfad(x.r)+(x.r.lp?"\n\nLehrplan: "+x.r.lp:""):"")}">${esc(x.text)}${x.r&&vorfahren(x.r).length?`<span class="fpfad">${esc(pfad(x.r))}</span>`:""}</span>`)).join("")}</div>`).join("");
-      return `<details class="fcard ${st.done>=st.total?"komplett":""}" open><summary><span class="t-name">${kidLabel(k)}</span>${klasseBadge(k)}<span class="jg">Jgst. ${k.jgst}</span><span class="spacer"></span>
+      return `<details class="fcard ${st.done>=st.total?"komplett":""}" open><summary><span class="t-name">${kidLabel(k)}</span>${klasseBadge(k)}<span class="jg">Jgst. ${k.jgst}</span>${fehltBadge(k,UI.datum)}<span class="spacer"></span>
         <span class="fprog"><span class="pbar"><span style="width:${st.total?Math.round(st.done/st.total*100):0}%"></span></span>${st.done} / ${st.total}</span></summary>
         <div class="fbody">${gr||'<p class="small muted">Für dieses Kind sind keine Themen eingestellt.</p>'}<div class="row" style="margin-top:.7rem">${tag?`<button class="btn small" data-act="fTake" data-k="${k.id}" title="Füllt alle heute noch offenen Themen dieses Kindes mit dem zuletzt vergebenen Wert">Offene wie zuletzt übernehmen</button>`:""}<button class="btn ghost small" data-act="noteKid" data-k="${k.id}">✎ Freitext</button><button class="btn ghost small" data-act="spontan" data-k="${k.id}">＋ Beobachtung</button></div></div></details>`}).join("");
   }
@@ -5535,6 +5576,408 @@ function problemMelden(){
     toast("Bericht gespeichert. Hänge die Datei an eine Mail an.",3000);
   };
 }
+/* ---------- QR-Code (für den GiroCode auf Zahlungsbriefen) ----------
+   Eigener, kleiner Encoder ohne Bibliothek: Byte-Modus, Fehlerkorrektur M (vom EPC-Standard verlangt), Version 1–20 */
+const QR_M=[null,[10,1,16],[16,1,28],[26,1,44],[18,2,32],[24,2,43],[16,4,27],[18,4,31],[22,2,38,2,39],[22,3,36,2,37],[26,4,43,1,44],
+  [30,1,50,4,51],[22,6,36,2,37],[22,8,37,1,38],[24,4,40,5,41],[24,5,41,5,42],[28,7,45,3,46],[28,10,46,1,47],[26,9,43,4,44],[26,3,44,11,45],[26,3,41,13,42]];
+const QR_AUSR=[null,[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90]];
+const QR_EXP=new Uint8Array(512),QR_LOG=new Uint8Array(256);
+(()=>{let x=1;for(let i=0;i<255;i++){QR_EXP[i]=x;QR_LOG[x]=i;x<<=1;if(x&256)x^=0x11d}for(let i=255;i<512;i++)QR_EXP[i]=QR_EXP[i-255]})();
+const qrMul=(a,b)=>a&&b?QR_EXP[QR_LOG[a]+QR_LOG[b]]:0;
+function qrRS(daten,n){ // Reed-Solomon: n Korrekturbytes
+  let g=[1];for(let i=0;i<n;i++){const h=new Array(g.length+1).fill(0);g.forEach((c,j)=>{h[j]^=c;h[j+1]^=qrMul(c,QR_EXP[i])});g=h}
+  const r=new Array(n).fill(0);
+  for(const b of daten){const f=b^r.shift();r.push(0);if(f)for(let j=0;j<n;j++)r[j]^=qrMul(g[j+1],f)}
+  return r;
+}
+function qrBch(wert,poly){const grad=p=>31-Math.clz32(p);let r=wert<<grad(poly);while(grad(r)>=grad(poly))r^=poly<<(grad(r)-grad(poly));return (wert<<grad(poly))|r}
+/* Liefert die Module als Array von Zeilen (true = dunkel) oder null, wenn der Text zu lang ist */
+function qrMatrix(text){
+  const bytes=[...new TextEncoder().encode(text)];
+  let v=1,T;
+  for(;v<QR_M.length;v++){T=QR_M[v];const cap=T[1]*T[2]+(T[3]||0)*(T[4]||0);if(4+(v<10?8:16)+bytes.length*8<=cap*8)break}
+  if(v>=QR_M.length)return null;
+  const [ec,b1,d1,b2=0,d2=0]=T,cap=b1*d1+b2*d2;
+  // Datenbits: Modus 0100 (Byte), Länge, Daten, Abschluss, Füllbytes
+  const bits=[];const put=(x,n)=>{for(let i=n-1;i>=0;i--)bits.push((x>>>i)&1)};
+  put(4,4);put(bytes.length,v<10?8:16);bytes.forEach(b=>put(b,8));put(0,Math.min(4,cap*8-bits.length));while(bits.length%8)bits.push(0);
+  const cw=[];for(let i=0;i<bits.length;i+=8)cw.push(parseInt(bits.slice(i,i+8).join(""),2));
+  for(let p=0;cw.length<cap;p^=1)cw.push(p?0x11:0xec);
+  // Blöcke bilden, Korrektur anhängen, verschränken
+  const bl=[];let o=0;for(let i=0;i<b1+b2;i++){const n=i<b1?d1:d2;const d=cw.slice(o,o+n);o+=n;bl.push({d,e:qrRS(d,ec)})}
+  const folge=[];for(let i=0;i<Math.max(d1,d2);i++)for(const b of bl)if(i<b.d.length)folge.push(b.d[i]);
+  for(let i=0;i<ec;i++)for(const b of bl)folge.push(b.e[i]);
+  // Matrix mit Funktionsmustern
+  const N=17+4*v,M=[...Array(N)].map(()=>new Array(N).fill(null)),fest=[...Array(N)].map(()=>new Array(N).fill(false));
+  const set=(r,c,x)=>{M[r][c]=!!x;fest[r][c]=true};
+  const finder=(r,c)=>{for(let i=-1;i<=7;i++)for(let j=-1;j<=7;j++){const y=r+i,x=c+j;if(y<0||x<0||y>=N||x>=N)continue;
+    set(y,x,i>=0&&i<=6&&j>=0&&j<=6&&(i===0||i===6||j===0||j===6||(i>=2&&i<=4&&j>=2&&j<=4)))}};
+  finder(0,0);finder(0,N-7);finder(N-7,0);
+  for(let i=8;i<N-8;i++){set(6,i,i%2===0);set(i,6,i%2===0)}
+  const A=QR_AUSR[v],L=A.length-1;A.forEach((r,i)=>A.forEach((c,j)=>{if((!i&&!j)||(!i&&j===L)||(i===L&&!j))return;for(let y=-2;y<=2;y++)for(let x=-2;x<=2;x++)set(r+y,c+x,Math.max(Math.abs(y),Math.abs(x))!==1)}));
+  for(let i=0;i<9;i++){if(!fest[8][i])set(8,i,0);if(!fest[i][8])set(i,8,0)}
+  for(let i=0;i<8;i++){set(8,N-1-i,0);set(N-1-i,8,0)}
+  set(N-8,8,1); // dunkles Modul
+  if(v>=7){const vi=qrBch(v,0x1f25);for(let i=0;i<18;i++){const b=(vi>>i)&1,a=Math.floor(i/3),c=N-11+i%3;set(a,c,b);set(c,a,b)}}
+  // Daten im Zickzack eintragen
+  const dbits=[];folge.forEach(b=>{for(let i=7;i>=0;i--)dbits.push((b>>i)&1)});
+  let k=0;for(let c=N-1,hoch=true;c>0;c-=2,hoch=!hoch){if(c===6)c=5;
+    for(let n=0;n<N;n++){const r=hoch?N-1-n:n;for(const x of [c,c-1])if(!fest[r][x])M[r][x]=!!dbits[k++]}}
+  // beste Maske wählen
+  const MASKEN=[(r,c)=>(r+c)%2===0,(r)=>r%2===0,(r,c)=>c%3===0,(r,c)=>(r+c)%3===0,(r,c)=>(Math.floor(r/2)+Math.floor(c/3))%2===0,
+    (r,c)=>r*c%2+r*c%3===0,(r,c)=>(r*c%2+r*c%3)%2===0,(r,c)=>((r+c)%2+r*c%3)%2===0];
+  const mitFormat=(Q,m)=>{const f=qrBch(m,0x537)^0x5412; // Fehlerkorrektur M = 00
+    for(let i=0;i<15;i++){const b=!!((f>>i)&1);
+      if(i<6)Q[i][8]=b;else if(i<8)Q[i+1][8]=b;else if(i===8)Q[8][7]=b;else Q[8][14-i]=b;
+      if(i<8)Q[8][N-1-i]=b;else Q[N-15+i][8]=b}};
+  const strafe=Q=>{let s=0;
+    for(let r=0;r<N;r++)for(const zeile of [Q[r],Q.map(z=>z[r])]){let lauf=1;for(let c=1;c<=N;c++){if(c<N&&zeile[c]===zeile[c-1])lauf++;else{if(lauf>=5)s+=lauf-2;lauf=1}}
+      const t=zeile.map(x=>x?1:0).join("");s+=40*((t.match(/(?=1011101(0000|$))|(?=(0000|^)1011101)/g)||[]).length)}
+    for(let r=0;r<N-1;r++)for(let c=0;c<N-1;c++){const x=Q[r][c];if(x===Q[r][c+1]&&x===Q[r+1][c]&&x===Q[r+1][c+1])s+=3}
+    const dunkel=Q.flat().filter(Boolean).length;s+=10*Math.floor(Math.abs(dunkel*20/(N*N)-10));
+    return s};
+  let best=null;
+  for(let m=0;m<8;m++){const Q=M.map((z,r)=>z.map((x,c)=>fest[r][c]?x:x!==MASKEN[m](r,c)));mitFormat(Q,m);const s=strafe(Q);if(!best||s<best.s)best={Q,s}}
+  return best.Q;
+}
+/* QR-Code als SVG mit 4 Modulen Ruhezone */
+function qrSvg(text,mm=32){
+  const Q=qrMatrix(text);if(!Q)return "";
+  const n=Q.length+8;let d="";Q.forEach((z,r)=>z.forEach((x,c)=>{if(x)d+=`M${c+4} ${r+4}h1v1h-1z`}));
+  return `<svg class="qr" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n} ${n}" width="${mm}mm" height="${mm}mm" shape-rendering="crispEdges" role="img" aria-label="GiroCode"><rect width="${n}" height="${n}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+/* ---------- Klassenorganisation: Sammellisten, Klassenkasse, Fehltage, Stundenplan ----------
+   S.listen   = [{id, titel, d, betrag (Cent je Kind, 0 = nur abhaken), frist, kasse (in Klassenkasse buchen), zu (abgeschlossen), text (Zahlungsbrief),
+                  st:{kindId:{w:"ok"|"bar"|"ue"|"frei", b (Cent), d}}, alt (Cent von Kindern, die nicht mehr in der Klasse sind)}]
+   S.kasse    = {konto:{inhaber, iban, bic}, buchungen:[{id, d, text, b (Cent: + Einnahme, − Ausgabe), beleg}]}
+   S.fehltage = [{k, d, ganz, ent, std, n, sj, hj}] – je Kind und Tag höchstens ein Eintrag
+   S.meta.stundenplan = {n (Stunden je Tag), zeiten[8] (Beginn "HH:MM" oder ""), A–E[8] (Fach oder freier Eintrag je Stunde)} */
+const ZAHLART={bar:"bar bezahlt",ue:"überwiesen",frei:"erlassen",ok:"erledigt"};
+const euro=c=>(c<0?"−":"")+(Math.abs(c)/100).toFixed(2).replace(".",",").replace(/\B(?=(\d{3})+,)/g,".")+" €";
+const euroFeld=c=>c?(c/100).toFixed(2).replace(".",","):"";
+function centAus(v){ // "8,50", "8.5", "1.234,50 €" → Cent; ungültig → null
+  const s=String(v??"").replace(/[€\s]/g,"").replace(/\.(?=\d{3}(\D|$))/g,"").replace(",",".");
+  return /^\d{1,7}(\.\d{0,2})?$/.test(s)?Math.round(parseFloat(s)*100):null;
+}
+const centOk=v=>Number.isInteger(+v)&&+v>=0&&+v<=1e8?+v:0;
+const textOk=(v,n)=>typeof v==="string"?v.slice(0,n):"";
+const DEFAULT_ZAHLTEXT="Liebe Eltern von {Vorname},\n\nfür „{Zweck}“ sammeln wir {Betrag} ein. Bitte geben Sie den Betrag {Frist} passend in einem Umschlag mit oder überweisen Sie ihn auf das unten genannte Konto.\n\nVielen Dank!\n{Lehrkraft}";
+function listenBereinigen(a){
+  return (Array.isArray(a)?a:[]).filter(l=>l&&typeof l==="object").map(l=>{const st={};
+    if(l.st&&typeof l.st==="object")for(const [k,x] of Object.entries(l.st))if(idOk(k)&&x&&ZAHLART[x.w])st[k]={w:x.w,b:centOk(x.b),d:DAT_RE.test(x.d||"")?x.d:""};
+    return {id:idOk(l.id)?l.id:neueId(),titel:textOk(l.titel,80).trim()||"Liste",d:DAT_RE.test(l.d||"")?l.d:today(),betrag:centOk(l.betrag),frist:DAT_RE.test(l.frist||"")?l.frist:"",
+      kasse:l.kasse!==false,zu:!!l.zu,text:typeof l.text==="string"?l.text.slice(0,3000):DEFAULT_ZAHLTEXT,st,alt:centOk(l.alt)}});
+}
+function kasseBereinigen(o){
+  o=o&&typeof o==="object"?o:{};const k=o.konto&&typeof o.konto==="object"?o.konto:{};
+  return {konto:{inhaber:textOk(k.inhaber,70),iban:textOk(k.iban,42),bic:textOk(k.bic,11)},
+    buchungen:(Array.isArray(o.buchungen)?o.buchungen:[]).filter(b=>b&&typeof b==="object"&&Number.isInteger(+b.b)&&Math.abs(+b.b)<=1e8)
+      .map(b=>({id:idOk(b.id)?b.id:neueId(),d:DAT_RE.test(b.d||"")?b.d:today(),text:textOk(b.text,120),b:+b.b,beleg:textOk(b.beleg,20)}))};
+}
+/* Schuljahr und Halbjahr zu einem Datum, falls ein Fehltag ohne diese Angaben kommt (Halbjahr ab Mitte Februar) */
+function sjVonDatum(d){const y=+d.slice(0,4),m=+d.slice(5,7),a=m>=8?y:y-1;return `${a}/${String((a+1)%100).padStart(2,"0")}`}
+const hjVonDatum=d=>{const m=+d.slice(5,7),t=+d.slice(8,10);return m>=8||m===1||(m===2&&t<15)?1:2};
+function fehltageBereinigen(a){
+  const gesehen=new Set();
+  return (Array.isArray(a)?a:[]).filter(f=>f&&idOk(f.k)&&DAT_RE.test(f.d||"")&&!gesehen.has(f.k+"|"+f.d)&&gesehen.add(f.k+"|"+f.d))
+    .map(f=>({k:f.k,d:f.d,ganz:f.ganz!==false,ent:f.ent!==false,std:Math.min(10,Math.max(0,Math.round(+f.std)||0)),n:textOk(f.n,200),
+      sj:typeof f.sj==="string"&&/^\d{4}\/\d{2}$/.test(f.sj)?f.sj:sjVonDatum(f.d),hj:+f.hj===1||+f.hj===2?+f.hj:hjVonDatum(f.d)}));
+}
+const SP_TAGE=["A","B","C","D","E"];
+const DEFAULT_STUNDENPLAN=()=>({n:6,zeiten:Array(8).fill(""),A:Array(8).fill(""),B:Array(8).fill(""),C:Array(8).fill(""),D:Array(8).fill(""),E:Array(8).fill("")});
+function stundenplanBereinigen(p){
+  p=p&&typeof p==="object"?p:{};const r=DEFAULT_STUNDENPLAN(),feld=(a,i)=>Array.isArray(a)?a[i]:"";
+  r.n=Math.min(8,Math.max(1,Math.round(+p.n)||6));
+  for(let i=0;i<8;i++){const z=feld(p.zeiten,i);r.zeiten[i]=/^\d{2}:\d{2}$/.test(z||"")?z:"";for(const t of SP_TAGE)r[t][i]=textOk(feld(p[t],i),40).trim()}
+  return r;
+}
+/* Stundenplan-Eintrag einem Fach zuordnen: Name oder Kürzel, auch abgekürzt („Mathe“ → Mathematik) */
+function spFach(eintrag){
+  const e=String(eintrag||"").trim().toLowerCase();if(!e)return null;
+  return FAECHER.find(f=>f.toLowerCase()===e||String(fachObj(f).kurz||"").toLowerCase()===e)||(e.length>=3?FAECHER.find(f=>f.toLowerCase().startsWith(e)):null)||null;
+}
+const spLeer=()=>SP_TAGE.every(t=>S.meta.stundenplan[t].slice(0,S.meta.stundenplan.n).every(x=>!x));
+const spTag=d=>{const wd=new Date(d+"T12:00:00").getDay();return wd>=1&&wd<=5?SP_TAGE[wd-1]:null};
+
+/* ---- Fehltage ---- */
+const fehltagVon=(k,d)=>S.fehltage.find(f=>f.k===k&&f.d===d)||null;
+const fehltText=f=>(f.ganz?"ganzer Tag":`${f.std?f.std+" "+(f.std===1?"Stunde":"Stunden"):"teilweise"}`)+", "+(f.ent?"entschuldigt":"unentschuldigt")+(f.n?` · ${f.n}`:"");
+const fehltBadge=(k,d)=>{const f=fehltagVon(k.id,d);return f?`<span class="fehltb" title="${esc(fehltText(f))}">fehlt</span>`:""};
+function fehlSumme(k,sj=S.meta.schuljahr,hj=S.meta.halbjahr){
+  const a=S.fehltage.filter(f=>f.k===k&&f.sj===sj&&(!hj||f.hj===hj)),g=a.filter(f=>f.ganz),t=a.filter(f=>!f.ganz);
+  return {n:a.length,tage:g.length,tageU:g.filter(f=>!f.ent).length,teil:t.length,std:t.reduce((s,f)=>s+f.std,0),stdU:t.filter(f=>!f.ent).reduce((s,f)=>s+f.std,0)};
+}
+function fehltagSetzen(k,d,o){
+  S.fehltage=S.fehltage.filter(f=>!(f.k===k&&f.d===d));
+  if(o)S.fehltage.push({k,d,ganz:o.ganz!==false,ent:o.ent!==false,std:o.ganz===false?Math.min(10,Math.max(0,Math.round(+o.std)||0)):0,n:textOk(o.n||"",200).trim(),
+    sj:d>=syStart()?S.meta.schuljahr:sjVonDatum(d),hj:d>=syStart()?S.meta.halbjahr:hjVonDatum(d)});
+  S.fehltage.sort((a,b)=>a.d.localeCompare(b.d)||a.k.localeCompare(b.k));save();
+}
+function fehltDialog(k,d){
+  const kid=kidById(k);if(!kid)return;const f=fehltagVon(k,d)||{ganz:true,ent:true,std:0,n:""};
+  const dl=dialog(`<form id="ftf"><h2>${kidLabel(kid)} fehlt am ${esc(new Date(d+"T12:00").toLocaleDateString("de-DE",{weekday:"long"}))}, ${fmtDate(d)}</h2>
+   <div class="stack" style="gap:.6rem">
+    <div class="row"><label class="row small" style="gap:.35rem"><input type="radio" name="ftGanz" value="1" ${f.ganz?"checked":""}> ganzer Tag</label>
+     <label class="row small" style="gap:.35rem"><input type="radio" name="ftGanz" value="0" ${f.ganz?"":"checked"}> teilweise:</label>
+     <label class="row small" style="gap:.35rem"><input type="number" id="ftStd" min="0" max="10" value="${f.std||""}" style="width:4.2rem" aria-label="Versäumte Stunden"> Stunden</label></div>
+    <label class="row small" style="gap:.35rem"><input type="checkbox" id="ftEnt" ${f.ent?"checked":""}> entschuldigt</label>
+    <label class="f">Bemerkung (optional, z. B. „Krankmeldung telefonisch“)<input type="text" id="ftN" value="${esc(f.n)}" maxlength="200"></label>
+    <p class="small muted" style="margin:0">Keine Gesundheitsangaben eintragen – „krank“ genügt.</p></div>
+   <div class="row" style="margin-top:1rem">${fehltagVon(k,d)?`<button class="btn danger" type="button" id="ftWeg">Doch anwesend</button>`:""}<span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div></form>`);
+  const zu=()=>{dl.close();const y=window.scrollY;render();window.scrollTo(0,y)};
+  $("#ftStd").oninput=()=>{dl.querySelector('input[name=ftGanz][value="0"]').checked=true};
+  if($("#ftWeg"))$("#ftWeg").onclick=()=>{fehltagSetzen(k,d,null);zu()};
+  $("#ftf").onsubmit=e=>{e.preventDefault();fehltagSetzen(k,d,{ganz:dl.querySelector('input[name=ftGanz]:checked').value==="1",std:$("#ftStd").value,ent:$("#ftEnt").checked,n:$("#ftN").value});zu()};
+}
+
+/* ---- Sammellisten und Klassenkasse ---- */
+const listeVon=id=>S.listen.find(l=>l.id===id)||null;
+const istGeld=l=>l.betrag>0;
+const bezahlt=x=>x&&(x.w==="bar"||x.w==="ue")?x.b:0;
+function listeStand(l){
+  const ks=sortedKids("alle"),offen=ks.filter(k=>!l.st[k.id]);
+  return {n:ks.length,ok:ks.length-offen.length,offen,ein:Object.values(l.st).reduce((s,x)=>s+bezahlt(x),0)+l.alt};
+}
+/* Verlässt ein Kind die Klasse, bleiben seine Zahlungen in der Summe der Liste (und damit im Kassenbuch) erhalten */
+function listenKindWeg(id){for(const l of S.listen){const x=l.st[id];if(!x)continue;l.alt+=bezahlt(x);delete l.st[id]}}
+function kassenbuch(){
+  const z=[...S.kasse.buchungen.map(b=>Object.assign({},b,{manuell:true})),
+    ...S.listen.filter(l=>istGeld(l)&&l.kasse).map(l=>({id:"l-"+l.id,d:l.d,text:"Sammelliste: "+l.titel,b:listeStand(l).ein,beleg:"",liste:l.id})).filter(x=>x.b)];
+  z.sort((a,b)=>a.d.localeCompare(b.d)||(a.beleg||"").localeCompare(b.beleg||"",undefined,{numeric:true}));
+  let s=0;for(const x of z){s+=x.b;x.saldo=s}
+  return z;
+}
+const ibanNorm=s=>String(s||"").replace(/\s+/g,"").toUpperCase();
+function ibanOk(iban){
+  const s=ibanNorm(iban);if(!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(s)||(s.startsWith("DE")&&s.length!==22))return false;
+  let m=0;for(const ch of (s.slice(4)+s.slice(0,4)).replace(/[A-Z]/g,c=>c.charCodeAt(0)-55))m=(m*10+(+ch))%97;
+  return m===1;
+}
+const ibanFmt=s=>ibanNorm(s).replace(/(.{4})(?=.)/g,"$1 ");
+const kontoOk=()=>!!(S.kasse.konto.inhaber.trim()&&ibanOk(S.kasse.konto.iban));
+const zweckVon=(l,kid)=>`${l.titel}, ${kid.klasse||S.meta.klasse}, ${kid.vorname?kid.vorname.trim()+" ("+kid.id+")":kid.id}`.replace(/\s+/g," ").slice(0,140);
+/* GiroCode (EPC-QR-Code, Version 002): Banking-Apps übernehmen Empfänger, IBAN, Betrag und Verwendungszweck */
+function epcText(cent,zweck){
+  const K=S.kasse.konto,eine=s=>String(s).replace(/\s+/g," ").trim();
+  return ["BCD","002","1","SCT",ibanNorm(K.bic),eine(K.inhaber).slice(0,70),ibanNorm(K.iban),"EUR"+(cent/100).toFixed(2),"","",eine(zweck).slice(0,140)].join("\n");
+}
+
+/* ---- Druckseiten ---- */
+function zahlbriefSeite(l,kid){
+  const frist=l.frist?`bis zum ${fmtDate(l.frist)}`:"möglichst bald",w={Zweck:l.titel,Betrag:euro(l.betrag),Frist:frist};
+  const t=platzhalterFuellen(String(l.text||DEFAULT_ZAHLTEXT).replace(/\{(Zweck|Betrag|Frist)\}/g,(x,k)=>w[k]),kid,kid,{stark:[],ueben:[],ziele:[]}).trim(),K=S.kasse.konto,zweck=zweckVon(l,kid);
+  return `<section class="page zbrief">${kopf("Elternbrief","leg")}
+  <div style="text-align:right;font-size:10pt;color:#555;margin:4px 0 14px">${fmtDate(today())}</div>
+  <h2>${esc(l.titel)}</h2>
+  ${t.split(/\n\s*\n/).map(p=>`<p class="bp">${esc(p).replace(/\n/g,"<br>")}</p>`).join("")}
+  ${kontoOk()?`<div class="zbox"><div><b>Überweisung</b><table class="ztab"><tr><td>Empfänger</td><td>${esc(K.inhaber)}</td></tr><tr><td>IBAN</td><td>${esc(ibanFmt(K.iban))}</td></tr>${K.bic.trim()?`<tr><td>BIC</td><td>${esc(ibanNorm(K.bic))}</td></tr>`:""}
+    <tr><td>Betrag</td><td><b>${euro(l.betrag)}</b></td></tr><tr><td>Verwendungszweck</td><td>${esc(zweck)}</td></tr></table></div>
+    <div class="zqr">${qrSvg(epcText(l.betrag,zweck))}<div>GiroCode: mit der Banking-App scannen</div></div></div>`
+   :`<div class="schnitt">✂ bitte abtrennen und mit dem Geld zurückgeben</div><div class="rueck"><p>${esc(kid.vorname||kid.id)}: <b>${euro(l.betrag)}</b> für „${esc(l.titel)}“</p><div class="sig" style="grid-template-columns:1fr 1fr"><div>Datum</div><div>Unterschrift Erziehungsberechtigte</div></div></div>`}
+  ${fuss("leg")}</section>`;
+}
+function listeSeite(l){
+  const st=listeStand(l),geld=istGeld(l);
+  return `<section class="page">${kopf("Sammelliste")}<h2>${esc(l.titel)}</h2>
+  <p style="font-size:9.5pt">${fmtDate(l.d)}${geld?` · ${euro(l.betrag)} je Kind`:""}${l.frist?` · bis ${fmtDate(l.frist)}`:""} · ${st.ok} von ${st.n} erledigt${geld?` · eingenommen ${euro(st.ein)}`:""}</p>
+  <table style="font-size:10pt"><tr><th style="width:34%">Kind</th><th style="width:12%">erledigt</th>${geld?`<th>Art</th><th style="width:16%">Betrag</th>`:""}<th style="width:16%">am</th></tr>
+  ${sortedKids("alle").map(k=>{const x=l.st[k.id];return `<tr><td>${kidLabel(k)}</td><td style="text-align:center">${x?"✓":"☐"}</td>${geld?`<td>${x?esc(ZAHLART[x.w]):""}</td><td style="text-align:right">${x&&bezahlt(x)?euro(x.b):""}</td>`:""}<td>${x&&x.d?fmtDate(x.d):""}</td></tr>`}).join("")}
+  ${geld&&l.alt?`<tr><td colspan="3">Zahlungen von Kindern, die nicht mehr in der Klasse sind</td><td style="text-align:right">${euro(l.alt)}</td><td></td></tr>`:""}</table>${fuss()}</section>`;
+}
+function kasseSeite(){
+  const z=kassenbuch(),ein=z.filter(x=>x.b>0).reduce((s,x)=>s+x.b,0),aus=z.filter(x=>x.b<0).reduce((s,x)=>s-x.b,0);
+  return `<section class="page">${kopf("Kassenbericht")}<h2>Kassenbericht Klassenkasse</h2>
+  <p style="font-size:9.5pt">Stand ${fmtDate(today())} · Einnahmen ${euro(ein)} · Ausgaben ${euro(aus)} · <b>Kassenstand ${euro(ein-aus)}</b></p>
+  <table style="font-size:9.5pt"><tr><th style="width:13%">Datum</th><th style="width:9%">Beleg</th><th>Buchung</th><th style="width:14%">Einnahme</th><th style="width:14%">Ausgabe</th><th style="width:14%">Stand</th></tr>
+  ${z.map(x=>`<tr><td>${fmtDate(x.d)}</td><td>${esc(x.beleg||"")}</td><td>${esc(x.text)}</td><td style="text-align:right">${x.b>0?euro(x.b):""}</td><td style="text-align:right">${x.b<0?euro(-x.b):""}</td><td style="text-align:right">${euro(x.saldo)}</td></tr>`).join("")||`<tr><td colspan="6">Noch keine Buchungen.</td></tr>`}</table>
+  <div class="sig" style="grid-template-columns:1fr 1fr"><div>Datum, Unterschrift Lehrkraft</div><div>Kasse geprüft (Datum, Unterschrift)</div></div>${fuss()}</section>`;
+}
+function fehltageSeite(hj){
+  const sj=S.meta.schuljahr,ks=sortedKids("alle");
+  return `<section class="page">${kopf("Fehltage")}<h2>Fehltage ${hj}. Halbjahr ${esc(sj)}</h2>
+  <p style="font-size:9.5pt">Stand ${fmtDate(today())}. Für das Zeugnis und die Eingabe in ASV.</p>
+  <table style="font-size:9.5pt"><tr><th style="width:26%">Kind</th><th>ganze Tage</th><th>davon unentschuldigt</th><th>teilweise (Stunden)</th><th style="width:34%">Tage</th></tr>
+  ${ks.map(k=>{const s=fehlSumme(k.id,sj,hj),a=S.fehltage.filter(f=>f.k===k.id&&f.sj===sj&&f.hj===hj);
+    return `<tr><td>${kidLabel(k)}</td><td style="text-align:center">${s.tage}</td><td style="text-align:center">${s.tageU}</td><td style="text-align:center">${s.teil?`${s.teil} (${s.std} Std.)`:"0"}</td><td style="font-size:8.5pt">${a.map(f=>fmtDate(f.d).slice(0,6)+(f.ganz?"":"½")+(f.ent?"":" u")).join(", ")}</td></tr>`}).join("")}</table>
+  <p style="font-size:8.5pt;color:#555">½ = teilweise · u = unentschuldigt</p>${fuss()}</section>`;
+}
+function stundenplanSeite(){
+  const P=S.meta.stundenplan;
+  return `<section class="page">${kopf("Stundenplan")}<h2>Stundenplan ${esc(S.meta.klasse)}</h2>
+  <table style="font-size:11pt;margin-top:10px"><tr><th style="width:10%">Std.</th>${SP_TAGE.map(t=>`<th>${TAGE[t]}</th>`).join("")}</tr>
+  ${[...Array(P.n).keys()].map(i=>`<tr><td>${i+1}.${P.zeiten[i]?`<br><span style="font-size:8.5pt;color:#555">${esc(P.zeiten[i])}</span>`:""}</td>${SP_TAGE.map(t=>`<td style="height:13mm">${esc(P[t][i])}</td>`).join("")}</tr>`).join("")}</table>${fuss()}</section>`;
+}
+
+/* ---- Heute ---- */
+function anwesenheitCard(t,schultag){
+  if(istFL()||!schultag||!S.kinder.length)return "";
+  const ks=sortedKids("alle"),fehlen=ks.filter(k=>fehltagVon(k.id,t));
+  return `<div class="card hcard" id="anwesenheit"><div class="hh"><h3>Wer fehlt heute?</h3><span class="badge${fehlen.length?" warn":" ok"}">${fehlen.length?`${fehlen.length} ${fehlen.length===1?"fehlt":"fehlen"}`:"alle da"}</span></div>
+   <div class="achips">${ks.map(k=>{const f=fehltagVon(k.id,t);return `<button class="achip${f?" fehlt":""}" data-act="fehltKlick" data-k="${k.id}" title="${f?esc(fehltText(f))+" – Klick: ändern":"Klick: fehlt heute"}" aria-pressed="${!!f}">${kidLabel(k)}${f?` <span class="small">${f.ganz?"":"½ "}${f.ent?"":"u"}</span>`:""}</button>`}).join("")}</div>
+   <p class="small muted" style="margin:0">Tippe ein Kind an, das heute fehlt (ganzer Tag, entschuldigt). Ein zweiter Klick ändert die Angaben. Wer fehlt, zählt heute nicht beim Fokustag.</p></div>`;
+}
+function stundenplanCard(t){
+  const tag=spTag(t);if(!tag||istFL())return "";
+  const P=S.meta.stundenplan,stunden=P[tag].slice(0,P.n),jetzt=new Date(),hm=`${pad(jetzt.getHours())}:${pad(jetzt.getMinutes())}`;
+  if(!stunden.some(Boolean))return "";
+  let aktuell=-1;P.zeiten.slice(0,P.n).forEach((z,i)=>{if(z&&z<=hm&&stunden[i])aktuell=i});
+  const faecher=[...new Set(stunden.map(spFach).filter(Boolean))],seit=isoD(new Date(Date.now()-14*864e5));
+  const vorschlag=f=>{const ks=S.kinder.filter(k=>nimmtTeil(k,f));if(!ks.length)return [];
+    return kompsFach(f).filter(r=>bewertbar(r)&&hatModus(r,"beob")&&istAktuell(r)).map(r=>({r,n:new Set(S.eintraege.filter(e=>e.c===r.id&&e.d>=seit).map(e=>e.k)).size,von:ks.filter(k=>modusK(r,k)==="beob").length}))
+      .filter(x=>x.von&&x.n<x.von).sort((a,b)=>a.n/a.von-b.n/b.von).slice(0,2)};
+  return `<div class="card hcard" id="stundenplanHeute"><div class="hh"><h3>Stundenplan ${TAGE[tag]}</h3><button class="btn ghost small" data-act="tab" data-v="stundenplan">ändern</button></div>
+   <div class="splist">${stunden.map((x,i)=>x?`<div class="sprow${i===aktuell?" jetzt":""}"><span class="spn">${i+1}.</span><span class="small muted">${esc(P.zeiten[i]||"")}</span><span>${esc(x)}</span>${spFach(x)?`<button class="btn ghost small" data-act="goFach" data-v="${esc(spFach(x))}" title="${esc(spFach(x))} in der Beobachtung öffnen">beobachten</button>`:"<span></span>"}</div>`:"").join("")}</div>
+   ${faecher.length?(v=>`<div class="stack" style="gap:.3rem"><span class="small"><b>Heute zum Beobachten</b></span>${v.length?v.map(x=>`<button class="hrow hbtn" data-act="goKomp" data-v="${esc(x.r.id)}"><span>★ ${esc(x.r.text)} <span class="small muted">${esc(fachObj(x.r.fach).kurz||x.r.fach)}</span></span><span class="pbar"><span style="width:${Math.round(x.n/x.von*100)}%"></span></span><span class="small muted">${x.n}/${x.von}</span></button>`).join("")
+     :`<p class="small muted" style="margin:0">In ${esc(joinList(faecher.map(f=>fachObj(f).kurz||f)))} ist kein ★-Thema offen. Markiere in der Beobachtung, was gerade dran ist – dann schlägt LeDoK es hier vor.</p>`}</div>`)(faecher.flatMap(vorschlag)):""}</div>`;
+}
+function listenCard(){
+  const offen=S.listen.filter(l=>!l.zu).map(l=>({l,st:listeStand(l)})).filter(x=>x.st.offen.length);
+  if(!offen.length)return "";
+  return `<div class="card hcard"><div class="hh"><h3>Offene Listen</h3><span class="badge">${offen.length}</span></div>
+   <div class="hlist">${offen.slice(0,6).map(({l,st})=>`<button class="hrow hbtn" data-act="goListe" data-v="${esc(l.id)}"><span>${esc(l.titel)}${istGeld(l)?` <span class="small muted">${euro(l.betrag)}</span>`:""}</span><span class="pbar"><span style="width:${st.n?Math.round(st.ok/st.n*100):0}%"></span></span><span class="small muted">${st.offen.length} offen</span></button>`).join("")}</div>
+   <p class="small muted" style="margin:0">Geld, Rückmeldezettel und Unterschriften hakst du unter <a href="#" data-act="tab" data-v="listen">Listen</a> ab.</p></div>`;
+}
+
+/* ---- Bereich „Listen“ ---- */
+function listenView(){
+  const ls=S.listen.slice().sort((a,b)=>(a.zu-b.zu)||b.d.localeCompare(a.d));
+  if(UI.liste&&!listeVon(UI.liste))UI.liste=null;
+  if(!UI.liste&&ls.length)UI.liste=ls[0].id;
+  const l=listeVon(UI.liste);
+  const seite=`<aside class="lside"><div class="row" style="gap:.4rem"><button class="btn primary small" data-act="listeNeu" data-v="geld">＋ Geld einsammeln</button><button class="btn small" data-act="listeNeu" data-v="haken">＋ Liste zum Abhaken</button></div>
+   <div class="hlist">${ls.map(x=>{const st=listeStand(x);return `<button class="lit${x.id===UI.liste?" on":""}${x.zu?" zu":""}" data-act="liste" data-v="${esc(x.id)}"><span class="ltt">${esc(x.titel)}</span><span class="small muted">${istGeld(x)?euro(x.betrag)+" · ":""}${x.zu?"abgeschlossen":`${st.ok}/${st.n}`}</span></button>`}).join("")||`<p class="small muted">Noch keine Listen. Lege eine an, zum Beispiel für den Ausflug, das Kopiergeld oder einen Rückmeldezettel.</p>`}</div></aside>`;
+  if(!l)return `<div class="lwrap">${seite}<section class="card"><p class="muted" style="margin:0">Mit einer Liste behältst du im Blick, wer schon bezahlt, den Zettel zurückgegeben oder unterschrieben hat.</p></section></div>`;
+  const st=listeStand(l),geld=istGeld(l),ks=sortedKids("alle");
+  const zeile=k=>{const x=l.st[k.id];
+    if(!geld)return `<tr class="${x?"lok":""}"><td>${kidLabel(k)}${klasseBadge(k)}</td><td><label class="row small" style="gap:.35rem"><input type="checkbox" ${x?"checked":""} data-chg="lHaken" data-k="${esc(k.id)}" aria-label="${esc(k.id)} erledigt"> erledigt</label></td><td class="small muted">${x&&x.d?fmtDate(x.d):""}</td></tr>`;
+    return `<tr class="${x?"lok":""}"><td>${kidLabel(k)}${klasseBadge(k)}</td><td><div class="seg zseg">${[["","offen"],["bar","bar"],["ue","überwiesen"],["frei","erlassen"]].map(([w,t])=>`<button class="${(x?x.w:"")===w?"on":""}" data-act="lZahl" data-k="${esc(k.id)}" data-w="${w}" aria-label="${esc(k.id)} ${t}">${t}</button>`).join("")}</div></td>
+     <td>${x&&(x.w==="bar"||x.w==="ue")?`<input type="text" inputmode="decimal" class="eurin" value="${euroFeld(x.b)}" data-chg="lBetrag" data-k="${esc(k.id)}" aria-label="Betrag ${esc(k.id)}"> €`:""}</td><td class="small muted">${x&&x.d?fmtDate(x.d):""}</td></tr>`};
+  return `<div class="lwrap">${seite}<section class="card stack">
+   <div class="row"><h3 style="margin:0">${esc(l.titel)}</h3><span class="badge${st.offen.length?"":" ok"}">${st.ok} von ${st.n} erledigt</span>${geld?`<span class="badge">eingenommen ${euro(st.ein)}</span>`:""}<span class="spacer"></span>
+    <button class="btn small" data-act="printListe">Liste drucken</button>${geld?`<button class="btn small primary" data-act="printZahlbrief" ${st.offen.length?"":"disabled"}>Zahlungsbriefe drucken …</button>`:""}</div>
+   <div class="row lform">
+    <label class="f">Titel<input type="text" value="${esc(l.titel)}" maxlength="80" data-chg="lFeld" data-f="titel"></label>
+    <label class="f">Datum<input type="date" value="${esc(l.d)}" data-chg="lFeld" data-f="d"></label>
+    <label class="f">Betrag je Kind<span class="row" style="gap:.25rem"><input type="text" inputmode="decimal" class="eurin" value="${euroFeld(l.betrag)}" placeholder="—" data-chg="lFeld" data-f="betrag" aria-label="Betrag je Kind"> €</span></label>
+    <label class="f">bis<input type="date" value="${esc(l.frist)}" data-chg="lFeld" data-f="frist"></label></div>
+   <div class="row small">${geld?`<label class="row" style="gap:.35rem"><input type="checkbox" ${l.kasse?"checked":""} data-chg="lFeld" data-f="kasse"> in der Klassenkasse buchen</label>`:`<span class="muted">Liste zum Abhaken – mit einem Betrag wird daraus eine Geldliste.</span>`}
+    <label class="row" style="gap:.35rem"><input type="checkbox" ${l.zu?"checked":""} data-chg="lFeld" data-f="zu"> abgeschlossen</label><span class="spacer"></span><button class="btn ghost small danger" data-act="listeWeg">Liste löschen …</button></div>
+   ${geld?`<details class="small"><summary>Text des Zahlungsbriefs</summary><div class="stack" style="gap:.4rem;margin-top:.4rem">
+     <textarea rows="7" data-chg="lFeld" data-f="text">${esc(l.text)}</textarea>
+     <span class="muted">Platzhalter: {Vorname}, {Zweck}, {Betrag}, {Frist}, {Lehrkraft}, {Klasse}, {Schule}. ${kontoOk()?"Unter dem Text stehen die Bankverbindung der Klassenkasse und ein GiroCode für die Banking-App.":`Trägst du unter <a href="#" data-act="lTab" data-v="kasse">Klassenkasse</a> eine Bankverbindung ein, druckt LeDoK sie mit einem GiroCode für die Banking-App dazu.`}</span>
+     <button class="btn small" data-act="lTextReset" style="align-self:flex-start">Standardtext</button></div></details>`:""}
+   ${ks.length?`<div class="tw"><table class="edit ltab"><tr><th>Kind</th><th>${geld?"Zahlung":"Status"}</th>${geld?"<th>Betrag</th>":""}<th>am</th></tr>${ks.map(zeile).join("")}</table></div>`:`<p class="small muted">Noch keine Kinder.</p>`}
+   ${l.alt?`<p class="small muted" style="margin:0">Darin enthalten: ${euro(l.alt)} von Kindern, die nicht mehr in der Klasse sind.</p>`:""}</section></div>`;
+}
+function kasseView(){
+  const K=S.kasse.konto,z=kassenbuch(),stand=z.length?z[z.length-1].saldo:0,ibanFehler=K.iban.trim()&&!ibanOk(K.iban);
+  return `<div class="grid2">
+   <div class="card stack"><div class="row"><h3 style="margin:0">Kassenstand</h3><span class="spacer"></span><button class="btn small" data-act="printKasse">Kassenbericht drucken</button></div>
+    <div class="kstand${stand<0?" neg":""}">${euro(stand)}</div>
+    <p class="small muted" style="margin:0">Einnahmen aus Geldlisten bucht LeDoK automatisch (Summe je Liste). Ausgaben, Anfangsbestand und andere Einnahmen trägst du unten ein.</p></div>
+   <div class="card stack"><h3 style="margin:0">Bankverbindung für Zahlungsbriefe</h3>
+    <label class="f">Kontoinhaber<input type="text" value="${esc(K.inhaber)}" maxlength="70" data-chg="konto" data-f="inhaber" placeholder="z. B. Elternbeirat GS Beispielstadt"></label>
+    <div class="row" style="align-items:flex-end"><label class="f" style="flex:2 1 14rem">IBAN<input type="text" value="${esc(ibanFmt(K.iban))}" maxlength="42" data-chg="konto" data-f="iban" autocomplete="off" spellcheck="false"></label>
+     <label class="f" style="flex:1 1 7rem">BIC (optional)<input type="text" value="${esc(K.bic)}" maxlength="11" data-chg="konto" data-f="bic" autocomplete="off" spellcheck="false"></label></div>
+    <p class="small ${ibanFehler?"err":"muted"}" style="margin:0">${ibanFehler?"Diese IBAN ist ungültig – bitte prüfen. Ohne gültige IBAN druckt LeDoK keinen GiroCode.":kontoOk()?"✓ IBAN gültig. Zahlungsbriefe bekommen einen GiroCode für die Banking-App.":"Ohne Bankverbindung enthalten Zahlungsbriefe einen Abschnitt zum Zurückgeben mit dem Bargeld."} Bankdaten der Eltern speichert LeDoK nicht.</p></div>
+  </div>
+  <div class="card stack"><h3 style="margin:0">Kassenbuch</h3>
+   <form class="row kform" id="buchungForm" data-nosubmit><label class="f">Datum<input type="date" id="bD" value="${today()}" required></label><label class="f" style="flex:2 1 12rem">Buchung<input type="text" id="bT" maxlength="120" placeholder="z. B. Busfahrt Tierpark" required></label>
+    <label class="f">Betrag<span class="row" style="gap:.25rem"><input type="text" id="bB" inputmode="decimal" class="eurin" required> €</span></label>
+    <label class="f">Art<select id="bA"><option value="aus">Ausgabe</option><option value="ein">Einnahme</option></select></label><label class="f">Beleg-Nr.<input type="text" id="bN" maxlength="20" style="width:6rem"></label>
+    <button class="btn primary" type="button" data-act="buchungNeu">Buchen</button></form>
+   <div class="tw"><table class="ktab"><tr><th>Datum</th><th>Beleg</th><th>Buchung</th><th class="num">Einnahme</th><th class="num">Ausgabe</th><th class="num">Stand</th><th></th></tr>
+   ${z.slice().reverse().map(x=>`<tr><td>${fmtDate(x.d)}</td><td>${esc(x.beleg||"")}</td><td>${x.liste?`<a href="#" data-act="goListe" data-v="${esc(x.liste)}">${esc(x.text)}</a>`:esc(x.text)}</td><td class="num">${x.b>0?euro(x.b):""}</td><td class="num">${x.b<0?euro(-x.b):""}</td><td class="num">${euro(x.saldo)}</td>
+     <td>${x.manuell?`<button class="btn ghost small" data-act="buchungWeg" data-v="${esc(x.id)}" title="Buchung löschen" aria-label="Buchung löschen">✕</button>`:""}</td></tr>`).join("")||`<tr><td colspan="7" class="muted small">Noch keine Buchungen.</td></tr>`}</table></div></div>`;
+}
+function fehltageView(){
+  const sj=S.meta.schuljahr,hj=UI.fHJ||S.meta.halbjahr,ks=sortedKids("alle");UI.fHJ=hj;
+  const alle=S.fehltage.filter(f=>f.sj===sj&&f.hj===hj);
+  return `<div class="card stack"><div class="row"><h3 style="margin:0">Fehltage ${esc(sj)}</h3><div class="seg">${[1,2].map(h=>`<button class="${hj===h?"on":""}" data-act="fHJ" data-v="${h}">${h}. Halbjahr</button>`).join("")}</div><span class="small muted">${alle.length} ${alle.length===1?"Eintrag":"Einträge"}</span><span class="spacer"></span><button class="btn small" data-act="printFehltage">Liste drucken</button></div>
+   <form class="row kform" data-nosubmit><label class="f">Kind<select id="fK">${ks.map(k=>`<option value="${esc(k.id)}">${esc(k.id)}${UI.showNames&&k.vorname?" – "+esc(kurzName(k)):""}</option>`).join("")}</select></label>
+    <label class="f">Datum<input type="date" id="fD" value="${today()}"></label><button class="btn" type="button" data-act="fehltagNeu" ${ks.length?"":"disabled"}>Fehltag eintragen …</button>
+    <span class="small muted">Für heute geht es schneller auf <a href="#" data-act="tab" data-v="heute">Heute</a> unter „Wer fehlt heute?“.</span></form>
+   ${ks.length?`<div class="tw"><table class="ftab"><tr><th>Kind</th><th class="num">ganze Tage</th><th class="num">davon unentsch.</th><th class="num">teilweise</th><th>Tage</th></tr>
+   ${ks.map(k=>{const s=fehlSumme(k.id,sj,hj),a=alle.filter(f=>f.k===k.id);
+     return `<tr><td>${kidLabel(k)}</td><td class="num">${s.tage||""}</td><td class="num">${s.tageU||""}</td><td class="num">${s.teil?`${s.teil} (${s.std} Std.)`:""}</td>
+      <td>${a.map(f=>`<button class="fchip${f.ent?"":" u"}" data-act="fehltEdit" data-k="${esc(f.k)}" data-d="${f.d}" title="${esc(fehltText(f))}">${fmtDate(f.d).slice(0,6)}${f.ganz?"":" ½"}${f.ent?"":" u"}</button>`).join("")}</td></tr>`}).join("")}</table></div>`:`<p class="small muted">Noch keine Kinder.</p>`}
+   <p class="small muted" style="margin:0">½ = teilweise · u = unentschuldigt. Ein Klick auf einen Tag ändert ihn. Fehltage zählen zu dem Halbjahr, das beim Eintragen eingestellt war.</p></div>`;
+}
+
+const ORGA_VIEWS={
+listen(){
+  const tabs=[["listen","Sammellisten"],["kasse","Klassenkasse"],["fehltage","Fehltage"]];UI.lTab=UI.lTab||"listen";
+  return `<div class="stack"><div class="row" style="align-items:center"><h2 style="margin:0">Listen</h2><span class="spacer"></span><div class="seg">${tabs.map(([k,l])=>`<button class="${UI.lTab===k?"on":""}" data-act="lTab" data-v="${k}">${l}</button>`).join("")}</div></div>
+   ${UI.lTab==="kasse"?kasseView():UI.lTab==="fehltage"?fehltageView():listenView()}</div>`;
+},
+stundenplan(){
+  const P=S.meta.stundenplan;
+  return `<div class="stack"><div class="row"><h2 style="margin:0">Stundenplan</h2><span class="spacer"></span><button class="btn small" data-act="printStundenplan" ${spLeer()?"disabled":""}>Drucken</button></div>
+   <p class="muted" style="margin:0">Trage ein, welches Fach du in welcher Stunde hast. <b>Heute</b> zeigt dann den Plan des Tages und schlägt ★-Themen dieser Fächer zum Beobachten vor. Fächer aus „Fächer &amp; Raster“ werden erkannt (grün), auch abgekürzt wie „Mathe“. Andere Einträge wie „AG“ erscheinen nur im Plan.</p>
+   <div class="row"><span class="small muted">Stunden am Tag</span><div class="seg">${[4,5,6,7,8].map(n=>`<button class="${P.n===n?"on":""}" data-act="spN" data-v="${n}">${n}</button>`).join("")}</div></div>
+   <div class="tw"><table class="edit sptab"><tr><th>Std.</th><th>Beginn</th>${SP_TAGE.map(t=>`<th>${TAGE[t]}</th>`).join("")}</tr>
+   ${[...Array(P.n).keys()].map(i=>`<tr><td class="num">${i+1}.</td><td><input type="time" value="${esc(P.zeiten[i])}" data-chg="spZeit" data-i="${i}" aria-label="Beginn ${i+1}. Stunde"></td>${SP_TAGE.map(t=>`<td><input type="text" list="spListe" value="${esc(P[t][i])}" class="${spFach(P[t][i])?"spok":""}" maxlength="40" data-chg="spFeld" data-t="${t}" data-i="${i}" aria-label="${TAGE[t]} ${i+1}. Stunde"></td>`).join("")}</tr>`).join("")}</table></div>
+   <datalist id="spListe">${FAECHER.map(f=>`<option value="${esc(f)}">`).join("")}</datalist>
+   <div class="row"><span class="small muted">Der Beginn ist freiwillig. Mit Uhrzeiten hebt „Heute“ die laufende Stunde hervor.</span><span class="spacer"></span><button class="btn ghost small danger" data-act="spLeeren" ${spLeer()?"disabled":""}>Stundenplan leeren …</button></div></div>`;
+}
+};
+
+const ORGA_ACT={
+  lTab:a=>{UI.lTab=a.dataset.v;UI.tab="listen";render();window.scrollTo(0,0)},
+  goListe:a=>{UI.tab="listen";UI.lTab="listen";UI.liste=a.dataset.v;render();window.scrollTo(0,0)},
+  goFach:a=>{if(!FAECHER.includes(a.dataset.v))return;UI.tab="erfassen";UI.mode="beob";UI.datum=today();UI.fach=a.dataset.v;UI.komp=null;render();window.scrollTo(0,0)},
+  liste:a=>{UI.liste=a.dataset.v;render()},
+  listeNeu:async a=>{
+    const geld=a.dataset.v==="geld",titel=((await askText(geld?"Geld einsammeln":"Neue Liste",geld?"Wofür sammelst du Geld? Zum Beispiel „Ausflug Tierpark“ oder „Kopiergeld“.":"Was hakst du ab? Zum Beispiel „Einverständnis Schwimmen“ oder „Zeugnis unterschrieben“.",""))||"").trim();
+    if(!titel)return;
+    let betrag=0;
+    if(geld){for(;;){const b=await askText("Betrag je Kind","In Euro, zum Beispiel 8,50.","");if(b==null)return;const c=centAus(b);if(c>0){betrag=c;break}await info("Bitte einen Betrag in Euro eingeben, zum Beispiel 8,50.")}}
+    const l={id:neueId(),titel:titel.slice(0,80),d:today(),betrag,frist:"",kasse:true,zu:false,text:DEFAULT_ZAHLTEXT,st:{},alt:0};
+    S.listen.push(l);UI.liste=l.id;UI.tab="listen";UI.lTab="listen";save();render()},
+  listeWeg:async()=>{const l=listeVon(UI.liste);if(!l)return;
+    if(!await frage(`Die Liste „${l.titel}“ löschen?${istGeld(l)&&listeStand(l).ein?` Die Einnahmen von ${euro(listeStand(l).ein)} verschwinden damit auch aus dem Kassenbuch.`:""}`,{titel:"Liste löschen",ja:"Löschen",gefahr:true}))return;
+    S.listen=S.listen.filter(x=>x!==l);UI.liste=null;save();render()},
+  lZahl:a=>{const l=listeVon(UI.liste);if(!l)return;const k=a.dataset.k,w=a.dataset.w;
+    if(!w)delete l.st[k];else{const alt=l.st[k];l.st[k]={w,b:w==="frei"?0:(alt&&bezahlt(alt)?alt.b:l.betrag),d:alt&&alt.d?alt.d:today()}}
+    save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  lTextReset:()=>{const l=listeVon(UI.liste);if(!l)return;l.text=DEFAULT_ZAHLTEXT;save();render()},
+  printListe:()=>{const l=listeVon(UI.liste);if(l)drucke(listeSeite(l))},
+  printZahlbrief:async()=>{const l=listeVon(UI.liste);if(!l||!istGeld(l))return;const offen=listeStand(l).offen;if(!offen.length)return;
+    if(!kontoOk()&&!await frage("Unter „Klassenkasse“ ist keine gültige Bankverbindung eingetragen. Die Briefe bekommen dann statt GiroCode einen Abschnitt zum Zurückgeben mit dem Bargeld.",{titel:"Zahlungsbriefe",ja:"Trotzdem drucken"}))return;
+    drucke(offen.map(k=>zahlbriefSeite(l,k)).join(""))},
+  printKasse:()=>drucke(kasseSeite()),
+  buchungNeu:()=>{const d=$("#bD").value,t=$("#bT").value.trim(),c=centAus($("#bB").value),art=$("#bA").value,beleg=$("#bN").value.trim();
+    if(!DAT_RE.test(d))return $("#bD").focus();if(!t)return $("#bT").focus();if(!(c>0)){toast("Bitte einen Betrag in Euro eingeben, zum Beispiel 12,50.",3000);return $("#bB").focus()}
+    S.kasse.buchungen.push({id:neueId(),d,text:t.slice(0,120),b:art==="ein"?c:-c,beleg:beleg.slice(0,20)});save();render();toast(`${art==="ein"?"Einnahme":"Ausgabe"} über ${euro(c)} gebucht.`,2500)},
+  buchungWeg:async a=>{const b=S.kasse.buchungen.find(x=>x.id===a.dataset.v);if(!b||!await frage(`Buchung „${b.text}“ (${euro(b.b)}) löschen?`,{ja:"Löschen",gefahr:true}))return;
+    S.kasse.buchungen=S.kasse.buchungen.filter(x=>x!==b);save();render()},
+  fHJ:a=>{UI.fHJ=+a.dataset.v;render()},
+  fehltKlick:a=>{const k=a.dataset.k,t=today();if(fehltagVon(k,t))return fehltDialog(k,t);
+    fehltagSetzen(k,t,{ganz:true,ent:true});const y=window.scrollY;render();window.scrollTo(0,y)},
+  fehltEdit:a=>fehltDialog(a.dataset.k,a.dataset.d),
+  fehltagNeu:()=>{const k=$("#fK").value,d=$("#fD").value;if(!kidById(k)||!DAT_RE.test(d))return;fehltDialog(k,d)},
+  printFehltage:()=>drucke(fehltageSeite(UI.fHJ||S.meta.halbjahr)),
+  spN:a=>{S.meta.stundenplan.n=+a.dataset.v;save();render()},
+  printStundenplan:()=>drucke(stundenplanSeite()),
+  spLeeren:async()=>{if(!await frage("Alle Einträge im Stundenplan löschen?",{ja:"Leeren",gefahr:true}))return;S.meta.stundenplan=DEFAULT_STUNDENPLAN();save();render()}
+};
+const ORGA_CHG={
+  lFeld:el=>{const l=listeVon(UI.liste);if(!l)return;const f=el.dataset.f;
+    if(f==="betrag"){const c=el.value.trim()?centAus(el.value):0;if(c==null){toast("Bitte einen Betrag in Euro eingeben, zum Beispiel 8,50.",3000);el.value=euroFeld(l.betrag);return}
+      if(!c&&Object.values(l.st).some(bezahlt)){toast("Es sind schon Zahlungen eingetragen. Setze sie erst auf „offen“, bevor du den Betrag entfernst.",4000);el.value=euroFeld(l.betrag);return}
+      if(!c)for(const x of Object.values(l.st))x.w="ok";else if(!l.betrag)for(const k of Object.keys(l.st))delete l.st[k];l.betrag=c}
+    else if(f==="d"||f==="frist")l[f]=DAT_RE.test(el.value)?el.value:(f==="d"?l.d:"");
+    else if(f==="kasse"||f==="zu")l[f]=el.checked;
+    else if(f==="titel")l.titel=el.value.trim().slice(0,80)||l.titel;
+    else if(f==="text")l.text=el.value.slice(0,3000);
+    save();if(f!=="text"){const y=window.scrollY;render();window.scrollTo(0,y)}},
+  lHaken:el=>{const l=listeVon(UI.liste);if(!l)return;if(el.checked)l.st[el.dataset.k]={w:"ok",b:0,d:today()};else delete l.st[el.dataset.k];save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  lBetrag:el=>{const l=listeVon(UI.liste),x=l&&l.st[el.dataset.k];if(!x)return;const c=centAus(el.value);
+    if(c==null){toast("Bitte einen Betrag in Euro eingeben, zum Beispiel 8,50.",3000);el.value=euroFeld(x.b);return}x.b=c;save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  konto:el=>{const f=el.dataset.f,v=el.value.trim();S.kasse.konto[f]=f==="iban"?ibanNorm(v).slice(0,34):f==="bic"?ibanNorm(v).slice(0,11):v.slice(0,70);save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  spZeit:el=>{S.meta.stundenplan.zeiten[+el.dataset.i]=/^\d{2}:\d{2}$/.test(el.value)?el.value:"";save()},
+  spFeld:el=>{const t=el.dataset.t,i=+el.dataset.i;if(!SP_TAGE.includes(t)||!(i>=0&&i<8))return;S.meta.stundenplan[t][i]=el.value.trim().slice(0,40);el.classList.toggle("spok",!!spFach(el.value));save()}
+};
 /* ---------- Dialoge ---------- */
 function dialog(html,breit){const d=$("#dlg");d.style.width=breit?"min(760px, calc(100% - 2rem))":"";d.innerHTML=html;d.showModal();return d}
 function closeDlg(){const d=$("#dlg");if(d.open)d.close()}
@@ -5546,6 +5989,9 @@ function sucheQuellen(){
   for(const [k,l,d] of einstTabs())q.push({art:"Einstellungen",text:l,info:d,los:tab(k)});
   for(const k of sortedKids("alle"))q.push({art:"Kind",text:UI.showNames&&k.vorname?kurzName(k):k.id,info:"Jgst. "+k.jgst,such:UI.showNames?[k.id,k.vorname,k.nachname].join(" "):k.id,los:()=>ACT.goKind({dataset:{k:k.id}})});
   for(const r of S.raster)if(!r.aus&&bewertbar(r)&&hatModus(r,"beob"))q.push({art:"Thema",text:r.text||r.id,info:`${fachObj(r.fach).kurz||r.fach} · ${r.id}`,los:()=>ACT.goKomp({dataset:{v:r.id}})});
+  for(const l of S.listen)q.push({art:"Liste",text:l.titel,info:istGeld(l)?euro(l.betrag)+" je Kind":"zum Abhaken",los:()=>ACT.goListe({dataset:{v:l.id}})});
+  q.push({art:"Bereich",text:"Klassenkasse",info:"Listen",los:()=>ACT.lTab({dataset:{v:"kasse"}})});
+  q.push({art:"Bereich",text:"Fehltage",info:"Listen",los:()=>ACT.lTab({dataset:{v:"fehltage"}})});
   q.push({art:"Aktion",text:"Sicherungskopie herunterladen",los:()=>ACT.backup()});
   q.push({art:"Aktion",text:"Bedienungsanleitung (Word) herunterladen",los:()=>ACT.anleitungLaden()});
   q.push({art:"Aktion",text:"Jetzt sperren",los:()=>lock()});
@@ -5977,7 +6423,7 @@ const ACT = {
   },
   demoEntfernen:async()=>{
     if(!await frage("Die Beispielklasse mit allen Kindern, Bewertungen, Notizen und Proben entfernen? Raster und Textbausteine bleiben. Danach legst du deine eigenen Kinder an.",{titel:"Beispiel entfernen",ja:"Entfernen"}))return;
-    const d=defaultState();S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.proben=[];S.meta.schule=d.meta.schule;S.meta.klasse=d.meta.klasse;S.meta.demo=false;
+    const d=defaultState();S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.proben=[];S.listen=[];S.kasse=kasseBereinigen();S.fehltage=[];S.meta.stundenplan=DEFAULT_STUNDENPLAN();S.meta.schule=d.meta.schule;S.meta.klasse=d.meta.klasse;S.meta.demo=false;
     protokoll("Beispielklasse entfernt");DV++;save();UI.kind=null;UI.tab="einst";UI.einst="klasse";UI.klasseOffen=true;render();toast("Beispiel entfernt. Lege jetzt deine Kinder an.",5000)},
   datenPruefen:async()=>{const p=datenPruefung(),weg=p.filter(x=>x.weg).reduce((a,x)=>a+x.n,0);
     if(!p.length)return info("Alles in Ordnung: Jede Bewertung, Notiz, jeder Text und jeder Förderplan gehört zu einem Kind und einem Thema.");
@@ -5986,8 +6432,8 @@ const ACT = {
     if(!await frage(`Die Prüfung hat Folgendes gefunden:\n\n${liste}\n\nAufräumen entfernt die ${weg} Reste ohne Kind oder Thema. Vorher legt LeDoK automatisch eine Sicherung an.`,{titel:"Datenprüfung",ja:"Aufräumen"}))return;
     const sich=await vorherSichern("vor-aufraeumen");datenAufraeumen();save();render();
     toast(`Aufgeräumt.${sich?` Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`:""}`,8000)},
-  wipeKids:async()=>{if(!await frage("Alle Kinder, Einträge, Freitexte und Texte löschen? Raster und Textbausteine bleiben. Vorher legt LeDoK automatisch eine Sicherung an.",{ja:"Alle löschen",gefahr:true,tippen:"LÖSCHEN"}))return;
-    const sich=await vorherSichern("vor-loeschen");S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.meta.demo=false;save();render();
+  wipeKids:async()=>{if(!await frage("Alle Kinder, Einträge, Freitexte, Texte und Fehltage löschen? Raster und Textbausteine bleiben. Vorher legt LeDoK automatisch eine Sicherung an.",{ja:"Alle löschen",gefahr:true,tippen:"LÖSCHEN"}))return;
+    const sich=await vorherSichern("vor-loeschen");S.kinder.forEach(k=>listenKindWeg(k.id));S.fehltage=[];S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.meta.demo=false;save();render();
     if(sich)toast(`Gelöscht. Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`,8000)},
   wipeAll:async()=>{
     // Ohne Passwort erreichbar – deshalb vorher immer die verschlüsselten Daten sichern und „LÖSCHEN“ eintippen lassen
@@ -6006,7 +6452,7 @@ function legCollect(kid){
 }
 /* ---------- Übergabe / Import / CSV ---------- */
 function nextKidId(){let n=1;while(S.kinder.find(k=>k.id==="S"+pad(n)))n++;return "S"+pad(n)}
-function kindLoeschen(id){delete S.foerderplaene[id];S.kinder=S.kinder.filter(k=>k.id!==id);S.eintraege=S.eintraege.filter(e=>e.k!==id);S.notizen=S.notizen.filter(n=>n.k!==id);for(const key of Object.keys(S.texte))if(key.startsWith(id+"|"))delete S.texte[key]}
+function kindLoeschen(id){delete S.foerderplaene[id];listenKindWeg(id);S.fehltage=S.fehltage.filter(f=>f.k!==id);S.kinder=S.kinder.filter(k=>k.id!==id);S.eintraege=S.eintraege.filter(e=>e.k!==id);S.notizen=S.notizen.filter(n=>n.k!==id);for(const key of Object.keys(S.texte))if(key.startsWith(id+"|"))delete S.texte[key]}
 function leastGroup(){const c={};"ABCDE".split("").forEach(g=>c[g]=S.kinder.filter(k=>k.gruppe===g).length);return Object.keys(c).sort((a,b)=>c[a]-c[b])[0]}
 function kindPaket(kid){
   const es=S.eintraege.filter(e=>e.k===kid.id), ids=new Set(es.map(e=>e.c));
@@ -6475,10 +6921,21 @@ function loadDemo(){
     ["S13","2026-10-14T08:55:00","Mathematik","Nutzt jetzt bei Aufgaben bis 10 die Kraft der Fünf, zählt nicht mehr alles ab."],
     ["S16","2026-10-06T12:10:00","Sozialverhalten","Konflikt mit Samuel in der Pause; hat selbst „Stopp“ gesagt und mich geholt."]];
   dn.forEach(([k,ts,kat,text],i)=>S.notizen.push({id:"n"+i,k,ts:new Date(ts).toISOString(),kat,text}));
+  // Stundenplan, Listen, Klassenkasse und Fehltage zum Ausprobieren
+  const sp=S.meta.stundenplan;sp.n=5;sp.zeiten=["08:00","08:50","09:50","10:40","11:40","","",""];
+  sp.A=["Deutsch","Deutsch","Mathematik","HSU","Sport","","",""];sp.B=["Mathematik","Deutsch","HSU","Religion","Kunst","","",""];sp.C=["Deutsch","Mathematik","HSU","Musik","AG","","",""];
+  sp.D=["Mathematik","Deutsch","Musik","Sport","Sport","","",""];sp.E=["Deutsch","Mathematik","Werken und Gestalten","Werken und Gestalten","","","",""];
+  S.kasse.konto={inhaber:"Elternbeirat GS Beispielstadt",iban:"DE02120300000000202051",bic:""};
+  S.kasse.buchungen=[{id:"b1",d:"2026-09-14",text:"Übertrag aus dem Vorjahr",b:4250,beleg:"1"},{id:"b2",d:"2026-10-02",text:"Bastelmaterial Herbst",b:-1890,beleg:"2"}];
+  const st={};S.kinder.slice(0,17).forEach((k,i)=>{st[k.id]=i===5?{w:"frei",b:0,d:"2026-10-07"}:{w:i%3?"bar":"ue",b:850,d:`2026-10-${pad(6+i%8)}`}});
+  S.listen=[{id:"l1",titel:"Ausflug Tierpark",d:"2026-10-05",betrag:850,frist:"2026-10-23",kasse:true,zu:false,text:DEFAULT_ZAHLTEXT,st,alt:0},
+    {id:"l2",titel:"Einverständnis Schwimmunterricht",d:"2026-10-12",betrag:0,frist:"",kasse:false,zu:false,text:DEFAULT_ZAHLTEXT,st:Object.fromEntries(S.kinder.slice(3,21).map(k=>[k.id,{w:"ok",b:0,d:"2026-10-14"}])),alt:0}];
+  S.fehltage=fehltageBereinigen([["S04","2026-09-24"],["S04","2026-09-25"],["S09","2026-10-01",false],["S15","2026-10-08",true,false],["S20","2026-10-13"]]
+    .map(([k,d,ganz=true,ent=true])=>({k,d,ganz,ent,std:ganz?0:2,n:"",sj:S.meta.schuljahr,hj:1})));
 }
 
 /* ---------- Start ---------- */
-Object.assign(ACT,ADMIN_ACT,ROLLEN_ACT);Object.assign(VIEWS,ROLLEN_VIEWS);
+Object.assign(ACT,ADMIN_ACT,ROLLEN_ACT,ORGA_ACT);Object.assign(VIEWS,ROLLEN_VIEWS,ORGA_VIEWS);Object.assign(CHG,ORGA_CHG);
 (function init(){
   verTag();
   if(DESKTOP&&DESKTOP.updateSuchen){setTimeout(()=>updateAutoPruefen(),3000);setInterval(()=>updateAutoPruefen(true),3600*1000)}
