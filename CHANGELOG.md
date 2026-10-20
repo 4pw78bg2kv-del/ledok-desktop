@@ -9,7 +9,11 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+## 1.1.3 (Beta)
+
 **Neu**
+- In einer Sammelliste legst du mit **Kinder auswählen** fest, wer auf der Liste steht. Filter nach **Name**, **Klasse** (z. B. 1a, 1b) und **Jahrgangsstufe** helfen dabei, mit „Angezeigte auswählen“ hakst du alle gefilterten Kinder auf einmal an. So sammelst du zum Beispiel nur bei der 1. Jahrgangsstufe Geld für einen Ausflug ein. Sind alle Kinder angehakt, kommen später neu angelegte Kinder automatisch dazu.
+- Bei **Zahlungsbriefe drucken** wählst du jetzt zwischen einem **personalisierten** Brief für jedes Kind, das noch offen ist, und einem **allgemeinen** Brief ohne Namen zum Kopieren und Austeilen. Außerdem entscheidest du, ob der Brief einen **GiroCode** bekommt oder nur die Überweisungsdaten. LeDoK merkt sich deine Wahl je Liste.
 - **Dienste:** Unter **Listen → Dienste** verteilst du Klassendienste wie Tafeldienst, Austeildienst oder Blumendienst reihum an alle Kinder, jede Woche, alle zwei Wochen oder jeden Schultag. LeDoK rechnet selbst aus, wer dran ist, und lässt die Dienste nach jedem Durchlauf weiterrücken, damit jedes Kind mal jeden Dienst hat. Du kannst die Reihenfolge auslosen, einzelne Kinder pausieren lassen und für eine Runde Kinder tauschen. **Aushang drucken** druckt den Plan in großer Schrift für die Klasse. Auf **Heute** zeigt die Karte **Dienste**, wer dran ist, und nennt für fehlende Kinder eine Vertretung.
 - Im neuen Reiter **Klassenbuch** führst du das Klassenbuch deiner Klasse. Die Woche zeigt Montag bis Freitag mit den Stunden aus deinem Stundenplan. Zu jeder Stunde trägst du Fach, Thema, Hausaufgabe und eine Bemerkung ein, zu jedem Tag eine Bemerkung wie „Wandertag“. Wer gefehlt hat, übernimmt LeDoK aus den Fehltagen. Mit **Woche drucken** bekommst du die Klassenbuchseite zum Abheften.
 - Jede Stunde verknüpfst du mit den passenden **Lernzielen aus dem LehrplanPLUS**: anklicken, suchen oder mit „wie letzte Stunde“ übernehmen. Auf Wunsch werden sie gleich ★ aktuelles Unterrichtsthema und erscheinen in der Beobachtung.
@@ -20,12 +24,6 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 - Unter **Listen → Klassenrat** begleitet LeDoK euren **Klassenrat**. Im **Briefkasten** sammelst du die Anliegen der Kinder („Ich lobe …“, „Mich stört …“, „Ich wünsche mir …“), auf Wunsch mit gedruckten Zetteln zum Ausfüllen. **Neue Sitzung** übernimmt sie als Tagesordnung und verteilt Leitung, Protokoll, Zeitwache und Regelwache reihum an die Kinder, die da sind. Die Sitzung führt durch positive Runde, Rückblick auf frühere Beschlüsse, Anliegen mit Beschluss, Zuständigen und Frist, Abstimmungen und ein Blitzlicht. Das **Protokoll** druckst du mit Unterschriftsfeldern, die Beschlüsse als **Aushang** für die Klassenzimmerwand.
 - **Umfragen:** Die Klasse stimmt per Handzeichen, jedes Kind einzeln oder geheim mit gedruckten **Stimmzetteln** ab, wahlweise mit Ja oder nein, Daumen, Stimmungsbarometer oder eigenen Möglichkeiten. **Groß zeigen** zeigt das Ergebnis ohne Namen an Tafel oder Beamer, und du kannst dort direkt mitzählen. Das Ergebnis einer Abstimmung übernimmst du mit einem Klick als Beschluss.
 - Auf **Heute** erinnert die Karte **Klassenrat** an eine Sitzung am selben Tag, an Anliegen im Briefkasten und an fällige Beschlüsse.
-
-## 1.1.3 (Beta)
-
-**Neu**
-- In einer Sammelliste legst du mit **Kinder auswählen** fest, wer auf der Liste steht. Filter nach **Name**, **Klasse** (z. B. 1a, 1b) und **Jahrgangsstufe** helfen dabei, mit „Angezeigte auswählen“ hakst du alle gefilterten Kinder auf einmal an. So sammelst du zum Beispiel nur bei der 1. Jahrgangsstufe Geld für einen Ausflug ein. Sind alle Kinder angehakt, kommen später neu angelegte Kinder automatisch dazu.
-- Bei **Zahlungsbriefe drucken** wählst du jetzt zwischen einem **personalisierten** Brief für jedes Kind, das noch offen ist, und einem **allgemeinen** Brief ohne Namen zum Kopieren und Austeilen. Außerdem entscheidest du, ob der Brief einen **GiroCode** bekommt oder nur die Überweisungsdaten. LeDoK merkt sich deine Wahl je Liste.
 
 ## 1.1.2 (Beta)
 
