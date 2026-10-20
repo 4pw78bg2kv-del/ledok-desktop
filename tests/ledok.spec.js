@@ -710,3 +710,23 @@ test("Datenprüfung: findet Reste ohne Kind oder Thema und räumt sie auf", asyn
   const nachher = await page.evaluate(() => ({ e: S.eintraege.length, n: S.notizen.length, t: Object.keys(S.texte).some((x) => x.startsWith("X99")), f: "X99" in S.foerderplaene }));
   expect(nachher).toEqual({ e: vorher.e - 2, n: vorher.n - 1, t: false, f: false });
 });
+
+test("Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausblenden", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00")); // ein Dienstag
+  await neueKlasse(page);
+  await page.click('nav.tabs button[data-v="heute"]');
+  const balken = page.locator("#tagesbalken");
+  await expect(balken).toContainText("Dein Tag");
+  await expect(balken).toContainText(/Fokustag \d+ von \d+/);
+  const [jetzt, max] = await Promise.all(["aria-valuenow", "aria-valuemax"].map((a) => balken.locator('[role="progressbar"]').getAttribute(a)));
+  expect(+max).toBeGreaterThan(0);
+  expect(+jetzt).toBeLessThanOrEqual(+max);
+  await balken.locator('[data-act="tagesbalkenAus"]').click();
+  await expect(balken).toHaveCount(0);
+  // Bleibt nach erneutem Zeichnen aus und kommt über den Knopf oben zurück
+  await page.click('nav.tabs button[data-v="erfassen"]');
+  await page.click('nav.tabs button[data-v="heute"]');
+  await expect(balken).toHaveCount(0);
+  await page.click("#tagesbalkenAn");
+  await expect(balken).toBeVisible();
+});

@@ -1,6 +1,6 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 20.10.2026 · `main` nach PR #24 · App-Version 1.1.0 Beta (mit unveröffentlichten Änderungen)
+Stand: 20.10.2026 · `main` nach PR #25 · App-Version 1.1.0 Beta (mit unveröffentlichten Änderungen)
 
 Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung ([`docs/LeDoK-Bedienungsanleitung.docx`](LeDoK-Bedienungsanleitung.docx), auch in der App unter Hilfe), Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
@@ -113,6 +113,7 @@ Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen 
 - Alle Texte aus Daten laufen durch `esc()`.
 - `UI` hält den flüchtigen Zustand (aktiver Reiter, Filter, Namen-Schalter). Er wird nicht gespeichert.
 - **Schnellsuche** (Strg/⌘+K, Knopf ⌕): `sucheQuellen()` sammelt Bereiche, Einstellungsseiten, Kinder, beobachtbare Themen und drei Aktionen (Sicherungskopie, Bedienungsanleitung, Sperren); `sucheTreffer()` filtert und sortiert (höchstens 12), `sucheOeffnen()` zeigt das Ergebnis in `#dlg`. Im Kürzel-Modus wird nur nach Kürzeln gesucht.
+- **Dein Tag** (Heute): `tagesFortschritt()` fasst Fokustag und Fokuswoche zu einem Balken zusammen. Ein Kind des Fokustags zählt als erledigt, wenn alle seine Fokus-Themen bewertet sind; dazu kommen die erledigten Kinder der Fokuswoche. Bei 100 % bekommt die Karte die Klasse `fertig` (grün). Nicht an Wochenenden, nicht für Fachlehrkräfte und nicht, wenn `S.meta.tagesbalken === false`.
 - **Bedienungsanleitung:** Der Knopf „Bedienungsanleitung (Word)“ in der Hilfe und die gleichnamige Aktion der Schnellsuche rufen `ACT.anleitungLaden`. Es dekodiert den Inhalt von `#anleitung-docx` und lädt ihn über `download()` als `LeDoK-Bedienungsanleitung-<APP_VERSION>.docx` herunter. Fehlt der Block, erscheint ein Hinweis.
 - **Druck:** Jeder Druck läuft über `drucke(html)`. Es zeigt zuerst eine Vorschau in `#dlg`; erst „Drucken …“ schreibt das HTML in `#print-root` und ruft `window.print()`. Nach `afterprint` wird `#print-root` geleert.
 - Darstellung hell/dunkel: pro Gerät in `localStorage` (`themeLesen`), nicht in den Daten.
@@ -143,7 +144,7 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
@@ -171,6 +172,7 @@ S = {
 - `S.meta.einladung`: Elternbrief zum LEG `{titel, text, rueck}`; `rueck` hängt einen Rückmeldeabschnitt an. `migrate()` ergänzt fehlende Felder aus `DEFAULT_EINLADUNG()`. Druckseiten: `einladungSeite(kid)`, `terminSeite(kids)`; Oberfläche: `legPlanerCard()` im Sammelexport.
 - `S.foerderplaene`: Förderpläne nach Kind-ID (Kind → Förderplan, Sammeldruck im Export). `fpBereinigen()` säubert sie beim Laden und Einlesen (gültige IDs, Datum `bis` nur im Format JJJJ-MM-TT, Stand aus `FP_STAND`). `kindLoeschen()`, das Umbenennen ungültiger Kürzel in `datenBereinigen()` und „Schülerdaten löschen“ ziehen die Pläne mit. Die Übergabedatei eines Kindes (`kindPaket`) enthält keinen Förderplan.
 - `S.meta.druck`: Druckbild `{groesse, schrift, grau}` für alle Ausdrucke. `groesse` ist einer aus `DRUCK_GROESSEN` (90, 100, 110, 125 Prozent), `schrift` `serif` oder `sans`, `grau` druckt Logo und Diagramme in Graustufen. `druckBereinigen()` säubert den Wert beim Laden und Einlesen; `druckKlassen()` liefert die Klassen `d-sans` und `d-grau` für `#print-root` und die Vorschau, `druckZoom()` den `zoom`-Stil.
+- `S.meta.tagesbalken`: `false` blendet den Balken „Dein Tag“ auf **Heute** aus (`ACT.tagesbalkenAus`/`tagesbalkenAn`); fehlt der Wert, wird er gezeigt.
 - `S.meta.kopf`: Briefkopf `{logo, anschrift, fuss, leg, bericht, liste}`. `logo` ist eine Data-URL, die nur gerendert wird, wenn sie auf `LOGO_RE` passt (PNG, JPEG oder WebP in Base64). Beim Einlesen verkleinert `logoVerkleinern()` das Bild auf höchstens 600 × 240 px und speichert es als PNG. Die drei Schalter legen fest, für welche Druckart der Briefkopf gilt.
 
 ### Migration
@@ -456,6 +458,7 @@ npm run dist:win | dist:mac | dist:linux
 | Beispielklasse: alle Tabs und Einstellungen öffnen | alle Reiter und Einstellungsseiten, Hilfe |
 | Hilfe bietet die Bedienungsanleitung als Word-Datei an | Dateiname mit Version, Word-Datei, SHA-256 passt zu `data-sha256` |
 | Erfassen speichert eine Bewertung | Eintrag entsteht |
+| Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausblenden | Zählung, Ausblenden bleibt nach erneutem Zeichnen, Einblenden über den Knopf oben |
 | Daten bleiben verschlüsselt erhalten … | Neuladen, falsches und richtiges Passwort |
 | Zweites LeDoK am selben Rechner löschen … | Profile, Löschen nur des gewählten |
 | Fachlehrkraft startet ohne Klasse | Willkommensseite |

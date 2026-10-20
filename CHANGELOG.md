@@ -10,6 +10,7 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 ## Unveröffentlicht
 
 **Neu**
+- Auf der Seite **Heute** zeigt oben der Balken **Dein Tag**, wie viele Kinder von Fokustag und Fokuswoche du heute schon erfasst hast. Ist alles erledigt, wird er grün. Wer ihn nicht möchte, blendet ihn mit „ausblenden“ aus und holt ihn oben rechts mit „Tagesfortschritt einblenden“ zurück.
 - In der **Hilfe** lädst du mit **Bedienungsanleitung (Word)** die ausführliche Bedienungsanleitung mit Bildern als Word-Datei herunter. Sie passt immer zu deiner LeDoK-Version und kommt mit jedem Update neu mit. Du findest sie auch über die Schnellsuche.
 
 ## 1.1.0 (Beta)
