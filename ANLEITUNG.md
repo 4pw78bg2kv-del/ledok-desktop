@@ -2,6 +2,7 @@
 
 Dieses Projekt verpackt `LeDoK.html` als Programm für Windows (`.exe`) und macOS (`.dmg`).
 Das Programm arbeitet vollständig offline, und Updates kommen als signierte Datei per Stick oder Mail.
+Wie App und Programm innen aufgebaut sind (Datenmodell, Verschlüsselung, Schlüssel, Updates, Tests), steht in [docs/TECHNIK.md](docs/TECHNIK.md).
 
 ```
 app/LeDoK.html                 die App selbst (immer die aktuelle Fassung hier ablegen)
