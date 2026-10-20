@@ -1046,6 +1046,105 @@ test("Klassenorganisation: Daten aus Dateien werden bereinigt", async ({ page })
   expect(r.s.B).toEqual(Array(8).fill(""));
 });
 
+test("Los-Liste: gerecht ziehen, Fehlende überspringen, zurücklegen, Gruppen und Großanzeige @handy", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="lose"]');
+  await expect(page.locator(".lwrap h3")).toHaveText("Ganze Klasse");
+  const n = await page.evaluate(() => S.kinder.length);
+  // Ein Kind fehlt heute und wird übersprungen
+  const fehlt = await page.evaluate(() => { const k = sortedKids("alle")[0].id; fehltagSetzen(k, today(), { ganz: true }); render(); return k; });
+  await expect(page.locator(".losbar .badge, .card .badge").filter({ hasText: "fehlt heute" })).toHaveCount(1);
+  // Eine ganze Runde: jedes anwesende Kind genau einmal
+  const gezogen = [];
+  for (let i = 0; i < n - 1; i++) {
+    await page.click('[data-act="losZiehen"]');
+    gezogen.push(await page.evaluate(() => UI.losErg.g[0][0]));
+  }
+  expect(new Set(gezogen).size).toBe(n - 1);
+  expect(gezogen).not.toContain("k:" + fehlt);
+  await expect(page.locator("main .badge.ok")).toContainText("noch 0 von");
+  // Zurück in den Topf: die letzte Ziehung zählt nicht
+  await page.click('[data-act="losZurueck"]');
+  expect(await page.evaluate(() => losRest(S.lose[0]))).toEqual([gezogen[gezogen.length - 1]]);
+  await page.click('[data-act="losZiehen"]');
+  // Mehrere auf einmal über die Rundengrenze: neue Runde, keine Doppelten
+  await page.click('[data-act="losN"][data-v="3"]');
+  await page.click('[data-act="losZiehen"]');
+  const r = await page.evaluate(() => UI.losErg);
+  expect(r.neu).toBe(true);
+  expect(new Set(r.g[0]).size).toBe(3);
+  await expect(page.locator(".loserg")).toContainText("neue Runde");
+  // Gruppen: 4 je Gruppe, alle Anwesenden genau einmal
+  await page.fill('[data-chg="losG"][data-f="n"]', "4");
+  await page.selectOption('[data-chg="losG"][data-f="art"]', "je");
+  await page.click('[data-act="losGruppen"]');
+  const g = await page.evaluate(() => UI.losErg.g);
+  expect(g.length).toBe(Math.round((n - 1) / 4));
+  expect(g.flat().sort()).toEqual(gezogen.slice().sort());
+  expect(Math.max(...g.map((x) => x.length)) - Math.min(...g.map((x) => x.length))).toBeLessThanOrEqual(1);
+  await page.click('[data-act="losDruck"]');
+  await expect(page.locator("#dlg .page")).toContainText("Gruppe 1");
+  await page.keyboard.press("Escape");
+  // Großanzeige: Leertaste zieht, Vornamen lassen sich einblenden
+  await page.click('[data-act="losGross"]');
+  await expect(page.locator("#dlg.dlg-los #losBuehne")).toBeVisible();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.keyboard.press(" ");
+  await expect(page.locator("#losBuehne .losname")).toHaveCount(3);
+  await page.click('#dlg [data-act="losN"][data-v="1"]');
+  await page.click('#dlg [data-act="losNamenAn"]');
+  await page.keyboard.press("Enter");
+  const name = await page.evaluate(() => { const k = kidById(UI.losErg.g[0][0].slice(2)); return kurzName(k); });
+  await expect(page.locator("#losBuehne .losname")).toHaveText(name);
+  await page.click('#dlg [data-act="closeDlg"]');
+  await expect(page.locator("#dlg")).not.toHaveClass(/dlg-los/);
+  // Verlauf bleibt gespeichert
+  expect(await page.evaluate(() => S.lose[0].verlauf.map((v) => v.art))).toEqual(["los", ...Array(n - 2).fill("los"), "los", "gruppen", "los", "los"].slice(-20));
+});
+
+test("Los-Liste: eigene Lose, Auswahl von Kindern, Schnellsuche und Löschen eines Kindes", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="lose"]');
+  await page.click('[data-act="losNeu"]');
+  await askAntwort(page, "Lesegruppe");
+  await expect(page.locator(".lwrap h3")).toHaveText("Lesegruppe");
+  await page.check('input[name="losK"][value="wahl"]');
+  await page.click('[data-act="losWahl"][data-v="keine"]');
+  const [a, b] = await page.evaluate(() => sortedKids("alle").slice(0, 2).map((k) => k.id));
+  await page.check(`[data-chg="losKind"][data-k="${a}"]`);
+  await page.check(`[data-chg="losKind"][data-k="${b}"]`);
+  await page.fill('textarea[data-chg="losFeld"][data-f="eigene"]', "Vorlesen\n\nVorlesen\nTafel wischen");
+  await page.locator('textarea[data-chg="losFeld"][data-f="eigene"]').blur();
+  const l = await page.evaluate(() => losVon(UI.los));
+  expect(l.kinder).toEqual([a, b]);
+  expect(l.eigene).toEqual(["Vorlesen", "Tafel wischen"]);
+  expect(await page.evaluate(() => losPool(losVon(UI.los)))).toEqual([`k:${a}`, `k:${b}`, "t:Vorlesen", "t:Tafel wischen"]);
+  await page.click('[data-act="losReihe"]');
+  await expect(page.locator(".losreihe li")).toHaveCount(4);
+  // Schnellsuche öffnet die Großanzeige dieser Liste
+  await page.keyboard.press("Control+k");
+  await page.fill("#suIn", "auslosen lese");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#dlg.dlg-los")).toContainText("Lesegruppe");
+  await page.click('#dlg [data-act="closeDlg"]');
+  // Verlässt ein Kind die Klasse, verschwindet es aus Auswahl, Runde und Verlauf
+  await page.evaluate((k) => { const l = losVon(UI.los); l.gezogen = ["k:" + k]; kindLoeschen(k); }, a);
+  const nach = await page.evaluate(() => losVon(UI.los));
+  expect(nach.kinder).toEqual([b]);
+  expect(nach.gezogen).toEqual([]);
+  expect(JSON.stringify(nach.verlauf)).not.toContain(a);
+  // Bereinigen: Unsinn fliegt raus, ohne Listen gibt es „Ganze Klasse“
+  const r = await page.evaluate(() => ({
+    leer: loseBereinigen("x"),
+    l: loseBereinigen([{ id: "<x>", name: 3, kinder: ["S01", "<b>"], eigene: ["a", "a", 7, " "], fair: 0, gezogen: ["k:S01", "x:1", "t:"], verlauf: [{ t: 1, art: "los", g: [["k:S01", "<x>"]] }, { t: 2, art: "boom", g: [] }] }]),
+  }));
+  expect(r.leer).toHaveLength(1);
+  expect(r.leer[0]).toMatchObject({ name: "Ganze Klasse", kinder: null, fair: true, fehlt: true });
+  expect(r.l[0]).toMatchObject({ name: "Lose", kinder: ["S01"], eigene: ["a"], fair: true, gezogen: ["k:S01"], verlauf: [{ t: 1, art: "los", g: [["k:S01"]] }] });
+});
+
 test("GiroCode: QR-Code hat Größe, Suchmuster, Taktlinien und Formatinformation an der richtigen Stelle", async ({ page }) => {
   await page.goto(URL);
   const r = await page.evaluate(() => [1, 40, 150, 330].map((n) => {
@@ -1060,4 +1159,164 @@ test("GiroCode: QR-Code hat Größe, Suchmuster, Taktlinien und Formatinformatio
   expect(r.map((x) => x.v)).toEqual([1, 3, 8, 13]); // Kapazität bei Fehlerkorrektur M
   for (const x of r) expect(x).toMatchObject({ ganz: true, finder: true, takt: true, format: true, dunkel: true });
   expect(await page.evaluate(() => qrMatrix("x".repeat(900)))).toBeNull();
+});
+
+test("Dienste: Plan rolliert fair, „Heute“ nennt Vertretungen und Tausch gilt nur für eine Runde @handy", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00")); // ein Dienstag
+  await neueKlasse(page, { demo: false });
+  await page.evaluate(() => {
+    S.kinder = Array.from({ length: 12 }, (_, i) => ({ id: "S" + pad(i + 1), vorname: "Kind" + (i + 1), nachname: "", jgst: 1, gruppe: "A", klasse: "", faecherNur: [], begabt: [] }));
+    save(); render();
+  });
+  await page.click('nav.tabs button[data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="dienste"]');
+  await page.click('[data-act="dVorschlag"]');
+  const r = await page.evaluate(() => {
+    const A = S.dienste.aemter, plaetze = A.reduce((s, a) => s + a.n, 0), zaehl = {}, aemter = {};
+    for (let p = 0; p < 12; p++) for (const x of dienstPlan(p)) {
+      zaehl[x.k.id] = (zaehl[x.k.id] || 0) + 1;
+      (aemter[x.k.id] = aemter[x.k.id] || new Set()).add(x.a.id);
+    }
+    const doppelt = [0, 1, 2, 3].some((p) => new Set(dienstPlan(p).map((x) => x.k.id)).size !== plaetze);
+    return { plaetze, zaehl: Object.values(zaehl), verschiedene: Math.min(...Object.values(aemter).map((s) => s.size)), doppelt,
+      jetzt: dienstRunde("2026-10-20"), naechste: dienstRunde("2026-10-27"), wochenende: dienstRunde("2026-10-25"), zeit: rundeZeit(1) };
+  });
+  expect(r.plaetze).toBe(8);
+  expect(new Set(r.zaehl)).toEqual(new Set([8])); // 12 Runden × 8 Plätze ÷ 12 Kinder
+  expect(r.verschiedene).toBeGreaterThan(1); // niemand hat immer denselben Dienst
+  expect(r.doppelt).toBe(false);
+  expect([r.jetzt, r.naechste, r.wochenende]).toEqual([0, 1, 0]);
+  expect(r.zeit).toEqual({ von: "2026-10-26", bis: "2026-10-30" });
+
+  // Tausch: nur in dieser Runde, das andere Kind übernimmt den freien Platz
+  const vorher = await page.evaluate(() => dienstPlan(0).map((x) => x.k.id));
+  const frei = await page.evaluate(() => dienstKinder().map((k) => k.id).find((id) => !dienstPlan(0).some((x) => x.k.id === id)));
+  const feld = page.locator('[data-chg="dTausch"]').first();
+  await feld.selectOption(vorher[2]);
+  let nachher = await page.evaluate(() => dienstPlan(0).map((x) => x.k.id));
+  expect(nachher[0]).toBe(vorher[2]);
+  expect(nachher[2]).toBe(vorher[0]);
+  expect(new Set(nachher).size).toBe(8);
+  await page.locator('[data-chg="dTausch"]').first().selectOption(frei);
+  nachher = await page.evaluate(() => dienstPlan(0).map((x) => x.k.id));
+  expect(nachher[0]).toBe(frei);
+  expect(nachher).not.toContain(vorher[2]); // wer vorher auf dem Platz war, hat diese Runde frei
+  expect(await page.evaluate(() => dienstPlan(1).some((x) => x.hand))).toBe(false);
+  await page.click('[data-act="dTauschWeg"]');
+  expect(await page.evaluate(() => dienstPlan(0).map((x) => x.k.id))).toEqual(vorher);
+
+  // Pause: Kind fällt aus dem Plan
+  await page.click(`[data-act="dAus"][data-k="${vorher[0]}"]`);
+  expect(await page.evaluate((id) => dienstKinder().some((k) => k.id === id), vorher[0])).toBe(false);
+  await page.click(`[data-act="dAus"][data-k="${vorher[0]}"]`);
+
+  // Heute: Kind fehlt → Vertretung
+  await page.evaluate((id) => { fehltagSetzen(id, today(), { ganz: true, ent: true }); render(); }, vorher[0]);
+  await page.click('nav.tabs button[data-v="heute"]');
+  const karte = page.locator("#diensteHeute");
+  await expect(karte).toContainText("Tafeldienst");
+  await expect(karte.locator("s")).toHaveCount(1);
+  const vertretung = await page.evaluate(() => { const p = dienstRunde(today()); return dienstVertretung(p, dienstPlan(p), today())[0].id; });
+  await expect(karte.locator('b[title="Vertretung"]')).toHaveText(vertretung);
+
+  // Plan verschieben und Aushang drucken
+  await page.click('[data-act="lTab"][data-v="dienste"]');
+  await page.click('[data-act="dVersatz"][data-v="-1"]');
+  expect(await page.evaluate(() => dienstRunde(today()))).toBe(-1);
+  await page.click('[data-act="printDienste"]');
+  await expect(page.locator("#dlg")).toContainText("Unsere Dienste");
+  await expect(page.locator("#dlg")).toContainText("Kind1");
+
+  // Kind löschen räumt Reihenfolge, Pause und Tausch auf
+  await page.evaluate(() => { S.dienste.reihe = ["S02", "S01"]; S.dienste.aus = ["S01"]; S.dienste.tausch = { 3: { [S.dienste.aemter[0].id + "|0"]: "S01" } }; kindLoeschen("S01"); });
+  expect(await page.evaluate(() => [S.dienste.reihe, S.dienste.aus, S.dienste.tausch])).toEqual([["S02"], [], {}]);
+});
+
+test("Dienste: Daten aus Dateien werden bereinigt", async ({ page }) => {
+  await neueKlasse(page, { demo: false });
+  const r = await page.evaluate(() => diensteBereinigen({
+    aemter: [null, { id: "a1", name: " Tafel ", n: 9, zeichen: "🧽" }, { id: "a1", name: 5, n: -1 }, { id: "x|y", name: "<b>" }],
+    rhythmus: "jahr", start: "morgen", versatz: "3", reihe: ["S01", "S01", "<x>"], aus: "S02",
+    tausch: { 2: { "a1|0": "S03", "a1|7": "S04", "zz|0": "S05", "a1|1": "<i>" }, abc: { "a1|0": "S01" }, "-1": {} },
+  }));
+  expect(r.aemter).toHaveLength(3);
+  expect(r.aemter[0]).toEqual({ id: "a1", name: "Tafel", zeichen: "🧽", n: 4 });
+  expect(r.aemter[1]).toMatchObject({ name: "Dienst", n: 1 });
+  expect(r.aemter[1].id).not.toBe("a1");
+  expect(r.aemter[2].id).not.toContain("|");
+  expect(r).toMatchObject({ rhythmus: "woche", start: "", versatz: 3, reihe: ["S01"], aus: [], tausch: { 2: { "a1|0": "S03" } } });
+  expect(Object.keys(r.tausch)).toEqual(["2"]);
+});
+
+test("Klassenbuch: Stunde mit Lernzielen eintragen, Lehrplanbezug ansehen und drucken @handy", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00")); // ein Dienstag
+  await neueKlasse(page);
+  await page.evaluate(() => { S.klassenbuch = S.klassenbuch.filter((e) => e.d < "2026-10-20"); render(); });
+  const karte = page.locator("#klassenbuchHeute");
+  await expect(karte).toContainText("0 von 5 eingetragen");
+  await karte.locator('[data-act="kbEdit"][data-s="1"]').click();
+  await expect(page.locator("#kbFach")).toHaveValue("Mathematik");
+  await page.fill("#kbThema", "Zehnerübergang mit dem Rechenschiff");
+  await page.fill("#kbHa", "Arbeitsheft S. 14");
+  await page.fill("#kbQ", "Zahlen zerlegen");
+  await page.locator("#kbL .kbit").first().click();
+  await expect(page.locator("#kbSel .kblz")).toHaveCount(1);
+  await page.click('#kbf button[type="submit"]');
+  const e = await page.evaluate(() => { const e = kbVon("2026-10-20", 1); return { e, akt: istAktuell(knoten(e.lz[0])) }; });
+  expect(e.e).toMatchObject({ fach: "Mathematik", thema: "Zehnerübergang mit dem Rechenschiff", ha: "Arbeitsheft S. 14", lz: ["M-1.1.6"] });
+  expect(e.akt).toBe(true);
+  await expect(karte).toContainText("1 von 5 eingetragen");
+
+  // „wie letzte Stunde“ übernimmt die Lernziele der letzten Mathestunde
+  await karte.locator('[data-act="kbNeu"]').click();
+  await page.fill("#kbFach", "Mathe");
+  await page.click("#kbLetzte");
+  await expect(page.locator("#kbSel .kblz")).toHaveCount(1);
+  await page.click('#dlg [data-act="closeDlg"]');
+
+  // Woche und Lernziele
+  await page.click('[data-act="kbGo"]');
+  await expect(page.locator(".kbtag.heute .kbrow.ein")).toContainText("Zehnerübergang");
+  await page.click('[data-act="kbTab"][data-v="lernziele"]');
+  await page.click('[data-act="kbFach"][data-v="Mathematik"]');
+  const zeile = page.locator('[data-act="kbLzInfo"][data-v="M-1.1.6"]');
+  await expect(zeile).not.toHaveClass(/offen/);
+  await zeile.click();
+  await expect(page.locator("#dlg")).toContainText("Zehnerübergang mit dem Rechenschiff");
+  await page.click("#kbBeob");
+  expect(await page.evaluate(() => ({ tab: UI.tab, fach: UI.fach }))).toEqual({ tab: "erfassen", fach: "Mathematik" });
+
+  // Druck: Woche und Lehrplanbezug vollständig
+  const html = await page.evaluate(() => kbWocheSeite("2026-10-19") + kbLzSeite("Mathematik", "sj") + kbLzSeite("Deutsch", "2"));
+  expect(html).not.toMatch(/undefined|NaN|\[object /);
+  expect(html).toContain("Zehnerübergang mit dem Rechenschiff");
+  expect(html).toContain("Zahlen zerlegen und Zerlegungen erklären");
+  expect((html.match(/<section class="page/g) || []).length).toBe(3);
+
+  // Bemerkung zum Tag und Löschen eines Eintrags
+  await page.evaluate(() => { UI.tab = "klassenbuch"; UI.kbTab = "woche"; render(); });
+  await page.locator('.kbtag.heute [data-act="kbEdit"][data-s="0"]').click();
+  await page.fill("#kbN", "Wandertag ab der 3. Stunde");
+  await page.click('#kbf button[type="submit"]');
+  await expect(page.locator(".kbtag.heute .kbbem")).toContainText("Wandertag");
+  await page.locator('.kbtag.heute [data-act="kbEdit"][data-s="1"]').click();
+  await page.click("#kbWeg");
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => kbVon("2026-10-20", 1))).toBeNull();
+});
+
+test("Klassenbuch: Daten aus Dateien werden bereinigt und Kürzel im Raster wandern mit", async ({ page }) => {
+  await neueKlasse(page, { demo: false });
+  const r = await page.evaluate(() => klassenbuchBereinigen([null, "x", { d: "gestern", thema: "a" }, { d: "2026-10-20", std: 99, fach: " Mathe ", lz: ["M-1.1.1", "M-1.1.1", "<b>", 5] },
+    { d: "2026-10-20", std: 8, thema: "doppelt" }, { d: "2026-10-19", std: 2 }, { id: "k1", d: "2026-10-19", std: -3, n: "Wandertag" }]));
+  expect(r).toEqual([
+    { id: "k1", d: "2026-10-19", std: 0, fach: "", thema: "", ha: "", n: "Wandertag", lz: [] },
+    { id: expect.stringMatching(/^[0-9a-f]{16}$/), d: "2026-10-20", std: 8, fach: "Mathe", thema: "", ha: "", n: "", lz: ["M-1.1.1"] },
+  ]);
+  const lz = await page.evaluate(() => {
+    S.klassenbuch = [{ id: "k1", d: "2026-10-20", std: 1, fach: "Mathematik", thema: "", ha: "", n: "", lz: ["M-1.1.1"] }];
+    CHG.compId({ dataset: { i: S.raster.findIndex((x) => x.id === "M-1.1.1") }, value: "M-1.1.1x" });
+    return S.klassenbuch[0].lz;
+  });
+  expect(lz).toEqual(["M-1.1.1x"]);
 });
