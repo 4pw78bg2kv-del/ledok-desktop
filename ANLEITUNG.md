@@ -72,6 +72,16 @@ Die App sucht solche Dateien auch selbst: beim Start, nach der Anmeldung und st�
 
 **Online-Suche (nur wenn die Schule sie einschaltet).** Der LeDoK-Admin kann unter **LeDoK-Admin → 5 · Online nach Updates suchen** mit dem Masterkennwort erlauben, dass die Desktop-App höchstens zweimal am Tag die Releases dieses Repositorys auf GitHub abfragt. Dafür hängst du `LeDoK-x.y.z.ledok-update` (genau dieser Dateiname) an einen **veröffentlichten** Release an; Entwürfe und Vorabversionen werden ignoriert. Die App lädt die Datei, prüft sie genauso wie eine Datei vom Stick und fragt die Lehrkraft vor dem Einspielen. Das ist der einzige Netzwerkzugriff von LeDoK: Er läuft im Programm-Hintergrund (nicht in der Oberfläche) über eine eigene Verbindung, die nur `api.github.com`, `github.com` und die GitHub-Download-Server erreicht. Daten von Lehrkräften oder Kindern werden nicht übertragen. Ältere LeDoK-Versionen lehnen einen Schulschlüssel mit eingeschalteter Online-Suche ab; spiele deshalb zuerst überall das Update ein.
 
+**Automatisch veröffentlichen (Aktion „Update veröffentlichen“).** Statt im Browser zu signieren und den Release von Hand anzulegen, erledigt das eine GitHub-Aktion. Einmalig einrichten:
+
+1. Auf GitHub **Settings → Environments → New environment**, Name genau `update-release`.
+2. Bei **Required reviewers** dich selbst eintragen und speichern. Ab dann wartet jeder Lauf auf deine Freigabe.
+3. In dieser Umgebung unter **Environment secrets → Add environment secret** zwei Geheimnisse anlegen:
+   - `LEDOK_UPDATE_KEY`: den **kompletten Inhalt** der Datei `LeDoK-Update-Schluessel-CE5F-1656-01AF-PRIVAT.ledok-updatekey` (mit einem Texteditor öffnen, alles markieren, kopieren, einfügen).
+   - `LEDOK_UPDATE_PASSPHRASE`: die Passphrase dazu.
+
+Für jede Version danach: `npm run release x.y.z` (oder Claude bereitet den PR vor), zusammenführen, dann **Actions → Update veröffentlichen → Run workflow** auf `main`. Der Lauf wartet, bis du unter **Review deployments** auf **Approve and deploy** klickst. Dann prüft er Version und CSP-Hash, signiert `LeDoK-x.y.z.ledok-update` mit dem Schlüssel aus dem Secret, prüft das Paket genauso wie die Apps und veröffentlicht den Release `vx.y.z` mit den Hinweisen aus `CHANGELOG.md`. Eine schon veröffentlichte Version lehnt er ab. Der Schlüssel erscheint nie im Protokoll; GitHub blendet Secrets dort aus.
+
 Was passiert im Detail?
 - Manipulierte Dateien und solche mit fremder Signatur werden abgelehnt.
 - Eine ältere Version lässt sich nicht einspielen.

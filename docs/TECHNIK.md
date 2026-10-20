@@ -442,7 +442,7 @@ npm run dist:win | dist:mac | dist:linux
 1. Änderungen für Lehrkräfte laufend unter `## Unveröffentlicht` in `CHANGELOG.md` eintragen und die Bedienungsanleitung nachziehen (siehe unten).
 2. `npm run release x.y.z`: setzt `APP_VERSION` und `APP_DATUM` (heute, Europe/Berlin), macht aus „Unveröffentlicht“ den Abschnitt `## x.y.z (Kanal)`, gibt den Hinweistext für das Update-Paket aus, bettet die aktuelle Word-Anleitung ein (`anleitung.js`, mit Hinweis, falls darin noch nicht „Version x.y.z“ steht), führt die Tests aus und committet „Version x.y.z“. Schlagen die Tests fehl, wird alles zurückgenommen.
 3. Pushen.
-4. Update-Paket in `LeDoK.html#hersteller` erzeugen und verteilen.
+4. Update-Paket erzeugen und verteilen: entweder **Actions → Update veröffentlichen → Run workflow** (siehe unten) oder von Hand in `LeDoK.html#hersteller` und als Release-Anhang hochladen.
 5. Nur bei Änderungen an der Hülle: `--tag` bzw. Tag `vx.y.z` pushen. `build.yml` baut dann beide Installer und legt einen Release-Entwurf an.
 
 **Bedienungsanleitung:** Die Word-Datei `docs/LeDoK-Bedienungsanleitung.docx` ist die Fassung für Lehrkräfte. Nach jeder neuen Fassung `node scripts/anleitung.js` ausführen; es schreibt sie als Base64 mit SHA-256 (`data-sha256`) in `<template id="anleitung-docx">` vor `#print-root`. Weil der Block außerhalb des Skripts steht, bleibt der CSP-Hash gleich. `pruefen.js` (also `npm test` und CI) schlägt fehl, wenn eingebettete und abgelegte Datei voneinander abweichen. Da das Update-Paket die ganze `LeDoK.html` enthält, kommt die Anleitung mit jedem Update zu den Lehrkräften (die App wächst dadurch auf ca. 2,7 MB, Grenze für Update-Pakete 30 MB).
@@ -455,6 +455,8 @@ npm run dist:win | dist:mac | dist:linux
 - macOS: DMG universal, ad-hoc signiert (`identity: "-"`), nicht notarisiert. Datei `LeDoK-x.y.z-mac.dmg`. `build.mac.extendInfo` trägt Begründungen für Downloads, Dokumente, Wechseldatenträger und Netzlaufwerke ein (`NS…UsageDescription`), damit macOS beim ersten Zugriff um Erlaubnis fragt.
 - `appId` `com.deep-moments.ledok`.
 - Build-Jobs haben nur Leserechte; nur der Release-Job darf schreiben. Alle Actions sind auf Commit-SHAs festgelegt.
+
+**Update veröffentlichen (`update-release.yml`):** nur `workflow_dispatch` auf `main`, Umgebung `update-release` mit Pflicht-Freigabe durch Dominik. Ablauf: `pruefen.js` → Abbruch, wenn Release `vx.y.z` schon existiert → `scripts/update-paket.js dist` → `gh release create vx.y.z` mit `LeDoK-x.y.z.ledok-update` und den Hinweisen aus `CHANGELOG.md` (veröffentlicht, kein Entwurf, damit die Online-Suche ihn findet). `update-paket.js` entschlüsselt `LEDOK_UPDATE_KEY` (Inhalt der `…-PRIVAT.ledok-updatekey`) mit `LEDOK_UPDATE_PASSPHRASE` (PBKDF2-SHA256, 600.000 Runden, AES-GCM wie `MASTER_IT` in der App), verlangt denselben Fingerabdruck wie `desktop/ledok-update-key.json`, signiert wie `updatePaket` in der App und prüft das Ergebnis mit `desktop/update.js` vor dem Schreiben. Der Job führt kein `npm ci` aus, damit neben dem Schlüssel kein fremder Paketcode läuft. Ein so erstellter Release löst `build.yml` nicht aus (Ereignisse des `GITHUB_TOKEN` starten keine weiteren Workflows); Installer baut man weiter über einen Tag oder „Run workflow“.
 
 ## 12 · Tests und Prüfungen
 

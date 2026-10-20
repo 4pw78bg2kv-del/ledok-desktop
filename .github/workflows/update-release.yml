@@ -1,0 +1,51 @@
+# Veröffentlicht die aktuelle Version von main als signiertes Update auf GitHub Releases.
+# Start: „Actions → Update veröffentlichen → Run workflow“ (Branch main).
+# Der private Update-Schlüssel liegt nur als Secret in der Umgebung „update-release“.
+# Diese Umgebung verlangt eine Freigabe: Jeder Lauf wartet, bis Dominik ihn unter „Review deployments“ bestätigt.
+# Kein npm ci: Es läuft nur eigener Code (scripts/, desktop/update.js), keine fremden Pakete neben dem Schlüssel.
+name: Update veröffentlichen
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-release
+  cancel-in-progress: false
+
+jobs:
+  veroeffentlichen:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: update-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - name: Version prüfen
+        run: node scripts/pruefen.js
+      - name: Gibt es den Release schon?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(grep -o 'const APP_VERSION="[0-9.]*"' app/LeDoK.html | grep -o '[0-9][0-9.]*')
+          if gh release view "v$v" >/dev/null 2>&1; then
+            echo "::error::Version $v ist schon veröffentlicht. Erst mit npm run release eine neue Version setzen."
+            exit 1
+          fi
+      - name: Update-Paket signieren
+        id: paket
+        env:
+          LEDOK_UPDATE_KEY: ${{ secrets.LEDOK_UPDATE_KEY }}
+          LEDOK_UPDATE_PASSPHRASE: ${{ secrets.LEDOK_UPDATE_PASSPHRASE }}
+        run: node scripts/update-paket.js dist
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.paket.outputs.version }}
+        run: gh release create "v$V" "dist/LeDoK-$V.ledok-update" --title "LeDoK $V" --notes-file dist/release-notes.md --target "$GITHUB_SHA"
