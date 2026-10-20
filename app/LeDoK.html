@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1sqhopCT2PZx6lo3EIb+XNxg+y3FYE2FtrQXwsICpHE='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8UfoLHriwuvNnaGaTGQPzMPhU23EntuUDaRLRr4rSWM='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -449,6 +449,9 @@ body.scrolled .topbar .btn{min-height:32px;padding-top:.25rem;padding-bottom:.25
 .hbtn{border:0;background:none;text-align:left;width:100%}.hbtn:hover{background:var(--surface2)}
 .hlist .hbtn:not(:has(.pbar)){grid-template-columns:minmax(0,1fr) auto}
 .pbar{display:block;height:6px;background:var(--surface2);border-radius:99px;overflow:hidden}.pbar>span{display:block;height:100%;background:var(--accent)}
+.tbar{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem}
+.tbar .pbar.tb{display:block;width:auto;height:10px}.tbar .pbar.tb>span{transition:width .3s}
+.tbar.fertig{background:var(--ok)}.tbar.fertig .pbar.tb>span{background:var(--b7)}
 .dl{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:1px;margin-right:.3rem}
 .dl-g{background:var(--b7)}.dl-y{background:var(--b5)}.dl-r{background:var(--b2)}
 table.mx td.c .dl,table.mx td.num .dl{width:6px;height:6px;margin-right:.25rem;opacity:.9}
@@ -2793,7 +2796,7 @@ Regeln: wertschätzend und beobachtungsnah formulieren, keine Diagnosen, keine S
 function defaultState(){
   return {
     version:1,
-    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),druck:DEFAULT_DRUCK(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
+    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),druck:DEFAULT_DRUCK(),tagesbalken:true,faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
     kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[], foerderplaene:{}
   };
 }
@@ -3748,6 +3751,18 @@ function rasterDetail(r){
 
 
 
+/* ---------- Heute: Tagesfortschritt (Fokustag + Fokuswoche als ein Balken, abschaltbar) ---------- */
+function tagesFortschritt(schultag,fst,wk,wDone,heuteN){
+  if(S.meta.tagesbalken===false||istFL()||!schultag)return "";
+  const fz=fst.filter(x=>x.st.total), fDone=fz.filter(x=>x.st.done>=x.st.total).length, wDoneN=wk.length?wDone:0;
+  const total=fz.length+wk.length, done=fDone+wDoneN;if(!total)return "";
+  const fertig=done>=total, pct=Math.round(done/total*100);
+  const teile=[fz.length?`Fokustag ${fDone} von ${fz.length}`:"",wk.length?`Fokuswoche ${wDoneN} von ${wk.length}`:""].filter(Boolean).join(" · ");
+  return `<div class="card tbar${fertig?" fertig":""}" id="tagesbalken"><div class="hh"><h3>Dein Tag</h3><span class="row" style="gap:.5rem"><span class="badge${fertig?" ok":""}">${done} von ${total} ${total===1?"Kind":"Kindern"}</span><button class="btn ghost small" data-act="tagesbalkenAus" title="Balken ausblenden – oben rechts auf „Heute“ wieder einblenden">ausblenden</button></span></div>
+   <div class="pbar tb" role="progressbar" aria-label="Tagesfortschritt" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}"><span style="width:${pct}%"></span></div>
+   <p class="small ${fertig?"":"muted"}" style="margin:0">${fertig?`<b>Geschafft.</b> Fokustag und Fokuswoche sind für heute erledigt.`:teile} · heute ${heuteN} ${heuteN===1?"Eintrag":"Einträge"}</p></div>`;
+}
+
 /* ---------- Heute: Schwierigkeiten und fallende Trends ---------- */
 function heuteProbleme(){
   // aktuelle Themen = mit ★ markiert; ohne Markierung: Themen, die in den letzten 21 Tagen bewertet wurden
@@ -3960,7 +3975,7 @@ hilfe(){
 
   <section class="card" id="h-auswerten"><h3>Auswerten</h3>
    <dl class="hdl">
-    <dt>${go("heute","Heute")}</dt><dd>Fallender Trend, größte Schwierigkeiten (mehr als 1 Punkt unter Erwartung, letzte 3 Wochen), wenig beobachtete Kinder, Sicherung.</dd>
+    <dt>${go("heute","Heute")}</dt><dd>Oben der Balken <i>Dein Tag</i>: wie viele Kinder von Fokustag und Fokuswoche schon erfasst sind (mit „ausblenden“ abschaltbar). Dazu fallender Trend, größte Schwierigkeiten (mehr als 1 Punkt unter Erwartung, letzte 3 Wochen), wenig beobachtete Kinder, Sicherung.</dd>
     <dt>${go("uebersicht","Übersicht")}</dt><dd>Ganze Klasse × Fächer mit Stand, Trend und Datenlage (grün: ab 4 Themen, zuletzt ≤ 3 Wochen). Klick auf eine Zelle öffnet das Kind.</dd>
     <dt>${go("kind","Kind")}</dt><dd>Fächer, Arbeits- und Sozialverhalten, Kompetenzen im Detail, Lernverlauf, Freitext-Journal, Übergabe, Bericht und LEG-Bogen.</dd>
     <dt>${go("export","Sammelexport")}</dt><dd>Fördergruppen (unter/über der Erwartung), Notenvorschläge ab Jgst. 2 und Notengrenzen.</dd>
@@ -4049,8 +4064,8 @@ heute(){
   const cardS=`<div class="card hcard"><div class="hh"><h3>Sicherung</h3>${days==null||days>7?'<span class="badge warn">fällig</span>':'<span class="badge">ok</span>'}</div>
    <p class="small">${days==null?"Noch keine Sicherungskopie heruntergeladen.":days===0?"Letzte Sicherungskopie: heute.":`Letzte Sicherungskopie vor ${days} ${days===1?"Tag":"Tagen"}.`} Heute ${heuteN} ${heuteN===1?"Eintrag":"Einträge"} erfasst.</p>
    <button class="btn" data-act="backup">Sicherungskopie herunterladen</button></div>`;
-  return `<div class="stack"><div class="row" style="align-items:baseline"><h2 style="margin:0">Heute</h2><span class="muted">${new Date(t+"T12:00:00").toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})} · ${S.meta.halbjahr}. Halbjahr</span></div>
-   <div class="hgrid">${teamCard()}${cardF}${cardW}${heuteFallend()}${heuteProbleme()}${cardA}${cardL}${cardS}</div></div>`;
+  return `<div class="stack"><div class="row" style="align-items:baseline"><h2 style="margin:0">Heute</h2><span class="muted">${new Date(t+"T12:00:00").toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})} · ${S.meta.halbjahr}. Halbjahr</span>${S.meta.tagesbalken===false&&!istFL()?`<span class="spacer"></span><button class="btn ghost small" data-act="tagesbalkenAn" id="tagesbalkenAn">Tagesfortschritt einblenden</button>`:""}</div>
+   ${tagesFortschritt(schultag,fst,cols.length?wk:[],wDone,heuteN)}<div class="hgrid">${teamCard()}${cardF}${cardW}${heuteFallend()}${heuteProbleme()}${cardA}${cardL}${cardS}</div></div>`;
 },
 erfassen(){
   if(!S.kinder.length)return `<div class="card"><h2>Noch keine Kinder angelegt</h2><p>Lege unter <a href="#" data-act="tab" data-v="klasse">Einstellungen → Klasse</a> deine Schülerinnen und Schüler an.</p></div>`;
@@ -5629,6 +5644,8 @@ const ACT = {
   hilfeDruck:()=>drucke(`<div class="hilfe-druck">${VIEWS.hilfe().replace(/<button[^>]*>.*?<\/button>/g,"").replace(/<details>/g,"<details open>")}</div>`),
   tab:a=>{const v=a.dataset.v;if(v==="einst"){UI.tab="einst";UI.einst=einstTabs().some(e=>e[0]===UI.einst)?UI.einst:einstTabs()[0][0]}else if(EINST.some(e=>e[0]===v)){UI.tab="einst";UI.einst=v}else UI.tab=v;render();window.scrollTo(0,0)},
   mode:a=>{UI.mode=a.dataset.v;render()},
+  tagesbalkenAus:()=>{S.meta.tagesbalken=false;save();render();toast("Tagesfortschritt ausgeblendet. Mit „Tagesfortschritt einblenden“ oben rechts holst du ihn zurück.",4000)},
+  tagesbalkenAn:()=>{S.meta.tagesbalken=true;save();render()},
   goFokus:a=>{UI.tab="erfassen";UI.mode="fokus";UI.datum=today();UI.gruppe=a.dataset.v;render();window.scrollTo(0,0)},
   goWoche:a=>{UI.tab="erfassen";UI.mode="asv";UI.asvGruppe=a.dataset.v;render();window.scrollTo(0,0)},
   goKomp:a=>{const r=knoten(a.dataset.v);if(!r)return;UI.tab="erfassen";UI.mode="beob";UI.datum=today();UI.fach=r.fach;UI.komp=r.id;if(!istAktuell(r))UI.beobAlle=true;render();window.scrollTo(0,0)},

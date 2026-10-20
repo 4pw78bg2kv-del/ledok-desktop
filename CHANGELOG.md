@@ -9,6 +9,9 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- Auf der Seite **Heute** zeigt oben der Balken **Dein Tag**, wie viele Kinder von Fokustag und Fokuswoche du heute schon erfasst hast. Ist alles erledigt, wird er grün. Wer ihn nicht möchte, blendet ihn mit „ausblenden“ aus und holt ihn oben rechts mit „Tagesfortschritt einblenden“ zurück.
+
 ## 1.1.0 (Beta)
 
 **Neu**
