@@ -21,6 +21,11 @@ const updateOrdner = () => path.join(app.getPath("userData"), "update");
 const sicherungsOrdner = () => path.join(app.getPath("documents"), "LeDoK-Sicherungen");
 
 const suchEinstellung = () => path.join(app.getPath("userData"), "update-suche.json");
+// Nach „zurück zur vorherigen Version“ bietet die Suche diese und ältere Versionen nicht erneut an, erst eine neuere
+const ausgelassenDatei = () => path.join(app.getPath("userData"), "update-ausgelassen.json");
+const ausgelassen = () => { const x = leseJson(ausgelassenDatei()); return x && typeof x.version === "string" ? x.version : null; };
+const ausgelassenVermerken = (v) => { const bisher = ausgelassen(); if (!bisher || U.vergleiche(v, bisher) > 0) schreibeAtomar(ausgelassenDatei(), JSON.stringify({ version: v, seit: new Date().toISOString() }, null, 2)); };
+const istAusgelassen = (v) => { const x = ausgelassen(); return !!x && U.vergleiche(v, x) <= 0; };
 
 function leseJson(datei) { try { return JSON.parse(fs.readFileSync(datei, "utf8")); } catch (e) { return null; } }
 const schluessel = () => { const k = leseJson(SCHLUESSEL_DATEI); return k && k.app === "ledok-update-key" ? k : null; };
@@ -43,6 +48,13 @@ function eingespieltesUpdate(mit) {
   const ok = r.ok && r.version === info.version ? { html: r.html, version: r.version, updateDatum: info.installiert } : null;
   updCache = { mtime: st.mtimeMs, size: st.size, r: ok };
   return ok;
+}
+// Vorheriges Update-Paket (eine Stufe zurück). Ohne gültiges Paket ist die vorherige Version die mitgelieferte.
+function vorherigesUpdate(mit) {
+  const datei = path.join(updateOrdner(), "vorher.ledok-update");
+  if (!fs.existsSync(datei)) return null;
+  const r = U.pruefen(fs.readFileSync(datei, "utf8"), schluessel());
+  return r.ok && U.vergleiche(r.version, mit) > 0 ? { datei, version: r.version, fp: r.fp } : null;
 }
 function aktiv() {
   const html = fs.readFileSync(MITGELIEFERT, "utf8");
@@ -86,10 +98,14 @@ function installieren(text, daten) {
   try {
     sichern(daten, `vor-update-${a.version}`);
     fs.mkdirSync(updateOrdner(), { recursive: true });
-    schreibeAtomar(path.join(updateOrdner(), "paket.ledok-update"), text);
+    // Das bisher eingespielte Paket als Rückfall aufheben; war die mitgelieferte Version aktiv, gibt es keins
+    const paket = path.join(updateOrdner(), "paket.ledok-update"), vorher = path.join(updateOrdner(), "vorher.ledok-update");
+    if (a.aktualisiert) fs.copyFileSync(paket, vorher); else fs.rmSync(vorher, { force: true });
+    schreibeAtomar(paket, text);
     fs.rmSync(path.join(updateOrdner(), "LeDoK.html"), { force: true }); // ältere Ablage ohne Signatur
     schreibeAtomar(path.join(updateOrdner(), "info.json"), JSON.stringify({ version: r.version, installiert: new Date().toISOString(), fp: r.fp, vorher: a.version }, null, 2));
   } catch (err) { return { ok: false, fehler: "Das Update konnte nicht gespeichert werden: " + err.message }; }
+  fs.rmSync(ausgelassenDatei(), { force: true });
   updCache = null; gespeichert = true; neustart();
   return { ok: true, version: r.version };
 }
@@ -128,6 +144,7 @@ function updateSuchen() {
       try { r = U.pruefen(leseUpdateDatei(datei), k); } catch (err) { probleme.push({ ort: datei, grund: "Die Datei kann nicht gelesen werden." }); continue; }
       if (!r.ok) { probleme.push({ ort: datei, grund: r.fehler }); continue; }
       if (U.vergleiche(r.version, a.version) <= 0) { if (!ordner.startsWith(updateOrdner())) probleme.push({ ort: datei, grund: `Version ${r.version} ist nicht neuer als die installierte ${a.version}.` }); continue; }
+      if (istAusgelassen(r.version)) { if (!ordner.startsWith(updateOrdner())) probleme.push({ ort: datei, grund: `Version ${r.version} wird nicht angeboten, weil du von Version ${ausgelassen()} zur vorherigen zurückgekehrt bist. Über „Update-Datei wählen …“ lässt sie sich trotzdem einspielen.` }); continue; }
       if (!best || U.vergleiche(r.version, best.r.version) > 0) best = { datei, r };
     }
   }
@@ -171,7 +188,7 @@ async function updateOnlineSuchen(erzwingen) {
       if (rel.draft || rel.prerelease) continue;
       for (const as of rel.assets || []) {
         const m = /^LeDoK-(\d+\.\d+\.\d+)\.ledok-update$/.exec(as.name || "");
-        if (!m || as.size > MAX_UPDATE_GROESSE || U.vergleiche(m[1], a.version) <= 0) continue;
+        if (!m || as.size > MAX_UPDATE_GROESSE || U.vergleiche(m[1], a.version) <= 0 || istAusgelassen(m[1])) continue;
         if (!best || U.vergleiche(m[1], best.version) > 0) best = { version: m[1], url: as.browser_download_url, name: as.name };
       }
     }
@@ -303,7 +320,9 @@ app.whenReady().then(() => {
 
   ipcMain.handle("ledok:info", () => {
     const a = aktiv(), k = schluessel();
-    return { shell: app.getVersion(), os: process.platform, version: a.version, mitgeliefert: a.mitgeliefert, aktualisiert: a.aktualisiert, updateDatum: a.updateDatum, updateKey: k ? k.fp : null, updateSuchordner: suchOrdner().eigener };
+    const v = a.aktualisiert ? vorherigesUpdate(a.mitgeliefert) : null;
+    return { shell: app.getVersion(), os: process.platform, version: a.version, mitgeliefert: a.mitgeliefert, aktualisiert: a.aktualisiert, updateDatum: a.updateDatum, updateKey: k ? k.fp : null, updateSuchordner: suchOrdner().eigener,
+      vorherigeVersion: a.aktualisiert ? (v ? v.version : a.mitgeliefert) : null, ausgelassen: ausgelassen() };
   });
   handle("ledok:updatePruefen", (e, text) => {
     const r = U.pruefen(text, schluessel()); if (r.ok) delete r.html; return r;
@@ -327,9 +346,34 @@ app.whenReady().then(() => {
   });
   handle("ledok:updateOrdnerEntfernen", () => { fs.rmSync(suchEinstellung(), { force: true }); return { ok: true }; });
   handle("ledok:updateZuruecksetzen", (e, daten) => {
-    try { sichern(daten, `vor-zuruecksetzen-${aktiv().version}`); fs.rmSync(updateOrdner(), { recursive: true, force: true }); }
+    try {
+      const a = aktiv();
+      sichern(daten, `vor-zuruecksetzen-${a.version}`); fs.rmSync(updateOrdner(), { recursive: true, force: true });
+      if (a.aktualisiert) ausgelassenVermerken(a.version);
+    }
     catch (err) { return { ok: false, fehler: err.message }; }
-    gespeichert = true; neustart();
+    updCache = null; gespeichert = true; neustart();
+    return { ok: true };
+  });
+  // Eine Stufe zurück: das vorher eingespielte Paket wird wieder aktiv, sonst die mitgelieferte Version.
+  // Die Daten bleiben, wie sie sind; vorher wird wie bei jedem Update eine Sicherung angelegt.
+  handle("ledok:updateVorherige", (e, daten) => {
+    try {
+      const a = aktiv();
+      if (!a.aktualisiert) return { ok: false, fehler: "Es ist kein Update eingespielt." };
+      const v = vorherigesUpdate(a.mitgeliefert);
+      sichern(daten, `vor-zurueck-${a.version}`);
+      if (v) {
+        schreibeAtomar(path.join(updateOrdner(), "paket.ledok-update"), fs.readFileSync(v.datei, "utf8"));
+        fs.rmSync(v.datei, { force: true });
+        schreibeAtomar(path.join(updateOrdner(), "info.json"), JSON.stringify({ version: v.version, installiert: new Date().toISOString(), fp: v.fp, vorher: null, zurueckVon: a.version }, null, 2));
+      } else {
+        for (const f of ["paket.ledok-update", "vorher.ledok-update", "info.json"]) fs.rmSync(path.join(updateOrdner(), f), { force: true });
+      }
+      ausgelassenVermerken(a.version);
+    }
+    catch (err) { return { ok: false, fehler: err.message }; }
+    updCache = null; gespeichert = true; neustart();
     return { ok: true };
   });
   handle("ledok:sicherungenOeffnen", () => { fs.mkdirSync(sicherungsOrdner(), { recursive: true }); return shell.openPath(sicherungsOrdner()); });

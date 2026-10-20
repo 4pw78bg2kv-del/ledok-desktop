@@ -9,6 +9,9 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- Unter **Hilfe → Über LeDoK** gibt es nach einem Update den Knopf **Zur vorherigen Version zurück**. Hat ein Update einen Fehler, kehrst du damit zur Version davor zurück; deine Daten bleiben erhalten und werden vorher gesichert. Die fehlerhafte Version bietet LeDoK dann nicht mehr an, erst die nächste. Der Knopf erscheint, sobald dein Rechner einen neuen Installer bekommen hat.
+
 ## 1.1.3 (Beta)
 
 **Neu**

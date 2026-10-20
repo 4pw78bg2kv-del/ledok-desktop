@@ -665,6 +665,47 @@ test("Desktop mit älterem Installer: Versionsdialog ohne automatische Suche", a
   await expect(page.locator("#updSuchen")).toHaveCount(0);
 });
 
+test("Desktop: nach einem Update zur vorherigen Version zurück", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__zurueck = 0;
+    window.ledokDesktop = {
+      info: async () => ({ shell: "1.1.0", os: "darwin", version: "1.1.3", mitgeliefert: "1.1.0", aktualisiert: true, updateDatum: "2026-10-20T10:00:00Z", updateKey: "CE5F-1656-01AF", vorherigeVersion: "1.1.2", ausgelassen: null }),
+      datenLaden: () => null, datenSpeichern: async () => ({ ok: true }), datenLoeschen: async () => ({ ok: true }),
+      sicherung: async () => ({ ok: true }), sicherungenOeffnen: async () => "",
+      updatePruefen: async () => ({ ok: false, fehler: "–" }), updateInstallieren: async () => ({ ok: false }), updateZuruecksetzen: async () => ({ ok: true }),
+      updateSuchen: async () => ({ ok: true, gefunden: false }),
+      updateVorherige: async () => { window.__zurueck++; return { ok: true }; },
+    };
+  });
+  await page.goto(URL);
+  await page.click("#verTag");
+  await expect(page.locator("#updReset")).toContainText("ausgelieferten Version 1.1.0");
+  await page.click("#updVorher");
+  await expect(page.locator(".msgtext")).toContainText("Zur vorherigen Version 1.1.2 zurückkehren?");
+  await page.click("#msgNein");
+  expect(await page.evaluate(() => window.__zurueck)).toBe(0);
+  await page.click("#updVorher");
+  await page.click("#msgJa");
+  await expect.poll(() => page.evaluate(() => window.__zurueck)).toBe(1);
+});
+
+test("Desktop: ohne vorheriges Update-Paket nur zurück zur ausgelieferten Version", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.ledokDesktop = {
+      info: async () => ({ shell: "1.1.0", os: "win32", version: "1.1.3", mitgeliefert: "1.1.0", aktualisiert: true, updateDatum: "2026-10-20T10:00:00Z", updateKey: "CE5F-1656-01AF", vorherigeVersion: "1.1.0", ausgelassen: "1.1.4" }),
+      datenLaden: () => null, datenSpeichern: async () => ({ ok: true }), datenLoeschen: async () => ({ ok: true }),
+      sicherung: async () => ({ ok: true }), sicherungenOeffnen: async () => "",
+      updatePruefen: async () => ({ ok: false, fehler: "–" }), updateInstallieren: async () => ({ ok: false }), updateZuruecksetzen: async () => ({ ok: true }),
+      updateSuchen: async () => ({ ok: true, gefunden: false }), updateVorherige: async () => ({ ok: true }),
+    };
+  });
+  await page.goto(URL);
+  await page.click("#verTag");
+  await expect(page.locator("#updReset")).toBeVisible();
+  await expect(page.locator("#updVorher")).toHaveCount(0);
+  await expect(page.locator("#dlg")).toContainText("Versionen bis 1.1.4 werden nicht mehr automatisch angeboten");
+});
+
 test("Dokumente: Druckbild mit Schriftgröße, Schriftart und Graustufen", async ({ page }) => {
   await neueKlasse(page);
   await page.evaluate(() => { window.print = () => { window.__druck = { k: document.querySelector("#print-root").className, z: document.querySelector("#print-root").style.zoom }; }; });
