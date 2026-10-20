@@ -675,8 +675,8 @@ test("Dokumente: Druckbild mit Schriftgröße, Schriftart und Graustufen", async
   await page.check('[data-bind="meta.druck.grau"]');
   expect(await page.evaluate(() => S.meta.druck)).toEqual({ groesse: 125, schrift: "sans", grau: true });
   await expect(page.locator("#dokPrev")).toHaveClass(/d-sans/);
-  const schrift = await page.locator("#dokPrev .page p").first().evaluate((e) => getComputedStyle(e).fontFamily);
-  expect(schrift).toContain("Arial");
+  // Die Vorschau wird nach dem Umschalten neu aufgebaut; ein abgelöstes Element liefert eine leere Schriftart
+  await expect.poll(() => page.locator("#dokPrev .page p").first().evaluate((e) => e.isConnected ? getComputedStyle(e).fontFamily : "")).toContain("Arial");
   await page.evaluate(() => ACT.printNoten());
   await expect(page.locator(".druckprev")).toHaveClass(/d-sans/);
   await page.click("#dvDruck");
