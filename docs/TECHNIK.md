@@ -48,7 +48,7 @@ LeDoK ist eine einzige HTML-Datei mit eingebettetem CSS und Vanilla-JavaScript, 
 
 Feste Grundsätze, die jede Änderung einhalten muss:
 
-- **Kein Netz.** CSP `connect-src 'none'`, in der Desktop-App zusätzlich `webRequest`-Sperre. Updates kommen als signierte Datei.
+- **Kein Netz.** CSP `connect-src 'none'`, in der Desktop-App zusätzlich `webRequest`-Sperre. Updates kommen als signierte Datei. Einzige Ausnahme: die Online-Suche nach Updates im Hauptprozess, nur wenn die Schule sie im Schulschlüssel einschaltet (Kapitel 10).
 - **Immer verschlüsselt.** Nichts wird im Klartext gespeichert. Ausnahmen sind ausdrücklich unverschlüsselte Exporte (CSV, Druck/PDF, KI-Export), vor denen die Oberfläche warnt.
 - **Keine Hintertür.** Es gibt keinen Hersteller-Generalschlüssel. Wiederherstellung nur über den Schulschlüssel (Masterkennwort der Schule) oder den von der Schule freigegebenen, sichtbaren Hersteller-Support.
 - **Sprache:** Oberfläche deutsch, Du-Form, aktuelle amtliche Rechtschreibung, Rolle „der LeDoK-Admin“.
@@ -253,12 +253,13 @@ Private Dateien und Passphrasen gehören **nie** ins Repository.
   spub: {kty, crv, x, y},        // ECDSA P-256, prüft die Signatur
   msalt, ek: {iv, ct}, esk: {iv, ct},
   support: null | {name, kontakt, fp, pub, seit},
+  online: undefined | {seit},   // Online nach Updates suchen, nur vom LeDoK-Admin
   fp, sig }
 ```
 
 - `fp` (Fingerabdruck): SHA-256 über `n.e.x.y`, die ersten 20 Hex-Zeichen in Blöcken `XXXX-XXXX-XXXX-XXXX-XXXX`. Ältere Dateien tragen 3 Blöcke; `fpPasst()` akzeptiert beides.
-- `sig`: ECDSA über `skPayload(o) = JSON.stringify([sid, name, pub.n, pub.e, msalt, ek.iv, ek.ct, ver, support ? [name, kontakt, fp, pub.n, pub.e, seit] : null])`.
-- Hersteller-Support ein/aus: neue Version (`ver + 1`), neu signiert, gleicher Fingerabdruck. Die App übernimmt einen Schlüssel derselben Schule (`sid`) nur, wenn `pub` und `spub` unverändert sind. Ein Schlüssel einer anderen Schule braucht eine Warnung mit Eintippen.
+- `sig`: ECDSA über `skPayload(o) = JSON.stringify([sid, name, pub.n, pub.e, msalt, ek.iv, ek.ct, ver, support ? [name, kontakt, fp, pub.n, pub.e, seit] : null, ...(online ? [["online", online.seit]] : [])])`. Ohne `online` bleibt die Nutzlast wie bisher, alte Signaturen gelten weiter; ältere App-Versionen lehnen einen Schlüssel mit `online` ab.
+- Hersteller-Support ein/aus und Online-Suche ein/aus (LeDoK-Admin → 4 bzw. 5): neue Version (`ver + 1`), neu signiert, gleicher Fingerabdruck. Die App übernimmt einen Schlüssel derselben Schule (`sid`) nur, wenn `pub` und `spub` unverändert sind. Ein Schlüssel einer anderen Schule braucht eine Warnung mit Eintippen.
 
 ### Dateiformate (Feld `app`)
 
@@ -336,8 +337,10 @@ Versionen in `package.json` (fest): Electron 44.9.0, electron-builder 26.17.0, P
 | `ledok:datenSpeichern` | prüfen (`app`, `ct`), `.vorher` anlegen, atomar schreiben |
 | `ledok:datenLoeschen` | Datei und `.vorher` löschen |
 | `ledok:sicherung` | Sicherung nach `Dokumente/LeDoK-Sicherungen`, ausdünnen |
-| `ledok:info` | Programmversion, Betriebssystem, aktive und ausgelieferte Version, Update-Datum, Fingerabdruck des Update-Schlüssels |
+| `ledok:info` | Programmversion, Betriebssystem, aktive und ausgelieferte Version, Update-Datum, Fingerabdruck des Update-Schlüssels, gewählter Update-Ordner (`updateSuchordner`) |
 | `ledok:updatePruefen`, `ledok:updateInstallieren`, `ledok:updateZuruecksetzen` | siehe Kapitel 10 |
+| `ledok:updateSuchen`, `ledok:updateOnlineSuchen`, `ledok:updateGefundenInstallieren` | automatische Suche, siehe Kapitel 10 |
+| `ledok:updateOrdnerWaehlen`, `ledok:updateOrdnerEntfernen` | Update-Ordner festlegen (`userData/update-suche.json`) |
 | `ledok:sicherungenOeffnen` | Sicherungsordner im Dateimanager öffnen |
 
 **Schließen:** Beim `close`-Ereignis ruft der Hauptprozess `ledokSchliessen()` im Renderer auf (höchstens 10 s). Sie speichert und legt höchstens einmal am Tag die Sicherung `tag` an. Schlägt das Speichern fehl, fragt ein Dialog „Nicht schließen / Trotzdem schließen“.
@@ -377,7 +380,12 @@ Versionen in `package.json` (fest): Electron 44.9.0, electron-builder 26.17.0, P
 
 Bei Änderungen an `desktop/`, `build/`, `package.json`/`package-lock.json` (Electron-Version), am Symbol oder bei einem neuen Update-Schlüssel. `npm run release` weist darauf hin, wenn sich seit dem letzten Tag etwas davon geändert hat.
 
-**In Arbeit (PR #11, Entwurf):** automatische Suche nach Update-Dateien im Download-Ordner und in einem wählbaren Ordner sowie eine optionale Online-Prüfung gegen GitHub Releases, die nur der LeDoK-Admin über den Schulschlüssel einschalten kann. Sie ändert die Hülle und kommt deshalb mit dem nächsten Installer. Nach dem Zusammenführen ist dieses Kapitel zu ergänzen.
+### Automatische Suche
+
+- **Ordner (immer):** Beim Start, nach der Anmeldung (`startApp`) und stündlich ruft die App `updateSuchen` auf. Der Hauptprozess liest `*.ledok-update` (höchstens 200 Dateien, je ≤ 30 MB) aus dem Update-Ordner, dem Download-Ordner und `userData/update/download`, prüft jede mit `pruefen` und merkt sich den Pfad der neuesten gültigen Datei, die neuer als die aktive Version ist. Die App bekommt nur Version, Datum, Hinweise und Dateiname, nie einen Pfad zum Zurückgeben.
+- **Online (nur mit `schulKey.online`):** `updateOnlineSuchen` läuft im Hauptprozess in der Sitzung `ledok-update-online` (ohne Cache und Cookies). `onBeforeRequest` erlaubt dort nur HTTPS zu `api.github.com`, `github.com`, `objects.githubusercontent.com` und `release-assets.githubusercontent.com`. Abgefragt wird `/repos/4pw78bg2kv-del/ledok-desktop/releases?per_page=10`; Entwürfe und Vorabversionen zählen nicht. Gesucht wird ein Anhang `LeDoK-x.y.z.ledok-update`, der neuer ist; erst dann wird er geladen, mit `pruefen` geprüft und nach `userData/update/download` gelegt. Automatisch höchstens alle 12 Stunden (`zuletztOnline` in `update-suche.json`), „Jetzt suchen“ fragt sofort. Die Standardsitzung bleibt vollständig gesperrt, die CSP der App unverändert.
+- **Bestätigung:** Ist ein Update gefunden und jemand angemeldet, fragt `updateAnbieten` „Update x.y.z verfügbar – jetzt einspielen?“ (einmal je Version und Sitzung; ist gerade ein anderer Dialog offen, 30 s später). Unten rechts steht bis dahin „Update x.y.z verfügbar“. „Jetzt aktualisieren“ ruft `updateGefundenInstallieren`, das die Datei erneut liest und über `installieren()` denselben Weg wie `updateInstallieren` nimmt.
+- **Nachträglich einschalten:** Liest die Lehrkraft einen Schulschlüssel mit neu eingeschaltetem `online` ein, steht das im Protokoll und die Online-Suche startet sofort.
 
 ## 11 · Bauen und Veröffentlichen
 

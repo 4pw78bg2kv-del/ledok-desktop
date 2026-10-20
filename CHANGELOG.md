@@ -17,6 +17,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 - Bevor LeDoK Daten löscht, eine Sicherungskopie einspielt oder ein neues Schuljahr beginnt, legt es automatisch eine Sicherung an. Zum Löschen tippst du zur Bestätigung „LÖSCHEN“ ein.
 - Die Desktop-App speichert deine Daten in einer eigenen Datei auf dem Rechner. Beim Schließen legt sie einmal am Tag eine Sicherung im Ordner **LeDoK-Sicherungen** an.
 - Die Beispielklasse ist beim Anlegen nicht mehr vorausgewählt. Solange sie da ist, zeigt ein Hinweis oben, wie du sie mit einem Klick wieder entfernst.
+- Die Desktop-App sucht selbst nach neuen Versionen: beim Start, nach der Anmeldung und stündlich im Download-Ordner und in einem Update-Ordner, den du unter **Version … → Update-Ordner wählen …** festlegst (z. B. Schulserver oder Stick). Findet sie eine neuere Update-Datei, fragt sie „Update … verfügbar – jetzt einspielen?“. Eingespielt wird nur, wenn du zustimmst.
+- Der LeDoK-Admin kann unter **LeDoK-Admin → Online nach Updates suchen** erlauben, dass die Desktop-App höchstens zweimal am Tag bei GitHub nach einer neuen Version fragt. Das ist ausgeschaltet, bis die Schule es einschaltet. Alle Lehrkräfte sehen den Status unter **Daten & Sicherheit**.
 
 **Geändert**
 - Der Aufbau des LEG-Bogens ist von **Textbausteine** nach **Dokumente** umgezogen. Deine bisherigen Überschriften und Einstellungen werden übernommen.
