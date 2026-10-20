@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-O2SJfqkndYjo0dLpMDIe7VWxf/HJ9w0rMd35Jgxrm5A='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xQ3oX+lSD3asRliI/v5HsGBxPbAqNC++vZpHWJERnGY='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -227,6 +227,8 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   .page:last-child{break-after:auto}
 }
 .page{font-family:Georgia,"Times New Roman",serif;color:#1a1a1a;line-height:1.45}
+.d-sans .page,.d-sans .page p,.d-sans .page td{font-family:system-ui,Arial,sans-serif}
+.d-grau .page img,.d-grau .page svg{filter:grayscale(1)}
 .page .ph{display:flex;justify-content:space-between;border-bottom:1.5px solid #333;padding-bottom:4px;margin-bottom:12px;font-size:9.5pt;font-family:system-ui,Arial,sans-serif;color:#444}
 .page h2{font-size:16pt;margin:0 0 2px}
 .page h4{font-size:11pt;margin:14px 0 4px;font-family:system-ui,Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:#333}
@@ -2730,6 +2732,12 @@ const DEFAULT_LEG = ()=>({
   bloecke:LEG_STANDARD.map(legStandardBlock),
   selbst:["Ich halte mich an unsere Regeln.","Ich helfe anderen.","Ich arbeite ruhig und bleibe dran.","Ich arbeite ordentlich."]
 });
+/* Druckbild: Schriftgröße in Prozent, Schriftart, Graustufen für Logo und Diagramme */
+const DRUCK_GROESSEN=[90,100,110,125];
+const DEFAULT_DRUCK=()=>({groesse:100,schrift:"serif",grau:false});
+function druckBereinigen(d){d=d&&typeof d==="object"?d:{};return {groesse:DRUCK_GROESSEN.includes(+d.groesse)?+d.groesse:100,schrift:d.schrift==="sans"?"sans":"serif",grau:!!d.grau}}
+const druckKlassen=()=>(S.meta.druck.schrift==="sans"?" d-sans":"")+(S.meta.druck.grau?" d-grau":"");
+const druckZoom=()=>S.meta.druck.groesse===100?"":`zoom:${S.meta.druck.groesse/100}`;
 const DEFAULT_EINLADUNG = ()=>({titel:"Einladung zum Lernentwicklungsgespräch",
   text:"Liebe Eltern von {Vorname},\n\nich möchte mit Ihnen und {Vorname} über die Lernentwicklung im {Halbjahr}. Halbjahr sprechen. Dazu lade ich Sie herzlich ein:\n\n{Termin}\n\nDas Gespräch dauert etwa 20 Minuten. {Vorname} ist dabei und erzählt selbst, was schon gut gelingt.\n\nMit freundlichen Grüßen\n{Lehrkraft}",
   rueck:true});
@@ -2785,7 +2793,7 @@ Regeln: wertschätzend und beobachtungsnah formulieren, keine Diagnosen, keine S
 function defaultState(){
   return {
     version:1,
-    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
+    meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),druck:DEFAULT_DRUCK(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
     kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[], foerderplaene:{}
   };
 }
@@ -3002,6 +3010,7 @@ function migrate(st){
   for(const r of st.raster)if(!st.meta.faecher.some(f=>f.name===r.fach))st.meta.faecher.push({name:r.fach,kurz:r.fach,prefix:"X",aktiv:true,benotet:true});
   st.meta.leg=legMigration(st.meta.leg);
   st.meta.kopf=kopfBereinigen(st.meta.kopf);
+  st.meta.druck=druckBereinigen(st.meta.druck);
   {const e=Object.assign(DEFAULT_EINLADUNG(),st.meta.einladung||{});for(const f of ["titel","text"])if(typeof e[f]!=="string")e[f]=DEFAULT_EINLADUNG()[f];e.rueck=!!e.rueck;st.meta.einladung=e}
   st.meta.legVorlagen=(Array.isArray(st.meta.legVorlagen)?st.meta.legVorlagen:[]).filter(v=>v&&typeof v==="object").map(legVorlageBereinigen);
   st.proben=Array.isArray(st.proben)?st.proben:[];
@@ -3466,11 +3475,11 @@ function asvBemerkungSeite(filter){
 function drucke(html){
   const n=(html.match(/<section class="page/g)||[]).length;
   const d=dialog(`<div class="row" style="align-items:baseline"><h2 style="margin:0">Druckvorschau</h2><span class="small muted">${n} ${n===1?"Dokument":"Dokumente"} – lange Dokumente können auf mehrere Blätter laufen</span></div>
-   <div class="preview druckprev">${html}</div>
+   <div class="preview druckprev${druckKlassen()}" style="${druckZoom()}">${html}</div>
    <div class="row" style="margin-top:1rem"><span class="small muted">Im Druckdialog kannst du auch „Als PDF speichern“ wählen.</span><span class="spacer"></span><button class="btn" type="button" data-act="closeDlg">Abbrechen</button><button class="btn primary" type="button" id="dvDruck">Drucken …</button></div>`,true);
   d.classList.add("dlg-druck");d.addEventListener("close",()=>d.classList.remove("dlg-druck"),{once:true});
   const k=$("#dvDruck");k.focus();
-  k.onclick=()=>{d.close();$("#print-root").innerHTML=html;setTimeout(()=>window.print(),50)};
+  k.onclick=()=>{d.close();const r=$("#print-root");r.className=druckKlassen().trim();r.style.cssText=druckZoom();r.innerHTML=html;setTimeout(()=>window.print(),50)};
 }
 window.addEventListener("afterprint",()=>{$("#print-root").innerHTML=""});
 
@@ -4188,6 +4197,11 @@ dokumente(){
    <label class="f">Anschrift und Kontakt (mehrere Zeilen möglich)<textarea id="kopfAnschrift" rows="3" data-bind="meta.kopf.anschrift" placeholder="Schulstraße 1 · 12345 Musterstadt&#10;Tel. 01234 5678 · sekretariat@…">${esc(K.anschrift)}</textarea></label>
    <label class="f">Fußzeile (optional)<input type="text" value="${esc(K.fuss)}" data-bind="meta.kopf.fuss" placeholder="z. B. Vertraulich – nur für das Gespräch mit den Eltern"></label>
    <div class="row small" style="gap:1rem"><span>Verwenden für:</span>${[["leg","LEG-Bogen"],["bericht","Berichte"],["liste","Listen, Verlauf, Proben"]].map(([k,l])=>`<label class="row" style="gap:.35rem"><input type="checkbox" ${K[k]?"checked":""} data-bind="meta.kopf.${k}" data-rerender> ${l}</label>`).join("")}</div></div>
+  <div class="card stack"><h3 style="margin:0">Druckbild</h3>
+   <p class="small muted" style="margin:0">Gilt für alle Ausdrucke. Größere Schrift hilft Eltern beim Lesen, braucht aber mehr Seiten.</p>
+   <div class="row" style="gap:1rem;flex-wrap:wrap"><label class="row small" style="gap:.4rem">Schriftgröße <select data-bind="meta.druck.groesse" data-type="num" data-rerender>${DRUCK_GROESSEN.map(g=>`<option value="${g}" ${S.meta.druck.groesse===g?"selected":""}>${{90:"klein",100:"normal",110:"groß",125:"sehr groß"}[g]}</option>`).join("")}</select></label>
+    <label class="row small" style="gap:.4rem">Schriftart <select data-bind="meta.druck.schrift" data-rerender><option value="serif" ${S.meta.druck.schrift==="serif"?"selected":""}>mit Serifen (Georgia)</option><option value="sans" ${S.meta.druck.schrift==="sans"?"selected":""}>ohne Serifen (Arial)</option></select></label>
+    <label class="row small" style="gap:.4rem"><input type="checkbox" ${S.meta.druck.grau?"checked":""} data-bind="meta.druck.grau" data-rerender> Logo und Diagramme in Graustufen</label></div></div>
   <div class="card stack"><h3 style="margin:0">LEG-Bogen: Vorlagen</h3>
    <div class="row"><label class="row small" style="gap:.4rem">Bearbeiten<select data-chg="legV" aria-label="Vorlage bearbeiten"><option value="std" ${std?"selected":""}>Standard</option>${V.map(v=>`<option value="${esc(v.id)}" ${v===L?"selected":""}>${esc(v.name)}</option>`).join("")}</select></label>
     <span class="spacer"></span><button class="btn" data-act="legVNeu">+ Neue Vorlage</button>${std?"":`<button class="btn ghost danger" data-act="legVWeg">Vorlage löschen</button>`}</div>
@@ -4209,7 +4223,7 @@ dokumente(){
   </div>
   <div class="dokprev"><div class="row" style="margin-bottom:.6rem"><div class="seg">${[["leg","LEG-Bogen"],["bericht","Bericht"],["einladung","Einladung"]].map(([k,l])=>`<button class="${art===k?"on":""}" data-act="dokArt" data-v="${k}">${l}</button>`).join("")}</div><span class="spacer"></span>
    ${kids.length?`<label class="row small" style="gap:.4rem">Kind <select data-chg="dokKind">${kids.map(k=>`<option value="${esc(k.id)}" ${k===kid?"selected":""}>${esc(UI.showNames&&k.vorname?kurzName(k):k.id)}</option>`).join("")}</select></label>`:""}</div>
-   <div class="preview" id="dokPrev">${dokVorschau()}</div></div></div></div>`;
+   <div class="preview${druckKlassen()}" id="dokPrev" style="${druckZoom()}">${dokVorschau()}</div></div></div></div>`;
 },
 klasse(){
   const m=S.meta;

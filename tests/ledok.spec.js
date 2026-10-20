@@ -635,3 +635,22 @@ test("Dokumente: Einladungstext anpassen mit Vorschau", async ({ page }) => {
   await page.click("#msgJa");
   expect(await page.evaluate(() => S.meta.einladung.rueck)).toBe(true);
 });
+
+test("Dokumente: Druckbild mit Schriftgröße, Schriftart und Graustufen", async ({ page }) => {
+  await neueKlasse(page);
+  await page.evaluate(() => { window.print = () => { window.__druck = { k: document.querySelector("#print-root").className, z: document.querySelector("#print-root").style.zoom }; }; });
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="dokumente"]');
+  await page.selectOption('[data-bind="meta.druck.groesse"]', "125");
+  await page.selectOption('[data-bind="meta.druck.schrift"]', "sans");
+  await page.check('[data-bind="meta.druck.grau"]');
+  expect(await page.evaluate(() => S.meta.druck)).toEqual({ groesse: 125, schrift: "sans", grau: true });
+  await expect(page.locator("#dokPrev")).toHaveClass(/d-sans/);
+  const schrift = await page.locator("#dokPrev .page p").first().evaluate((e) => getComputedStyle(e).fontFamily);
+  expect(schrift).toContain("Arial");
+  await page.evaluate(() => ACT.printNoten());
+  await expect(page.locator(".druckprev")).toHaveClass(/d-sans/);
+  await page.click("#dvDruck");
+  await expect.poll(() => page.evaluate(() => window.__druck)).toEqual({ k: "d-sans d-grau", z: "1.25" });
+  expect(await page.evaluate(() => druckBereinigen({ groesse: 300, schrift: "<x>", grau: "ja" }))).toEqual({ groesse: 100, schrift: "serif", grau: true });
+});
