@@ -9,6 +9,9 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- In der **Hilfe** lädst du mit **Bedienungsanleitung (Word)** die ausführliche Bedienungsanleitung mit Bildern als Word-Datei herunter. Sie passt immer zu deiner LeDoK-Version und kommt mit jedem Update neu mit. Du findest sie auch über die Schnellsuche.
+
 ## 1.1.0 (Beta)
 
 **Neu**

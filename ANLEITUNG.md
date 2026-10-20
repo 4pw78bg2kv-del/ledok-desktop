@@ -160,3 +160,5 @@ npm run dist:mac     # nur auf einem Mac
 ```
 
 Nach jeder Änderung am Skript in `app/LeDoK.html` einmal `node scripts/csp-hash.js` ausführen. Es trägt den Hash des Skripts in die Content-Security-Policy ein; ohne passenden Hash startet die App nicht. Der Build prüft das automatisch.
+
+Die Bedienungsanleitung für Lehrkräfte liegt als `docs/LeDoK-Bedienungsanleitung.docx` im Repository und steckt zusätzlich in `app/LeDoK.html`, damit sie in der App unter **Hilfe → Bedienungsanleitung (Word)** heruntergeladen werden kann. Ersetzt du die Word-Datei durch eine neue Fassung, führe `node scripts/anleitung.js` aus. `npm run release` macht das ebenfalls und weist dich darauf hin, wenn in der Anleitung noch nicht die neue Versionsnummer steht. So kommt mit jedem Update auch die passende Anleitung zu den Schulen.
