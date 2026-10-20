@@ -760,6 +760,8 @@ test("Sammelliste: Geld einsammeln, Zahlungsbriefe mit GiroCode und Kassenbuch @
 
   // Zahlungsbriefe nur für Kinder, die noch offen sind, jeweils mit GiroCode
   await page.click('[data-act="printZahlbrief"]');
+  await expect(page.locator('#zbf input[name=zbArt][value="pers"]')).toBeChecked();
+  await page.click('#zbf button[type="submit"]');
   const seiten = page.locator(".druckprev section.page");
   await expect(seiten).toHaveCount(stand.n - 3);
   await expect(page.locator(".druckprev svg.qr")).toHaveCount(stand.n - 3);
@@ -777,6 +779,97 @@ test("Sammelliste: Geld einsammeln, Zahlungsbriefe mit GiroCode und Kassenbuch @
   await page.evaluate((k) => kindLoeschen(k), a);
   const nachher = await page.evaluate(() => { const l = S.listen.find((x) => x.titel === "Kopiergeld"); return { ein: listeStand(l).ein, alt: l.alt }; });
   expect(nachher).toEqual({ ein: 750, alt: 350 });
+});
+
+test("Sammelliste: Kinder nach Name, Klasse und Jahrgangsstufe auswählen", async ({ page }) => {
+  await neueKlasse(page);
+  await page.evaluate(() => { const ks = sortedKids("alle"); ks[0].klasse = "1a"; ks[1].klasse = "1b"; ks[2].klasse = "1b"; save(); });
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="listeNeu"][data-v="geld"]');
+  await askAntwort(page, "Lesenacht");
+  await askAntwort(page, "5");
+  const alle = await page.evaluate(() => S.kinder.length);
+  await expect(page.locator(".lwer")).toContainText(`alle ${alle} Kinder`);
+  await page.click('[data-act="listeKinder"]');
+  // Klassenfilter: nur 1b anzeigen, alles abwählen, dann die angezeigten auswählen
+  await page.selectOption("#lkKl", "1b");
+  await expect(page.locator("#lkKids label:visible")).toHaveCount(2);
+  await page.selectOption("#lkKl", "");
+  await page.click("#lkAus");
+  await page.selectOption("#lkKl", "1b");
+  await page.click("#lkAn");
+  await page.click('#lkf button[type="submit"]');
+  let l = await page.evaluate(() => listeVon(UI.liste));
+  const b = await page.evaluate(() => sortedKids("alle").filter((k) => k.klasse === "1b").map((k) => k.id));
+  expect(l.kinder).toEqual(b);
+  expect(await page.evaluate(() => listeStand(listeVon(UI.liste)).n)).toBe(2);
+  await expect(page.locator(".ltab tr")).toHaveCount(3);
+  // Jahrgangsstufe und Name ergänzen
+  await page.click('[data-act="listeKinder"]');
+  const jg = await page.evaluate(() => { const k = sortedKids("alle").find((k) => !k.klasse); return { jgst: String(k.jgst), n: sortedKids("alle").filter((x) => String(x.jgst) === String(k.jgst)).length }; });
+  await page.selectOption("#lkJg", jg.jgst);
+  await expect(page.locator("#lkKids label:visible")).toHaveCount(jg.n);
+  await page.selectOption("#lkJg", "");
+  await page.fill("#lkName", "s04");
+  await expect(page.locator("#lkKids label:visible")).toHaveCount(1);
+  await page.click("#lkAn");
+  await page.click('#lkf button[type="submit"]');
+  l = await page.evaluate(() => listeVon(UI.liste));
+  expect(l.kinder).toEqual([...b, "S04"].sort());
+  // Ein Kind mit Zahlung abwählen: Rückfrage, dann ist die Zahlung weg
+  await page.click(`[data-act="lZahl"][data-k="${b[0]}"][data-w="bar"]`);
+  await page.click('[data-act="listeKinder"]');
+  await page.uncheck(`#lkKids input[value="${b[0]}"]`);
+  await page.click('#lkf button[type="submit"]');
+  await expect(page.locator("#msgJa")).toBeVisible();
+  await page.click("#msgJa");
+  l = await page.evaluate(() => listeVon(UI.liste));
+  expect(l.st[b[0]]).toBeUndefined();
+  expect(l.kinder).not.toContain(b[0]);
+  // Alle wieder anhaken: die Liste gilt wieder für alle Kinder
+  await page.click('[data-act="listeKinder"]');
+  await page.click("#lkAn");
+  await page.click('#lkf button[type="submit"]');
+  expect(await page.evaluate(() => listeVon(UI.liste).kinder)).toBeNull();
+});
+
+test("Zahlungsbrief: allgemein oder personalisiert, mit oder ohne GiroCode", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('.lit:has-text("Ausflug Tierpark")');
+  const offen = await page.evaluate(() => listeStand(listeVon(UI.liste)).offen.length);
+  // allgemein mit GiroCode: eine Seite ohne Namen
+  await page.click('[data-act="printZahlbrief"]');
+  await page.check('#zbf input[name=zbArt][value="allg"]');
+  await page.click('#zbf button[type="submit"]');
+  await expect(page.locator(".druckprev section.page")).toHaveCount(1);
+  await expect(page.locator(".druckprev svg.qr")).toHaveCount(1);
+  const html = await page.locator(".druckprev").innerHTML();
+  expect(html).toContain("Liebe Eltern,");
+  expect(html).toContain("Nachnamen Ihres Kindes");
+  expect(html).not.toMatch(/undefined|NaN|\{(Vorname|Name|Zweck|Betrag|Frist|Klasse)\}/);
+  const namen = await page.evaluate(() => S.kinder.map((k) => k.vorname).filter(Boolean));
+  for (const n of namen) expect(html).not.toContain(`von ${n}`);
+  await page.click('#dlg [data-act="closeDlg"]');
+  expect(await page.evaluate(() => listeVon(UI.liste).brief)).toEqual({ allg: true, code: true });
+  // personalisiert ohne GiroCode: ein Brief je offenem Kind, Überweisungsdaten ohne QR-Code
+  await page.click('[data-act="printZahlbrief"]');
+  await expect(page.locator('#zbf input[name=zbArt][value="allg"]')).toBeChecked();
+  await page.check('#zbf input[name=zbArt][value="pers"]');
+  await page.check('#zbf input[name=zbCode][value="0"]');
+  await page.click('#zbf button[type="submit"]');
+  await expect(page.locator(".druckprev section.page")).toHaveCount(offen);
+  await expect(page.locator(".druckprev svg.qr")).toHaveCount(0);
+  await expect(page.locator(".druckprev .ztab").first()).toContainText("IBAN");
+  await page.click('#dlg [data-act="closeDlg"]');
+  // ohne gültige Bankverbindung ist „mit GiroCode“ gesperrt, der Brief bekommt den Abschnitt zum Zurückgeben
+  await page.evaluate(() => { S.kasse.konto.iban = ""; });
+  await page.click('[data-act="printZahlbrief"]');
+  await expect(page.locator('#zbf input[name=zbCode][value="1"]')).toBeDisabled();
+  await page.check('#zbf input[name=zbArt][value="allg"]');
+  await page.click('#zbf button[type="submit"]');
+  await expect(page.locator(".druckprev")).toContainText("Name des Kindes");
+  await expect(page.locator(".druckprev svg.qr")).toHaveCount(0);
 });
 
 test("Sammelliste: Liste zum Abhaken und offene Listen auf „Heute“", async ({ page }) => {

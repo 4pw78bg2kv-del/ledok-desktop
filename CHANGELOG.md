@@ -9,6 +9,12 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+## 1.1.3 (Beta)
+
+**Neu**
+- In einer Sammelliste legst du mit **Kinder auswählen** fest, wer auf der Liste steht. Filter nach **Name**, **Klasse** (z. B. 1a, 1b) und **Jahrgangsstufe** helfen dabei, mit „Angezeigte auswählen“ hakst du alle gefilterten Kinder auf einmal an. So sammelst du zum Beispiel nur bei der 1. Jahrgangsstufe Geld für einen Ausflug ein. Sind alle Kinder angehakt, kommen später neu angelegte Kinder automatisch dazu.
+- Bei **Zahlungsbriefe drucken** wählst du jetzt zwischen einem **personalisierten** Brief für jedes Kind, das noch offen ist, und einem **allgemeinen** Brief ohne Namen zum Kopieren und Austeilen. Außerdem entscheidest du, ob der Brief einen **GiroCode** bekommt oder nur die Überweisungsdaten. LeDoK merkt sich deine Wahl je Liste.
+
 ## 1.1.2 (Beta)
 
 **Neu**
