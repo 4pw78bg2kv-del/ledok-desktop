@@ -478,6 +478,51 @@ test("Dokumente: LEG-Vorlagen aus Dateien werden bereinigt", async ({ page }) =>
   expect(r).toMatchObject({ logo: "", anschrift: "A" });
 });
 
+test("Schnellsuche: Strg+K findet Kinder, Themen und Einstellungen", async ({ page }) => {
+  await neueKlasse(page);
+  const kind = await page.evaluate(() => sortedKids("alle")[2].id);
+  await page.keyboard.press("Control+k");
+  await expect(page.locator("#suIn")).toBeFocused();
+  await page.keyboard.type(kind);
+  await expect(page.locator(".suitem").first()).toContainText(kind);
+  await page.keyboard.press("Enter");
+  await expect(page.locator("dialog#dlg[open]")).toHaveCount(0);
+  expect(await page.evaluate(() => [UI.tab, UI.kind])).toEqual(["kind", kind]);
+
+  await page.click('[data-act="suche"]');
+  await page.keyboard.type("dokumente");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#dokPrev")).toBeVisible();
+
+  const thema = await page.evaluate(() => S.raster.find((r) => !r.aus && bewertbar(r) && hatModus(r, "beob")));
+  await page.keyboard.press("Control+k");
+  await page.keyboard.type(thema.text.split(" ").slice(0, 3).join(" "));
+  await page.locator(".suitem", { hasText: "Thema" }).first().click();
+  expect(await page.evaluate(() => UI.tab)).toBe("erfassen");
+
+  await page.keyboard.press("Control+k");
+  await page.keyboard.type("xyzgibtsnicht");
+  await expect(page.locator("#suList")).toContainText("Nichts gefunden");
+});
+
+test("Druckvorschau erscheint vor dem Drucken", async ({ page }) => {
+  await neueKlasse(page);
+  await page.evaluate(() => { window.print = () => { window.__gedruckt = (window.__gedruckt || 0) + 1; }; });
+  await page.click('nav.tabs [data-v="export"]');
+  await page.click('[data-act="printNoten"]');
+  await expect(page.locator("#dlg .druckprev")).toContainText("Notenvorschläge");
+  await page.click('#dlg [data-act="closeDlg"]');
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.__gedruckt || 0)).toBe(0);
+
+  await page.click('[data-act="printAll"][data-v="bericht"]');
+  const n = await page.evaluate(() => sortedKids(UI.expJgst).length);
+  await expect(page.locator("#dlg")).toContainText(`${n} Dokumente`);
+  await page.click("#dvDruck");
+  await expect.poll(() => page.evaluate(() => window.__gedruckt || 0)).toBe(1);
+  expect(await page.evaluate(() => document.querySelectorAll("#print-root .page").length)).toBe(n);
+});
+
 test("Förderplan: anlegen, aus dem LEG-Bogen füllen, drucken und mit dem Kind löschen", async ({ page }) => {
   await neueKlasse(page);
   await page.evaluate(() => { window.print = () => { window.__druck = document.querySelector("#print-root").innerHTML; }; });
@@ -503,12 +548,14 @@ test("Förderplan: anlegen, aus dem LEG-Bogen füllen, drucken und mit dem Kind 
   for (const z of vorher) expect(ziele.filter((t) => t === z)).toHaveLength(1);
 
   await page.click('[data-act="printOne"][data-v="foerder"]');
+  await page.click("#dvDruck");
   await expect.poll(() => page.evaluate(() => window.__druck || "")).toContain("Förderplan");
   expect(await page.evaluate(() => window.__druck)).toContain("Lesepatenschaft");
 
   // Sammeldruck unter Export enthält nur Kinder mit Plan
-  const n = await page.evaluate(() => { window.__druck = ""; ACT.printFoerderAlle(); return document.querySelectorAll("#print-root section.page").length; });
-  expect(n).toBe(1);
+  await page.evaluate(() => { window.__druck = ""; ACT.printFoerderAlle(); });
+  await expect(page.locator(".druckprev section.page")).toHaveCount(1);
+  await page.click('#dlg [data-act="closeDlg"]');
 
   await page.evaluate((k) => kindLoeschen(k), kid);
   expect(await page.evaluate((k) => k in S.foerderplaene, kid)).toBe(false);
