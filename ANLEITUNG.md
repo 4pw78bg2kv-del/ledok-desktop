@@ -2,6 +2,7 @@
 
 Dieses Projekt verpackt `LeDoK.html` als Programm für Windows (`.exe`) und macOS (`.dmg`).
 Das Programm arbeitet vollständig offline, und Updates kommen als signierte Datei per Stick oder Mail.
+Wie App und Programm innen aufgebaut sind (Datenmodell, Verschlüsselung, Schlüssel, Updates, Tests), steht in [docs/TECHNIK.md](docs/TECHNIK.md).
 
 ```
 app/LeDoK.html                 die App selbst (immer die aktuelle Fassung hier ablegen)
@@ -54,7 +55,7 @@ Nur Update-Dateien, die mit deinem privaten Schlüssel signiert sind, werden von
 
 Du kannst auch ohne Tag bauen, über `Actions → Installer bauen → Run workflow`. Die Dateien liegen dann im Lauf unter „Artifacts“.
 
-## 4 · Updates verteilen (ohne Internet)
+## 4 · Updates verteilen
 
 Für die meisten Änderungen brauchst du **keinen neuen Installer**:
 
@@ -66,6 +67,10 @@ Für die meisten Änderungen brauchst du **keinen neuen Installer**:
    - zeigt deine Hinweise,
    - legt eine Sicherung der Daten an und
    - startet neu.
+
+Die App sucht solche Dateien auch selbst: beim Start, nach der Anmeldung und stündlich im **Download-Ordner** und in einem **Update-Ordner**, den die Lehrkraft unter „Version …“ festlegt (z. B. ein Ordner auf dem Schulserver oder ein Stick). Findet sie eine neuere, gültig signierte Datei, fragt sie „Update x.y.z verfügbar – jetzt einspielen?“. Eingespielt wird nur nach Zustimmung.
+
+**Online-Suche (nur wenn die Schule sie einschaltet).** Der LeDoK-Admin kann unter **LeDoK-Admin → 5 · Online nach Updates suchen** mit dem Masterkennwort erlauben, dass die Desktop-App höchstens zweimal am Tag die Releases dieses Repositorys auf GitHub abfragt. Dafür hängst du `LeDoK-x.y.z.ledok-update` (genau dieser Dateiname) an einen **veröffentlichten** Release an; Entwürfe und Vorabversionen werden ignoriert. Die App lädt die Datei, prüft sie genauso wie eine Datei vom Stick und fragt die Lehrkraft vor dem Einspielen. Das ist der einzige Netzwerkzugriff von LeDoK: Er läuft im Programm-Hintergrund (nicht in der Oberfläche) über eine eigene Verbindung, die nur `api.github.com`, `github.com` und die GitHub-Download-Server erreicht. Daten von Lehrkräften oder Kindern werden nicht übertragen. Ältere LeDoK-Versionen lehnen einen Schulschlüssel mit eingeschalteter Online-Suche ab; spiele deshalb zuerst überall das Update ein.
 
 Was passiert im Detail?
 - Manipulierte Dateien und solche mit fremder Signatur werden abgelehnt.

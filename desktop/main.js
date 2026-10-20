@@ -1,6 +1,9 @@
 // LeDoK – Desktop-Programm (Windows / macOS)
 // Lädt LeDoK.html über das eigene Protokoll ledok://app/ – vollständig offline.
 // Updates kommen nur als signierte Datei (.ledok-update) und werden im Benutzerordner abgelegt.
+// Die App sucht solche Dateien selbst in Downloads und einem wählbaren Ordner (Schulserver, Stick) – ohne Netzwerk.
+// Nur wenn die Schule es im Schulschlüssel einschaltet, fragt der Hauptprozess zusätzlich die GitHub-Releases ab
+// (einziger Netzwerkzugriff von LeDoK, eigene Sitzung, feste Hosts; die Oberfläche selbst bleibt ohne Netzwerk).
 "use strict";
 const { app, BrowserWindow, protocol, ipcMain, shell, Menu, session, dialog } = require("electron");
 const path = require("path");
@@ -16,6 +19,8 @@ const MITGELIEFERT = path.join(__dirname, "..", "app", "LeDoK.html");
 const SCHLUESSEL_DATEI = path.join(__dirname, "ledok-update-key.json");
 const updateOrdner = () => path.join(app.getPath("userData"), "update");
 const sicherungsOrdner = () => path.join(app.getPath("documents"), "LeDoK-Sicherungen");
+
+const suchEinstellung = () => path.join(app.getPath("userData"), "update-suche.json");
 
 function leseJson(datei) { try { return JSON.parse(fs.readFileSync(datei, "utf8")); } catch (e) { return null; } }
 const schluessel = () => { const k = leseJson(SCHLUESSEL_DATEI); return k && k.app === "ledok-update-key" ? k : null; };
@@ -72,6 +77,118 @@ function ausduennen(anlass) {
 function schreibeAtomar(datei, inhalt) { const tmp = datei + ".tmp"; fs.writeFileSync(tmp, inhalt, "utf8"); fs.renameSync(tmp, datei); }
 
 function neustart() { setTimeout(() => { app.relaunch(); app.exit(0); }, 300); }
+
+function installieren(text, daten) {
+  const r = U.pruefen(text, schluessel());
+  if (!r.ok) return r;
+  const a = aktiv();
+  if (U.vergleiche(r.version, a.version) <= 0) return { ok: false, fehler: `Version ${r.version} ist nicht neuer als die installierte Version ${a.version}.` };
+  try {
+    sichern(daten, `vor-update-${a.version}`);
+    fs.mkdirSync(updateOrdner(), { recursive: true });
+    schreibeAtomar(path.join(updateOrdner(), "paket.ledok-update"), text);
+    fs.rmSync(path.join(updateOrdner(), "LeDoK.html"), { force: true }); // ältere Ablage ohne Signatur
+    schreibeAtomar(path.join(updateOrdner(), "info.json"), JSON.stringify({ version: r.version, installiert: new Date().toISOString(), fp: r.fp, vorher: a.version }, null, 2));
+  } catch (err) { return { ok: false, fehler: "Das Update konnte nicht gespeichert werden: " + err.message }; }
+  updCache = null; gespeichert = true; neustart();
+  return { ok: true, version: r.version };
+}
+
+// Automatische Suche: nur lokale Ordner, kein Netzwerk. Jede Datei muss die Signaturprüfung bestehen.
+const MAX_UPDATE_GROESSE = 30 * 1024 * 1024;
+let gefunden = null; // Pfad der zuletzt gefundenen, gültigen Update-Datei
+function suchOrdner() {
+  const e = leseJson(suchEinstellung());
+  const eigener = e && typeof e.ordner === "string" ? e.ordner : null;
+  let downloads = null; try { downloads = app.getPath("downloads"); } catch (err) { /* nicht überall vorhanden */ }
+  return { eigener, liste: [eigener, downloads, path.join(updateOrdner(), "download")].filter(Boolean) };
+}
+function leseUpdateDatei(datei) {
+  const st = fs.statSync(datei);
+  if (!st.isFile() || st.size > MAX_UPDATE_GROESSE) throw new Error("keine gültige Update-Datei");
+  return fs.readFileSync(datei, "utf8");
+}
+function updateSuchen() {
+  const { eigener, liste } = suchOrdner(), a = aktiv(), k = schluessel();
+  gefunden = null;
+  if (!k) return { ok: true, gefunden: false, ordner: eigener };
+  let best = null;
+  for (const ordner of liste) {
+    let namen = [];
+    try { namen = fs.readdirSync(ordner).filter((f) => /\.ledok-update$/i.test(f)).slice(0, 200); } catch (err) { continue; } // Stick abgezogen, Server nicht erreichbar
+    for (const f of namen) {
+      const datei = path.join(ordner, f);
+      let r;
+      try { r = U.pruefen(leseUpdateDatei(datei), k); } catch (err) { continue; }
+      if (!r.ok || U.vergleiche(r.version, a.version) <= 0) continue;
+      if (!best || U.vergleiche(r.version, best.r.version) > 0) best = { datei, r };
+    }
+  }
+  if (!best) return { ok: true, gefunden: false, ordner: eigener };
+  gefunden = best.datei;
+  const { version, datum, hinweise, fp } = best.r;
+  const online = path.dirname(best.datei) === path.join(updateOrdner(), "download"); // früher von GitHub geladen
+  return { ok: true, gefunden: true, online, version, datum, hinweise, fp, datei: path.basename(best.datei), ort: online ? "GitHub" : path.dirname(best.datei), ordner: eigener };
+}
+
+// Online-Suche (nur wenn die Schule sie freigegeben hat): neueste signierte Update-Datei der GitHub-Releases.
+// Eigene Sitzung ohne Cookies und Speicher; erlaubt sind nur HTTPS-Anfragen an diese Hosts.
+const RELEASES = "https://api.github.com/repos/4pw78bg2kv-del/ledok-desktop/releases?per_page=10";
+const ONLINE_HOSTS = ["api.github.com", "github.com", "objects.githubusercontent.com", "release-assets.githubusercontent.com"];
+const ONLINE_ABSTAND = 12 * 3600 * 1000; // höchstens zweimal am Tag automatisch
+let onlineSitzung = null;
+function onlineFetch(url, opt) {
+  if (!onlineSitzung) {
+    onlineSitzung = session.fromPartition("ledok-update-online", { cache: false });
+    onlineSitzung.webRequest.onBeforeRequest((d, cb) => {
+      let ok = false; try { const u = new URL(d.url); ok = u.protocol === "https:" && ONLINE_HOSTS.includes(u.hostname); } catch (e) { ok = false; }
+      cb({ cancel: !ok });
+    });
+    onlineSitzung.setPermissionRequestHandler((wc, perm, cb) => cb(false));
+    onlineSitzung.setPermissionCheckHandler(() => false);
+  }
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 30000);
+  return onlineSitzung.fetch(url, { ...opt, signal: ctl.signal, credentials: "omit", headers: { "user-agent": `LeDoK/${app.getVersion()}`, ...(opt && opt.headers) } }).finally(() => clearTimeout(t));
+}
+async function updateOnlineSuchen(erzwingen) {
+  const e = leseJson(suchEinstellung()) || {};
+  if (!erzwingen && e.zuletztOnline && Date.now() - e.zuletztOnline < ONLINE_ABSTAND) return { ok: true, gefunden: false, uebersprungen: true };
+  const a = aktiv(), k = schluessel();
+  if (!k) return { ok: false, fehler: "In dieser App ist kein Update-Schlüssel hinterlegt." };
+  try {
+    const r = await onlineFetch(RELEASES, { headers: { accept: "application/vnd.github+json" } });
+    if (!r.ok) throw new Error(`GitHub antwortet mit ${r.status}`);
+    const releases = await r.json();
+    let best = null;
+    for (const rel of Array.isArray(releases) ? releases : []) {
+      if (rel.draft || rel.prerelease) continue;
+      for (const as of rel.assets || []) {
+        const m = /^LeDoK-(\d+\.\d+\.\d+)\.ledok-update$/.exec(as.name || "");
+        if (!m || as.size > MAX_UPDATE_GROESSE || U.vergleiche(m[1], a.version) <= 0) continue;
+        if (!best || U.vergleiche(m[1], best.version) > 0) best = { version: m[1], url: as.browser_download_url, name: as.name };
+      }
+    }
+    schreibeAtomar(suchEinstellung(), JSON.stringify({ ...e, zuletztOnline: Date.now() }, null, 2));
+    if (!best) return { ok: true, gefunden: false };
+    const d = await onlineFetch(best.url, { headers: { accept: "application/octet-stream" } });
+    if (!d.ok) throw new Error(`Download fehlgeschlagen (${d.status})`);
+    const text = await d.text();
+    if (text.length > MAX_UPDATE_GROESSE) throw new Error("Die Datei ist zu groß.");
+    // Gleiche Prüfung wie bei Dateien vom Stick: Signatur des Herstellers und höhere Versionsnummer
+    const p = U.pruefen(text, k);
+    if (!p.ok) return { ok: false, fehler: p.fehler };
+    if (U.vergleiche(p.version, a.version) <= 0) return { ok: true, gefunden: false };
+    const ziel = path.join(updateOrdner(), "download");
+    fs.mkdirSync(ziel, { recursive: true });
+    for (const f of fs.readdirSync(ziel)) fs.rmSync(path.join(ziel, f), { force: true });
+    const datei = path.join(ziel, `LeDoK-${p.version}.ledok-update`);
+    schreibeAtomar(datei, text);
+    gefunden = datei;
+    return { ok: true, gefunden: true, online: true, version: p.version, datum: p.datum, hinweise: p.hinweise, fp: p.fp, datei: path.basename(datei), ort: "GitHub" };
+  } catch (err) {
+    return { ok: false, fehler: err.name === "AbortError" ? "Keine Antwort von GitHub (Zeitüberschreitung)." : String(err.message || err) };
+  }
+}
 
 let fenster = null, gespeichert = false;
 
@@ -179,26 +296,29 @@ app.whenReady().then(() => {
 
   ipcMain.handle("ledok:info", () => {
     const a = aktiv(), k = schluessel();
-    return { shell: app.getVersion(), os: process.platform, version: a.version, mitgeliefert: a.mitgeliefert, aktualisiert: a.aktualisiert, updateDatum: a.updateDatum, updateKey: k ? k.fp : null };
+    return { shell: app.getVersion(), os: process.platform, version: a.version, mitgeliefert: a.mitgeliefert, aktualisiert: a.aktualisiert, updateDatum: a.updateDatum, updateKey: k ? k.fp : null, updateSuchordner: suchOrdner().eigener };
   });
   handle("ledok:updatePruefen", (e, text) => {
     const r = U.pruefen(text, schluessel()); if (r.ok) delete r.html; return r;
   });
-  handle("ledok:updateInstallieren", (e, text, daten) => {
-    const r = U.pruefen(text, schluessel());
-    if (!r.ok) return r;
-    const a = aktiv();
-    if (U.vergleiche(r.version, a.version) <= 0) return { ok: false, fehler: `Version ${r.version} ist nicht neuer als die installierte Version ${a.version}.` };
-    try {
-      sichern(daten, `vor-update-${a.version}`);
-      fs.mkdirSync(updateOrdner(), { recursive: true });
-      schreibeAtomar(path.join(updateOrdner(), "paket.ledok-update"), text);
-      fs.rmSync(path.join(updateOrdner(), "LeDoK.html"), { force: true }); // ältere Ablage ohne Signatur
-      schreibeAtomar(path.join(updateOrdner(), "info.json"), JSON.stringify({ version: r.version, installiert: new Date().toISOString(), fp: r.fp, vorher: a.version }, null, 2));
-    } catch (err) { return { ok: false, fehler: "Das Update konnte nicht gespeichert werden: " + err.message }; }
-    updCache = null; gespeichert = true; neustart();
-    return { ok: true, version: r.version };
+  handle("ledok:updateInstallieren", (e, text, daten) => installieren(text, daten));
+  handle("ledok:updateSuchen", () => updateSuchen());
+  // Die App ruft das nur auf, wenn der Schulschlüssel der Lehrkraft die Online-Suche freigibt.
+  handle("ledok:updateOnlineSuchen", (e, erzwingen) => updateOnlineSuchen(!!erzwingen));
+  // Installiert die zuletzt gefundene Datei. Die App nennt keinen Pfad; die Datei wird erneut gelesen und geprüft.
+  handle("ledok:updateGefundenInstallieren", (e, daten) => {
+    if (!gefunden) return { ok: false, fehler: "Es wurde keine Update-Datei gefunden." };
+    let text;
+    try { text = leseUpdateDatei(gefunden); } catch (err) { return { ok: false, fehler: "Die Update-Datei ist nicht mehr da: " + err.message }; }
+    return installieren(text, daten);
   });
+  handle("ledok:updateOrdnerWaehlen", async () => {
+    const r = await dialog.showOpenDialog(fenster, { title: "Ordner für LeDoK-Updates wählen", properties: ["openDirectory"] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    schreibeAtomar(suchEinstellung(), JSON.stringify({ ordner: r.filePaths[0] }, null, 2));
+    return { ok: true, ordner: r.filePaths[0] };
+  });
+  handle("ledok:updateOrdnerEntfernen", () => { fs.rmSync(suchEinstellung(), { force: true }); return { ok: true }; });
   handle("ledok:updateZuruecksetzen", (e, daten) => {
     try { sichern(daten, `vor-zuruecksetzen-${aktiv().version}`); fs.rmSync(updateOrdner(), { recursive: true, force: true }); }
     catch (err) { return { ok: false, fehler: err.message }; }
