@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-aqWnVQPhCy/bwz+mciZsOvUpFhZqzpO7lZAl4A4q9yw='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-nxIjCEfXJCsxyGm4aE3CjyCP3ap9hlTcLkCNZO+9/L4='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -222,6 +222,21 @@ details.bs>div{padding:0 .9rem .9rem}
 .fehltb{display:inline-block;margin-left:.35rem;font-size:.72rem;font-weight:600;padding:0 .4rem;border-radius:99px;background:var(--low);color:var(--danger);vertical-align:middle}
 .achips{display:flex;flex-wrap:wrap;gap:.3rem}.achip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:.25rem .65rem;min-height:32px;color:var(--ink);font-size:.88rem}
 .achip.fehlt{background:var(--low);border-color:var(--danger);color:var(--danger);font-weight:600}
+.losbar{align-items:center;gap:.5rem}.losgo{font-size:1.05rem;padding:.55rem 1.1rem}
+.loserg{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:.8rem 1rem;animation:lospop .25s ease-out}
+.losnamen{display:flex;flex-wrap:wrap;gap:.3rem 1.4rem}.loserg .losname{font-size:1.9rem;font-weight:700;color:var(--accent)}
+.losreihe{margin:0;columns:3 11rem;font-weight:600}.losgruppen{display:grid;grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:.6rem}
+.losgr{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.5rem .7rem}.losgr ul{margin:.3rem 0 0;padding-left:1.1rem}
+.loschip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:.15rem .6rem;font-size:.85rem}.loschip.weg{text-decoration:line-through;opacity:.55}.loschip.fehlt{border-color:var(--danger);color:var(--danger)}
+.loswahl{display:grid;grid-template-columns:repeat(auto-fill,minmax(9rem,1fr));gap:.2rem .8rem}.losverlauf{gap:.25rem;margin-top:.4rem}
+#dlg.dlg-los{width:100vw!important;max-width:none;height:100vh;max-height:none;margin:0;border:0;border-radius:0;padding:1.2rem 1.6rem}#dlg.dlg-los[open]{display:flex}
+.losvoll{display:flex;flex-direction:column;gap:1rem;flex:1;min-height:0;width:100%}.losvkopf,.losvfuss{align-items:center;gap:.6rem}
+.losbuehne{flex:1;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:.5rem 3rem;text-align:center;cursor:pointer;user-select:none}
+.losbuehne .losname{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:clamp(3rem,12vw,10rem);font-weight:700;line-height:1.05;color:var(--accent);animation:lospop .3s ease-out}
+.losbuehne.mehr .losname{font-size:clamp(2rem,6vw,5rem)}.losbuehne.misch .losname{color:var(--muted);animation:none}.losleer{font-size:1.4rem}
+.page .losdruck{display:grid;grid-template-columns:repeat(3,1fr);gap:10pt 16pt;font-size:11pt}.page .losdruck ol{margin:3pt 0 0;padding-left:16pt}
+@keyframes lospop{from{transform:scale(.85);opacity:.3}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.loserg,.losbuehne .losname{animation:none}}
 
 .splist{display:flex;flex-direction:column;gap:2px}.sprow{display:grid;grid-template-columns:1.6rem 3rem minmax(0,1fr) auto;gap:.4rem;align-items:center;padding:.15rem .3rem;border-radius:6px;font-size:.92rem}
 .dlist{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.3rem .8rem;font-size:.92rem;padding:0 .3rem}.drow{display:contents}.drow s{color:var(--muted)}
@@ -2849,7 +2864,7 @@ function defaultState(){
     version:1,
     meta:{schule:"",klasse:"Klasse 1/2",lehrkraft:"",schuljahr:"2026/27",halbjahr:1,lastBackup:null,notenGrenzen:[8.5,7.5,6,4.5,3],skala9:true,sperrliste:"",kiPrompt:DEFAULT_KI_PROMPT,leg:DEFAULT_LEG(),kopf:DEFAULT_KOPF(),legVorlagen:[],einladung:DEFAULT_EINLADUNG(),druck:DEFAULT_DRUCK(),tagesbalken:true,stundenplan:DEFAULT_STUNDENPLAN(),faecher:defaultFaecher(),asvModus:{},rolle:"kl",klassenId:neueId(),fachlehrer:[],pakete:[],protokoll:[]},
     kinder:[], raster:defaultRaster(), eintraege:[], notizen:[], bausteine:defaultBausteine(), texte:{}, proben:[], foerderplaene:{},
-    listen:[], kasse:kasseBereinigen(), fehltage:[], dienste:DEFAULT_DIENSTE(), klassenbuch:[]
+    listen:[], kasse:kasseBereinigen(), fehltage:[], dienste:DEFAULT_DIENSTE(), klassenbuch:[], lose:[]
   };
 }
 
@@ -3069,7 +3084,7 @@ function migrate(st){
   {const e=Object.assign(DEFAULT_EINLADUNG(),st.meta.einladung||{});for(const f of ["titel","text"])if(typeof e[f]!=="string")e[f]=DEFAULT_EINLADUNG()[f];e.rueck=!!e.rueck;st.meta.einladung=e}
   st.meta.legVorlagen=(Array.isArray(st.meta.legVorlagen)?st.meta.legVorlagen:[]).filter(v=>v&&typeof v==="object").map(legVorlageBereinigen);
   st.proben=Array.isArray(st.proben)?st.proben:[];
-  st.meta.stundenplan=stundenplanBereinigen(st.meta.stundenplan);st.listen=listenBereinigen(st.listen);st.kasse=kasseBereinigen(st.kasse);st.fehltage=fehltageBereinigen(st.fehltage);st.dienste=diensteBereinigen(st.dienste);st.klassenbuch=klassenbuchBereinigen(st.klassenbuch);
+  st.meta.stundenplan=stundenplanBereinigen(st.meta.stundenplan);st.listen=listenBereinigen(st.listen);st.kasse=kasseBereinigen(st.kasse);st.fehltage=fehltageBereinigen(st.fehltage);st.dienste=diensteBereinigen(st.dienste);st.klassenbuch=klassenbuchBereinigen(st.klassenbuch);st.lose=loseBereinigen(st.lose);
   st.kinder=st.kinder||[];st.kinder.forEach(k=>{if(k.klasse==null)k.klasse="";if(!Array.isArray(k.faecherNur))k.faecherNur=[];if(!Array.isArray(k.begabt))k.begabt=[]});st.notizen=st.notizen||[];st.foerderplaene=fpBereinigen(st.foerderplaene);st.raster=st.raster||d.raster;st.eintraege=st.eintraege||[];st.texte=st.texte||{};
   if(st.raster.some(r=>r.ebene==null))baumMigration(st);
   st.bausteine=st.bausteine||d.bausteine;
@@ -3120,6 +3135,8 @@ function datenBereinigen(st){
     for(const l of (st.listen||[])){for(const k of Object.keys(l.st||{}))if(umb[k]){l.st[umb[k]]=l.st[k];delete l.st[k]}
       if(Array.isArray(l.kinder))l.kinder=l.kinder.map(k=>umb[k]||k)}
     if(st.dienste){const D=st.dienste,um=k=>umb[k]||k;D.reihe=(D.reihe||[]).map(um);D.aus=(D.aus||[]).map(um);for(const m of Object.values(D.tausch||{}))for(const s of Object.keys(m))m[s]=um(m[s])}
+    const losUmb=x=>x.startsWith("k:")&&umb[x.slice(2)]?"k:"+umb[x.slice(2)]:x;
+    for(const l of (st.lose||[])){if(l.kinder)l.kinder=l.kinder.map(k=>umb[k]||k);l.gezogen=l.gezogen.map(losUmb);for(const v of l.verlauf)v.g=v.g.map(g=>g.map(losUmb))}
   }
   st.kinder.forEach(k=>{k.jgst=Math.min(4,Math.max(1,+k.jgst||1))});
   st.eintraege=st.eintraege.map(eintragOk).filter(Boolean);
@@ -4048,10 +4065,11 @@ hilfe(){
    <li><b>KI-Auswertung:</b> nur mit Kürzeln, Namen und Muster werden geschwärzt. Text vollständig lesen und bestätigen, nur schulisch freigegebene KI nutzen.</li></ol>
    <p class="small muted">Texte passt du unter ${go("bausteine","Textbausteine")} an: beobachtbar statt Etikett, Stärke zuerst. Briefkopf der Schule und Aufbau des LEG-Bogens (Abschnitte, eigene Freitexte mit Platzhaltern) stellst du unter ${go("dokumente","Dokumente")} ein.</p></section>
 
-  <section class="card" id="h-listen"><h3>Listen, Kasse, Fehltage, Dienste &amp; Stundenplan</h3>
+  <section class="card" id="h-listen"><h3>Listen, Kasse, Fehltage, Dienste, Auslosen &amp; Stundenplan</h3>
    <dl class="hdl">
     <dt>${go("listen","Listen")} → Sammellisten</dt><dd><b>＋ Geld einsammeln</b> (Betrag je Kind) oder <b>＋ Liste zum Abhaken</b> (z. B. Einverständnis, Unterschrift). Je Kind „bar“, „überwiesen“ oder „erlassen“ bzw. „erledigt“. Mit <b>Kinder auswählen</b> legst du fest, wer auf der Liste steht; Filter nach Name, Klasse und Jahrgangsstufe helfen dabei. <b>Zahlungsbriefe drucken</b> erzeugt wahlweise einen Brief mit Namen für jedes Kind, das noch offen ist, oder einen allgemeinen Brief ohne Namen zum Kopieren, jeweils mit oder ohne GiroCode.</dd>
     <dt>Klassenkasse</dt><dd>Kassenstand und Kassenbuch. Einnahmen aus Geldlisten bucht LeDoK selbst; Ausgaben und andere Einnahmen trägst du ein. Mit Bankverbindung bekommen Zahlungsbriefe einen <b>GiroCode</b>, den Eltern mit der Banking-App scannen.</dd>
+    <dt>Listen → Auslosen</dt><dd>Los-Listen für die ganze Klasse, ausgewählte Kinder oder eigene Lose (Stationen, Aufgaben). <b>🎲 Los ziehen</b> (1–5 auf einmal), <b>Gruppen bilden</b> oder <b>Reihenfolge auslosen</b>. „Gerecht ziehen“ lässt jedes Los einmal dran, bevor eine neue Runde beginnt; wer heute fehlt, wird übersprungen. <b>⛶ Großanzeige</b> für den Beamer: Leertaste zieht. Schnell erreichbar über 🎲 auf ${go("heute","Heute")} oder die Schnellsuche.</dd>
     <dt>Fehltage</dt><dd>Auf ${go("heute","Heute")} unter „Wer fehlt heute?“ ein Kind antippen. Nachtragen und die Summen je Halbjahr (für Zeugnis und ASV) unter Listen → Fehltage.</dd>
     <dt>Dienste</dt><dd>Unter Listen → Dienste legst du Dienste wie Tafel-, Austeil- oder Blumendienst an. LeDoK verteilt sie reihum, jede Woche (oder jeden Tag) an die nächsten Kinder, und druckt einen <b>Aushang</b>. ${go("heute","Heute")} zeigt, wer dran ist, und nennt für fehlende Kinder eine Vertretung.</dd>
     <dt>${go("stundenplan","Stundenplan")}</dt><dd>Fächer je Stunde eintragen. ${go("heute","Heute")} zeigt dann den Plan des Tages und ★-Themen dieser Fächer, die noch wenig beobachtet sind.</dd>
@@ -5861,7 +5879,7 @@ function stundenplanSeite(){
 function anwesenheitCard(t,schultag){
   if(istFL()||!schultag||!S.kinder.length)return "";
   const ks=sortedKids("alle"),fehlen=ks.filter(k=>fehltagVon(k.id,t));
-  return `<div class="card hcard" id="anwesenheit"><div class="hh"><h3>Wer fehlt heute?</h3><span class="badge${fehlen.length?" warn":" ok"}">${fehlen.length?`${fehlen.length} ${fehlen.length===1?"fehlt":"fehlen"}`:"alle da"}</span></div>
+  return `<div class="card hcard" id="anwesenheit"><div class="hh"><h3>Wer fehlt heute?</h3><button class="btn small ghost" data-act="losGross" title="Ein Kind auslosen (Großanzeige)">🎲 Auslosen</button><span class="badge${fehlen.length?" warn":" ok"}">${fehlen.length?`${fehlen.length} ${fehlen.length===1?"fehlt":"fehlen"}`:"alle da"}</span></div>
    <div class="achips">${ks.map(k=>{const f=fehltagVon(k.id,t);return `<button class="achip${f?" fehlt":""}" data-act="fehltKlick" data-k="${k.id}" title="${f?esc(fehltText(f))+" – Klick: ändern":"Klick: fehlt heute"}" aria-pressed="${!!f}">${kidLabel(k)}${f?` <span class="small">${f.ganz?"":"½ "}${f.ent?"":"u"}</span>`:""}</button>`}).join("")}</div>
    <p class="small muted" style="margin:0">Tippe ein Kind an, das heute fehlt (ganzer Tag, entschuldigt). Ein zweiter Klick ändert die Angaben. Wer fehlt, zählt heute nicht beim Fokustag.</p></div>`;
 }
@@ -6003,9 +6021,9 @@ function fehltageView(){
 
 const ORGA_VIEWS={
 listen(){
-  const tabs=[["listen","Sammellisten"],["kasse","Klassenkasse"],["fehltage","Fehltage"],["dienste","Dienste"]];UI.lTab=UI.lTab||"listen";
+  const tabs=[["listen","Sammellisten"],["kasse","Klassenkasse"],["fehltage","Fehltage"],["dienste","Dienste"],["lose","Auslosen"]];UI.lTab=UI.lTab||"listen";
   return `<div class="stack"><div class="row" style="align-items:center"><h2 style="margin:0">Listen</h2><span class="spacer"></span><div class="seg">${tabs.map(([k,l])=>`<button class="${UI.lTab===k?"on":""}" data-act="lTab" data-v="${k}">${l}</button>`).join("")}</div></div>
-   ${UI.lTab==="kasse"?kasseView():UI.lTab==="fehltage"?fehltageView():UI.lTab==="dienste"?diensteView():listenView()}</div>`;
+   ${UI.lTab==="kasse"?kasseView():UI.lTab==="fehltage"?fehltageView():UI.lTab==="dienste"?diensteView():UI.lTab==="lose"?losView():listenView()}</div>`;
 },
 stundenplan(){
   const P=S.meta.stundenplan;
@@ -6457,6 +6475,161 @@ const KB_ACT={
   printKbWoche:()=>drucke(kbWocheSeite(UI.kbMo||kbMontag(today()))),
   printKbLz:()=>{if(FAECHER.includes(UI.kbFach))drucke(kbLzSeite(UI.kbFach,UI.kbZ||"sj"))}
 };
+/* ---------- Los-Liste: schnell auslosen (ganze Klasse, Auswahl von Kindern oder eigene Lose) ----------
+   S.lose = [{id, name, kinder (null = ganze Klasse, auch neue Kinder; sonst [Kind-IDs]), eigene [Texte, z. B. Stationen oder Aufgaben],
+              fair (jedes Los erst einmal, dann neue Runde), fehlt (wer heute ganztags fehlt, wird übersprungen),
+              gezogen [Lose der laufenden Runde], verlauf [{t, art:"los"|"gruppen"|"reihe", g:[[Lose]]}]}]
+   Ein Los ist "k:<Kind-ID>" oder "t:<eigener Text>". Der Zufall kommt aus crypto.getRandomValues, gleichverteilt ohne Modulo-Verzerrung. */
+const LOS_VERLAUF=20,LOS_ARTEN=["los","gruppen","reihe"];
+const LOS_STD=()=>({id:neueId(),name:"Ganze Klasse",kinder:null,eigene:[],fair:true,fehlt:true,gezogen:[],verlauf:[]});
+const losOk=x=>typeof x==="string"&&(x.startsWith("k:")?idOk(x.slice(2)):x.startsWith("t:")&&x.length>2&&x.length<=62);
+function loseBereinigen(a){
+  const r=(Array.isArray(a)?a:[]).filter(l=>l&&typeof l==="object").slice(0,50).map(l=>({id:idOk(l.id)?l.id:neueId(),name:textOk(l.name,60).trim()||"Lose",
+    kinder:Array.isArray(l.kinder)?[...new Set(l.kinder.filter(idOk))]:null,
+    eigene:[...new Set((Array.isArray(l.eigene)?l.eigene:[]).map(x=>textOk(x,60).trim()).filter(Boolean))].slice(0,200),
+    fair:l.fair!==false,fehlt:l.fehlt!==false,gezogen:[...new Set((Array.isArray(l.gezogen)?l.gezogen:[]).filter(losOk))],
+    verlauf:(Array.isArray(l.verlauf)?l.verlauf:[]).filter(v=>v&&Number.isFinite(+v.t)&&LOS_ARTEN.includes(v.art)&&Array.isArray(v.g)).slice(-LOS_VERLAUF)
+      .map(v=>({t:+v.t,art:v.art,g:v.g.filter(Array.isArray).slice(0,50).map(g=>g.filter(losOk).slice(0,250))}))}));
+  return r.length?r:[LOS_STD()];
+}
+const losVon=id=>S.lose.find(l=>l.id===id)||null;
+const losKids=l=>l.kinder?sortedKids("alle").filter(k=>l.kinder.includes(k.id)):sortedKids("alle");
+const losPool=l=>[...losKids(l).map(k=>"k:"+k.id),...l.eigene.map(t=>"t:"+t)];
+const losFehlt=(l,x)=>{if(!l.fehlt||!x.startsWith("k:"))return false;const f=fehltagVon(x.slice(2),today());return !!(f&&f.ganz)};
+const losDa=l=>losPool(l).filter(x=>!losFehlt(l,x));
+const losRest=l=>{const da=losDa(l);return l.fair?da.filter(x=>!l.gezogen.includes(x)):da};
+function losName(x){if(x.startsWith("t:"))return x.slice(2);const k=kidById(x.slice(2));return k?(UI.showNames&&k.vorname?kurzName(k):k.id):x.slice(2)}
+/* Kinder, die die Klasse verlassen (oder alle beim Löschen der Schülerdaten), verschwinden aus Auswahl, Runde und Verlauf */
+function losKindWeg(ids){
+  const weg=new Set(ids),raus=x=>!(x.startsWith("k:")&&weg.has(x.slice(2)));
+  for(const l of S.lose){if(l.kinder)l.kinder=l.kinder.filter(k=>!weg.has(k));l.gezogen=l.gezogen.filter(raus);
+    l.verlauf=l.verlauf.map(v=>Object.assign(v,{g:v.g.map(g=>g.filter(raus)).filter(g=>g.length)})).filter(v=>v.g.length)}
+  UI.losErg=null;
+}
+function zufall(n){const a=new Uint32Array(1),grenze=Math.floor(0x100000000/n)*n;do crypto.getRandomValues(a);while(a[0]>=grenze);return a[0]%n}
+function mischen(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=zufall(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+/* n Lose ziehen. Mit „fair“ kommt jedes Los einmal dran; reicht der Rest nicht, beginnt mitten in der Ziehung eine neue Runde (ohne Doppelte) */
+function ziehe(l,n){
+  const da=losDa(l);n=Math.min(Math.max(1,n),da.length);if(!n)return {w:[],neu:false};
+  if(!l.fair)return {w:mischen(da).slice(0,n),neu:false};
+  const w=mischen(losRest(l)).slice(0,n);
+  if(w.length===n){l.gezogen.push(...w);return {w,neu:false}}
+  const dazu=mischen(da.filter(x=>!w.includes(x))).slice(0,n-w.length);l.gezogen=dazu;
+  return {w:w.concat(dazu),neu:true};
+}
+function losGruppen(l,anz){const da=mischen(losDa(l)),g=Array.from({length:Math.min(Math.max(1,anz),da.length)},()=>[]);da.forEach((x,i)=>g[i%g.length].push(x));return g}
+function losMerken(l,art,g,t){l.verlauf.push({t,art,g:g.map(x=>x.slice())});if(l.verlauf.length>LOS_VERLAUF)l.verlauf.splice(0,l.verlauf.length-LOS_VERLAUF)}
+const losZeit=t=>new Date(t).toLocaleString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+const losNamen=a=>a.map(x=>esc(losName(x))).join(", ");
+function losErgHtml(E){
+  if(E.art==="los")return `<div class="losnamen">${E.g[0].map(x=>`<span class="losname">${esc(losName(x))}</span>`).join("")}</div>`;
+  if(E.art==="reihe")return `<ol class="losreihe">${E.g[0].map(x=>`<li>${esc(losName(x))}</li>`).join("")}</ol>`;
+  return `<div class="losgruppen">${E.g.map((g,i)=>`<div class="losgr"><b>Gruppe ${i+1}</b><ul>${g.map(x=>`<li>${esc(losName(x))}</li>`).join("")}</ul></div>`).join("")}</div>`;
+}
+function losView(){
+  if(!losVon(UI.los))UI.los=S.lose[0].id;
+  const l=losVon(UI.los),pool=losPool(l),da=losDa(l),rest=losRest(l),E=UI.losErg&&UI.losErg.id===l.id?UI.losErg:null,G=UI.losG=UI.losG||{art:"anz",n:4};
+  const fehlen=pool.filter(x=>losFehlt(l,x)).length,ks=sortedKids("alle"),jg=[...new Set(ks.map(k=>k.jgst))].sort();UI.losN=UI.losN||1;
+  const seite=`<aside class="lside"><button class="btn small" data-act="losNeu" style="align-self:flex-start">＋ Neue Los-Liste</button>
+   <div class="hlist">${S.lose.map(x=>`<button class="lit${x.id===l.id?" on":""}" data-act="los" data-v="${esc(x.id)}"><span class="ltt">${esc(x.name)}</span><span class="small muted">${losPool(x).length} Lose${x.fair&&x.gezogen.length?` · noch ${losRest(x).length} im Topf`:""}</span></button>`).join("")}</div>
+   <p class="small muted" style="margin:0">Eine Los-Liste ist die ganze Klasse, eine Auswahl von Kindern oder eigene Lose wie Stationen, Aufgaben oder Themen.</p></aside>`;
+  const chip=x=>`<span class="loschip${l.fair&&l.gezogen.includes(x)?" weg":""}${losFehlt(l,x)?" fehlt":""}" title="${losFehlt(l,x)?"fehlt heute":l.fair&&l.gezogen.includes(x)?"in dieser Runde schon gezogen":"noch im Topf"}">${esc(losName(x))}</span>`;
+  return `<div class="lwrap">${seite}<section class="card stack">
+   <div class="row"><h3 style="margin:0">${esc(l.name)}</h3><span class="badge">${pool.length} ${pool.length===1?"Los":"Lose"}</span>${fehlen?`<span class="badge warn">${fehlen} ${fehlen===1?"fehlt":"fehlen"} heute</span>`:""}${l.fair&&da.length?`<span class="badge${rest.length?"":" ok"}">noch ${rest.length} von ${da.length} in dieser Runde</span>`:""}
+    <span class="spacer"></span><button class="btn small" data-act="losGross" data-v="${esc(l.id)}" title="Großanzeige für Beamer oder Tafel" ${da.length?"":"disabled"}>⛶ Großanzeige</button></div>
+   ${da.length?"":`<p class="note warn small" style="margin:0">Im Topf liegt kein Los. Wähle unter „Lose bearbeiten“ Kinder aus oder schreibe eigene Lose.</p>`}
+   <div class="row losbar"><div class="seg" role="group" aria-label="Wie viele Lose ziehen">${[1,2,3,4,5].map(n=>`<button class="${UI.losN===n?"on":""}" data-act="losN" data-v="${n}">${n}</button>`).join("")}</div>
+    <button class="btn primary losgo" data-act="losZiehen" ${da.length?"":"disabled"}>🎲 ${UI.losN===1?"Los ziehen":UI.losN+" Lose ziehen"}</button>
+    <span class="spacer"></span><button class="btn" data-act="losReihe" ${da.length>1?"":"disabled"}>Reihenfolge auslosen</button></div>
+   <div class="row losbar"><span class="small muted">Gruppen bilden:</span><input type="number" min="1" max="30" value="${G.n}" data-chg="losG" data-f="n" aria-label="Anzahl" style="width:4.5rem">
+    <select data-chg="losG" data-f="art" aria-label="Gruppen oder Lose je Gruppe"><option value="anz" ${G.art==="anz"?"selected":""}>Gruppen</option><option value="je" ${G.art==="je"?"selected":""}>je Gruppe</option></select>
+    <button class="btn" data-act="losGruppen" ${da.length>1?"":"disabled"}>Gruppen bilden</button></div>
+   ${E?`<div class="loserg">${losErgHtml(E)}<div class="row small">${E.neu?`<span class="muted">Alle waren einmal dran, eine neue Runde hat begonnen.</span>`:""}<span class="spacer"></span>
+     ${E.art==="los"?`<button class="btn small ghost" data-act="losZurueck" title="Die Ziehung zählt nicht, die Lose kommen zurück in den Topf">Zurück in den Topf</button>`:`<button class="btn small" data-act="losDruck">Drucken</button>`}</div></div>`:""}
+   ${pool.length?`<div class="stack" style="gap:.3rem"><span class="small muted">Im Topf${l.fair?" (durchgestrichen: in dieser Runde schon gezogen)":""}${fehlen?", rot: fehlt heute":""}</span><div class="achips">${pool.map(chip).join("")}</div></div>`:""}
+   ${l.verlauf.length?`<details class="small"><summary>Zuletzt gezogen (${l.verlauf.length})</summary><div class="stack losverlauf">${l.verlauf.slice().reverse().map(v=>`<div><span class="muted">${losZeit(v.t)} · ${v.art==="los"?"gezogen":v.art==="reihe"?"Reihenfolge":v.g.length+" Gruppen"}:</span> ${v.art==="gruppen"?v.g.map((g,i)=>`<b>${i+1}</b> ${losNamen(g)}`).join(" · "):losNamen(v.g[0])}</div>`).join("")}</div>
+     <button class="btn ghost small" data-act="losVerlaufWeg" style="margin-top:.3rem">Verlauf löschen</button></details>`:""}
+   <details class="losedit"${UI.losEdit?" open":""}><summary><b>Lose bearbeiten</b></summary><div class="stack" style="margin-top:.6rem">
+    <label class="f">Name<input type="text" value="${esc(l.name)}" maxlength="60" data-chg="losFeld" data-f="name"></label>
+    <div class="row small"><label class="row" style="gap:.35rem"><input type="radio" name="losK" value="alle" ${l.kinder?"":"checked"} data-chg="losFeld" data-f="kinder"> ganze Klasse (neue Kinder kommen dazu)</label>
+     <label class="row" style="gap:.35rem"><input type="radio" name="losK" value="wahl" ${l.kinder?"checked":""} data-chg="losFeld" data-f="kinder"> nur ausgewählte Kinder</label></div>
+    ${l.kinder?`<div class="row small" style="gap:.3rem">${[["alle","alle"],["keine","keine"],...(jg.length>1?jg.map(j=>["j"+j,"Jgst. "+j]):[])].map(([v,t])=>`<button class="btn small" data-act="losWahl" data-v="${v}">${t}</button>`).join("")}<span class="muted">${l.kinder.length} ausgewählt</span></div>
+     <div class="loswahl">${ks.map(k=>`<label class="row small" style="gap:.35rem"><input type="checkbox" ${l.kinder.includes(k.id)?"checked":""} data-chg="losKind" data-k="${esc(k.id)}"> ${kidLabel(k)}</label>`).join("")||`<span class="muted">Noch keine Kinder.</span>`}</div>`:""}
+    <label class="f">Eigene Lose, eins pro Zeile (z. B. Stationen, Aufgaben, Themen)<textarea rows="4" data-chg="losFeld" data-f="eigene" placeholder="Station 1&#10;Station 2">${esc(l.eigene.join("\n"))}</textarea></label>
+    <label class="row small" style="gap:.35rem"><input type="checkbox" ${l.fair?"checked":""} data-chg="losFeld" data-f="fair"> gerecht ziehen: jedes Los kommt einmal dran, dann beginnt eine neue Runde</label>
+    <label class="row small" style="gap:.35rem"><input type="checkbox" ${l.fehlt?"checked":""} data-chg="losFeld" data-f="fehlt"> Kinder überspringen, die heute fehlen (unter „Wer fehlt heute?“ eingetragen)</label>
+    <div class="row">${l.fair?`<button class="btn small" data-act="losRunde" ${l.gezogen.length?"":"disabled"}>Neue Runde beginnen</button>`:""}<span class="spacer"></span>${S.lose.length>1?`<button class="btn ghost small danger" data-act="losWeg">Los-Liste löschen …</button>`:""}</div></div></details>
+   </section></div>`;
+}
+/* Großanzeige für Beamer oder Tafel: füllt das Fenster, Leertaste oder Enter zieht (der Knopf „Ziehen“ hat den Fokus) */
+let losTimer=null;
+function losGrossHtml(l){
+  const da=losDa(l),rest=losRest(l),E=UI.losErg&&UI.losErg.id===l.id&&UI.losErg.art==="los"?UI.losErg:null,w=E?E.g[0]:[];
+  const namenKnopf=losKids(l).some(k=>k.vorname)?`<button class="btn small" data-act="losNamenAn">${UI.showNames?"Kürzel zeigen":"Vornamen zeigen"}</button>`:"";
+  return `<div class="row losvkopf"><b>${esc(l.name)}</b><span class="small muted">${l.fair?`noch ${rest.length} von ${da.length} im Topf`:`${da.length} Lose`}</span><span class="spacer"></span>${namenKnopf}<button class="btn ghost" data-act="closeDlg">Schließen ✕</button></div>
+   <div class="losbuehne${w.length>1?" mehr":""}" id="losBuehne" data-act="losZiehen" aria-live="polite">${w.length?w.map(x=>`<span class="losname">${esc(losName(x))}</span>`).join(""):`<span class="muted losleer">${da.length?"Leertaste oder Klick zum Ziehen":"Im Topf liegt kein Los."}</span>`}</div>
+   <p class="small muted" style="text-align:center;margin:0;min-height:1.3em">${E&&E.neu?"Alle waren einmal dran, eine neue Runde hat begonnen.":""}</p>
+   <div class="row losvfuss"><div class="seg" role="group" aria-label="Wie viele Lose ziehen">${[1,2,3,4,5].map(n=>`<button class="${UI.losN===n?"on":""}" data-act="losN" data-v="${n}">${n}</button>`).join("")}</div><span class="spacer"></span>
+    ${E?`<button class="btn" data-act="losZurueck">Zurück in den Topf</button>`:""}<button class="btn primary losgo" id="losGo" data-act="losZiehen" ${da.length?"":"disabled"}>🎲 Ziehen</button></div>`;
+}
+function losGrossNeu(){const v=$("#losVoll"),l=losVon(UI.los);if(!v||!l)return;v.innerHTML=losGrossHtml(l);const g=$("#losGo");if(g&&!g.disabled)g.focus()}
+function losGross(id){
+  const l=losVon(id)||losVon(UI.los)||S.lose[0];if(!l)return;UI.los=l.id;UI.losN=UI.losN||1;
+  if(UI.losErg&&UI.losErg.id!==l.id)UI.losErg=null;
+  const d=dialog(`<div class="losvoll" id="losVoll"></div>`);d.classList.add("dlg-los");losGrossNeu();
+  // Ein noch ausstehendes close-Ereignis des vorigen Dialogs (z. B. der Schnellsuche) kommt erst jetzt an: dann ist #dlg wieder offen
+  const zu=()=>{if(d.open)return;d.removeEventListener("close",zu);d.classList.remove("dlg-los");clearInterval(losTimer);losTimer=null;if(S&&UI.tab==="listen"){const y=window.scrollY;render();window.scrollTo(0,y)}};
+  d.addEventListener("close",zu);
+}
+function losNeuZeichnen(){if($("#losVoll"))losGrossNeu();else{const y=window.scrollY;render();window.scrollTo(0,y)}}
+function losErgebnis(l,art,g,neu,vorher){const t=Date.now();UI.losErg={id:l.id,art,g,neu,t,vorher};losMerken(l,art,g,t);save()}
+const LOS_ACT={
+  los:a=>{UI.los=a.dataset.v;render()},
+  losNeu:async()=>{const name=((await askText("Neue Los-Liste","Wie soll die Los-Liste heißen? Zum Beispiel „Lesegruppe“, „Stationen“ oder „Vorlesen“.",""))||"").trim();if(!name)return;
+    const l=Object.assign(LOS_STD(),{name:name.slice(0,60)});S.lose.push(l);UI.los=l.id;UI.losErg=null;UI.losEdit=true;UI.tab="listen";UI.lTab="lose";save();render()},
+  losN:a=>{UI.losN=+a.dataset.v||1;losNeuZeichnen()},
+  losZiehen:()=>{const l=losVon(UI.los);if(!l||losTimer)return;const vorher=l.gezogen.slice(),r=ziehe(l,UI.losN||1);if(!r.w.length)return;
+    losErgebnis(l,"los",[r.w],r.neu,vorher);
+    const b=$("#losBuehne"),pool=losDa(l);
+    if(!b||pool.length<2||matchMedia("(prefers-reduced-motion: reduce)").matches)return losNeuZeichnen();
+    // kurz durchmischen, dann das Ergebnis zeigen (nur Anzeige, gezogen ist schon)
+    let n=0;b.classList.remove("mehr");b.classList.add("misch");
+    losTimer=setInterval(()=>{b.innerHTML=`<span class="losname">${esc(losName(pool[zufall(pool.length)]))}</span>`;if(++n>=14){clearInterval(losTimer);losTimer=null;losGrossNeu()}},70)},
+  losZurueck:()=>{const l=losVon(UI.los),E=UI.losErg;if(!l||!E||E.id!==l.id||E.art!=="los"||losTimer)return;
+    l.gezogen=E.vorher;l.verlauf=l.verlauf.filter(v=>v.t!==E.t);UI.losErg=null;save();losNeuZeichnen()},
+  losGruppen:()=>{const l=losVon(UI.los),G=UI.losG||{art:"anz",n:4};if(!l)return;const da=losDa(l).length;if(da<2)return;
+    const n=Math.min(30,Math.max(1,Math.round(+G.n)||1)),anz=G.art==="je"?Math.max(1,Math.round(da/n)):n;
+    losErgebnis(l,"gruppen",losGruppen(l,anz),false);losNeuZeichnen()},
+  losReihe:()=>{const l=losVon(UI.los);if(!l||losDa(l).length<2)return;losErgebnis(l,"reihe",[mischen(losDa(l))],false);losNeuZeichnen()},
+  losDruck:()=>{const l=losVon(UI.los),E=UI.losErg;if(l&&E&&E.id===l.id)drucke(losSeite(l,E))},
+  losGross:a=>losGross(a.dataset.v),
+  losNamenAn:()=>{UI.showNames=!UI.showNames;losGrossNeu()},
+  losRunde:()=>{const l=losVon(UI.los);if(!l)return;l.gezogen=[];UI.losErg=null;save();render();toast("Neue Runde: Alle Lose sind wieder im Topf.",2500)},
+  losVerlaufWeg:async()=>{const l=losVon(UI.los);if(!l||!await frage(`Den Verlauf von „${l.name}“ löschen? Die laufende Runde bleibt.`,{ja:"Löschen",gefahr:true}))return;l.verlauf=[];UI.losErg=null;save();render()},
+  losWeg:async()=>{const l=losVon(UI.los);if(!l||S.lose.length<2||!await frage(`Die Los-Liste „${l.name}“ löschen?`,{titel:"Los-Liste löschen",ja:"Löschen",gefahr:true}))return;
+    S.lose=S.lose.filter(x=>x!==l);UI.los=null;UI.losErg=null;save();render()},
+  losWahl:a=>{const l=losVon(UI.los);if(!l||!l.kinder)return;const v=a.dataset.v,ks=sortedKids("alle");
+    l.kinder=v==="alle"?ks.map(k=>k.id):v==="keine"?[]:[...new Set([...l.kinder,...ks.filter(k=>"j"+k.jgst===v).map(k=>k.id)])];
+    l.gezogen=l.gezogen.filter(x=>!x.startsWith("k:")||l.kinder.includes(x.slice(2)));UI.losEdit=true;save();const y=window.scrollY;render();window.scrollTo(0,y)}
+};
+const LOS_CHG={
+  losFeld:el=>{const l=losVon(UI.los);if(!l)return;const f=el.dataset.f;
+    if(f==="name")l.name=el.value.trim().slice(0,60)||l.name;
+    else if(f==="kinder")l.kinder=el.value==="wahl"?sortedKids("alle").map(k=>k.id):null;
+    else if(f==="eigene"){l.eigene=[...new Set(el.value.split("\n").map(x=>x.trim().slice(0,60)).filter(Boolean))].slice(0,200);l.gezogen=l.gezogen.filter(x=>!x.startsWith("t:")||l.eigene.includes(x.slice(2)))}
+    else if(f==="fair"||f==="fehlt"){l[f]=el.checked;if(f==="fair")l.gezogen=[]}
+    UI.losEdit=true;UI.losErg=null;save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  losKind:el=>{const l=losVon(UI.los);if(!l||!l.kinder)return;const k=el.dataset.k;
+    l.kinder=el.checked?[...new Set([...l.kinder,k])]:l.kinder.filter(x=>x!==k);if(!el.checked)l.gezogen=l.gezogen.filter(x=>x!=="k:"+k);save();const y=window.scrollY;render();window.scrollTo(0,y)},
+  losG:el=>{UI.losG=UI.losG||{art:"anz",n:4};UI.losG[el.dataset.f]=el.dataset.f==="n"?Math.min(30,Math.max(1,Math.round(+el.value)||1)):el.value}
+};
+document.addEventListener("toggle",e=>{if(e.target.classList&&e.target.classList.contains("losedit"))UI.losEdit=e.target.open},true);
+function losSeite(l,E){
+  const titel=E.art==="gruppen"?"Gruppen":E.art==="reihe"?"Reihenfolge":"Gezogen";
+  return `<section class="page">${kopf("Los-Liste")}<h2>${esc(l.name)}: ${titel}</h2><p style="font-size:9.5pt">Ausgelost am ${losZeit(E.t)} Uhr</p>
+  ${E.art==="reihe"?`<table style="font-size:11pt"><tr><th style="width:12%">Nr.</th><th>Name</th></tr>${E.g[0].map((x,i)=>`<tr><td>${i+1}.</td><td>${esc(losName(x))}</td></tr>`).join("")}</table>`
+   :`<div class="losdruck">${E.g.map((g,i)=>`<div><b>${E.art==="gruppen"?"Gruppe "+(i+1):"Gezogen"}</b><ol>${g.map(x=>`<li>${esc(losName(x))}</li>`).join("")}</ol></div>`).join("")}</div>`}${fuss()}</section>`;
+}
 /* ---------- Dialoge ---------- */
 function dialog(html,breit){const d=$("#dlg");d.style.width=breit?"min(760px, calc(100% - 2rem))":"";d.innerHTML=html;d.showModal();return d}
 function closeDlg(){const d=$("#dlg");if(d.open)d.close()}
@@ -6472,6 +6645,8 @@ function sucheQuellen(){
   q.push({art:"Bereich",text:"Klassenkasse",info:"Listen",los:()=>ACT.lTab({dataset:{v:"kasse"}})});
   q.push({art:"Bereich",text:"Fehltage",info:"Listen",los:()=>ACT.lTab({dataset:{v:"fehltage"}})});
   q.push({art:"Bereich",text:"Dienste",info:"Listen · Tafeldienst usw.",such:"Dienste Dienstplan Tafeldienst Ämter",los:()=>ACT.lTab({dataset:{v:"dienste"}})});
+  q.push({art:"Bereich",text:"Auslosen",info:"Listen · Los-Liste",los:()=>ACT.lTab({dataset:{v:"lose"}})});
+  for(const l of S.lose)q.push({art:"Aktion",text:"Auslosen: "+l.name,info:"Großanzeige",such:"Los ziehen Losliste",los:()=>losGross(l.id)});
   q.push({art:"Aktion",text:"Sicherungskopie herunterladen",los:()=>ACT.backup()});
   q.push({art:"Aktion",text:"Bedienungsanleitung (Word) herunterladen",los:()=>ACT.anleitungLaden()});
   q.push({art:"Aktion",text:"Jetzt sperren",los:()=>lock()});
@@ -6903,7 +7078,7 @@ const ACT = {
   },
   demoEntfernen:async()=>{
     if(!await frage("Die Beispielklasse mit allen Kindern, Bewertungen, Notizen und Proben entfernen? Raster und Textbausteine bleiben. Danach legst du deine eigenen Kinder an.",{titel:"Beispiel entfernen",ja:"Entfernen"}))return;
-    const d=defaultState();S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.proben=[];S.listen=[];S.kasse=kasseBereinigen();S.fehltage=[];S.dienste=DEFAULT_DIENSTE();S.klassenbuch=[];S.meta.stundenplan=DEFAULT_STUNDENPLAN();S.meta.schule=d.meta.schule;S.meta.klasse=d.meta.klasse;S.meta.demo=false;
+    const d=defaultState();S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.proben=[];S.listen=[];S.kasse=kasseBereinigen();S.fehltage=[];S.dienste=DEFAULT_DIENSTE();S.klassenbuch=[];S.lose=loseBereinigen([]);S.meta.stundenplan=DEFAULT_STUNDENPLAN();S.meta.schule=d.meta.schule;S.meta.klasse=d.meta.klasse;S.meta.demo=false;
     protokoll("Beispielklasse entfernt");DV++;save();UI.kind=null;UI.tab="einst";UI.einst="klasse";UI.klasseOffen=true;render();toast("Beispiel entfernt. Lege jetzt deine Kinder an.",5000)},
   datenPruefen:async()=>{const p=datenPruefung(),weg=p.filter(x=>x.weg).reduce((a,x)=>a+x.n,0);
     if(!p.length)return info("Alles in Ordnung: Jede Bewertung, Notiz, jeder Text und jeder Förderplan gehört zu einem Kind und einem Thema.");
@@ -6913,7 +7088,7 @@ const ACT = {
     const sich=await vorherSichern("vor-aufraeumen");datenAufraeumen();save();render();
     toast(`Aufgeräumt.${sich?` Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`:""}`,8000)},
   wipeKids:async()=>{if(!await frage("Alle Kinder, Einträge, Freitexte, Texte und Fehltage löschen? Raster und Textbausteine bleiben. Vorher legt LeDoK automatisch eine Sicherung an.",{ja:"Alle löschen",gefahr:true,tippen:"LÖSCHEN"}))return;
-    const sich=await vorherSichern("vor-loeschen");S.kinder.forEach(k=>{listenKindWeg(k.id);dienstKindWeg(k.id)});S.fehltage=[];S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.meta.demo=false;save();render();
+    const sich=await vorherSichern("vor-loeschen");S.kinder.forEach(k=>{listenKindWeg(k.id);dienstKindWeg(k.id)});losKindWeg(S.kinder.map(k=>k.id));S.fehltage=[];S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.meta.demo=false;save();render();
     if(sich)toast(`Gelöscht. Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`,8000)},
   wipeAll:async()=>{
     // Ohne Passwort erreichbar – deshalb vorher immer die verschlüsselten Daten sichern und „LÖSCHEN“ eintippen lassen
@@ -6932,7 +7107,7 @@ function legCollect(kid){
 }
 /* ---------- Übergabe / Import / CSV ---------- */
 function nextKidId(){let n=1;while(S.kinder.find(k=>k.id==="S"+pad(n)))n++;return "S"+pad(n)}
-function kindLoeschen(id){delete S.foerderplaene[id];listenKindWeg(id);dienstKindWeg(id);S.fehltage=S.fehltage.filter(f=>f.k!==id);S.kinder=S.kinder.filter(k=>k.id!==id);S.eintraege=S.eintraege.filter(e=>e.k!==id);S.notizen=S.notizen.filter(n=>n.k!==id);for(const key of Object.keys(S.texte))if(key.startsWith(id+"|"))delete S.texte[key]}
+function kindLoeschen(id){delete S.foerderplaene[id];listenKindWeg(id);dienstKindWeg(id);losKindWeg([id]);S.fehltage=S.fehltage.filter(f=>f.k!==id);S.kinder=S.kinder.filter(k=>k.id!==id);S.eintraege=S.eintraege.filter(e=>e.k!==id);S.notizen=S.notizen.filter(n=>n.k!==id);for(const key of Object.keys(S.texte))if(key.startsWith(id+"|"))delete S.texte[key]}
 function leastGroup(){const c={};"ABCDE".split("").forEach(g=>c[g]=S.kinder.filter(k=>k.gruppe===g).length);return Object.keys(c).sort((a,b)=>c[a]-c[b])[0]}
 function kindPaket(kid){
   const es=S.eintraege.filter(e=>e.k===kid.id), ids=new Set(es.map(e=>e.c));
@@ -7419,12 +7594,13 @@ function loadDemo(){
   S.listen=[{id:"l1",titel:"Ausflug Tierpark",d:"2026-10-05",betrag:850,frist:"2026-10-23",kasse:true,zu:false,text:DEFAULT_ZAHLTEXT,st,alt:0},
     {id:"l2",titel:"Einverständnis Schwimmunterricht",d:"2026-10-12",betrag:0,frist:"",kasse:false,zu:false,text:DEFAULT_ZAHLTEXT,st:Object.fromEntries(S.kinder.slice(3,21).map(k=>[k.id,{w:"ok",b:0,d:"2026-10-14"}])),alt:0}];
   S.dienste=diensteBereinigen({aemter:DIENST_VORSCHLAG.slice(0,5).map(([name,zeichen,n],i)=>({id:"d"+i,name,zeichen,n})),rhythmus:"woche",start:montagVon(today())});
+  S.lose=loseBereinigen([LOS_STD(),{id:"los2",name:"Lernstationen",kinder:[],eigene:["Station 1: Rechenspiel","Station 2: Lesekiste","Station 3: Schreibwerkstatt","Station 4: Forscherecke"],fair:false,fehlt:true}]);
   S.fehltage=fehltageBereinigen([["S04","2026-09-24"],["S04","2026-09-25"],["S09","2026-10-01",false],["S15","2026-10-08",true,false],["S20","2026-10-13"]]
     .map(([k,d,ganz=true,ent=true])=>({k,d,ganz,ent,std:ganz?0:2,n:"",sj:S.meta.schuljahr,hj:1})));
 }
 
 /* ---------- Start ---------- */
-Object.assign(ACT,ADMIN_ACT,ROLLEN_ACT,ORGA_ACT,DIENST_ACT,KB_ACT);Object.assign(VIEWS,ROLLEN_VIEWS,ORGA_VIEWS,KB_VIEWS);Object.assign(CHG,ORGA_CHG,DIENST_CHG);
+Object.assign(ACT,ADMIN_ACT,ROLLEN_ACT,ORGA_ACT,DIENST_ACT,KB_ACT,LOS_ACT);Object.assign(VIEWS,ROLLEN_VIEWS,ORGA_VIEWS,KB_VIEWS);Object.assign(CHG,ORGA_CHG,DIENST_CHG,LOS_CHG);
 (function init(){
   verTag();
   if(DESKTOP&&DESKTOP.updateSuchen){setTimeout(()=>updateAutoPruefen(),3000);setInterval(()=>updateAutoPruefen(true),3600*1000)}

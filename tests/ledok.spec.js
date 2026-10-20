@@ -1005,6 +1005,105 @@ test("Klassenorganisation: Daten aus Dateien werden bereinigt", async ({ page })
   expect(r.s.B).toEqual(Array(8).fill(""));
 });
 
+test("Los-Liste: gerecht ziehen, Fehlende überspringen, zurücklegen, Gruppen und Großanzeige @handy", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="lose"]');
+  await expect(page.locator(".lwrap h3")).toHaveText("Ganze Klasse");
+  const n = await page.evaluate(() => S.kinder.length);
+  // Ein Kind fehlt heute und wird übersprungen
+  const fehlt = await page.evaluate(() => { const k = sortedKids("alle")[0].id; fehltagSetzen(k, today(), { ganz: true }); render(); return k; });
+  await expect(page.locator(".losbar .badge, .card .badge").filter({ hasText: "fehlt heute" })).toHaveCount(1);
+  // Eine ganze Runde: jedes anwesende Kind genau einmal
+  const gezogen = [];
+  for (let i = 0; i < n - 1; i++) {
+    await page.click('[data-act="losZiehen"]');
+    gezogen.push(await page.evaluate(() => UI.losErg.g[0][0]));
+  }
+  expect(new Set(gezogen).size).toBe(n - 1);
+  expect(gezogen).not.toContain("k:" + fehlt);
+  await expect(page.locator("main .badge.ok")).toContainText("noch 0 von");
+  // Zurück in den Topf: die letzte Ziehung zählt nicht
+  await page.click('[data-act="losZurueck"]');
+  expect(await page.evaluate(() => losRest(S.lose[0]))).toEqual([gezogen[gezogen.length - 1]]);
+  await page.click('[data-act="losZiehen"]');
+  // Mehrere auf einmal über die Rundengrenze: neue Runde, keine Doppelten
+  await page.click('[data-act="losN"][data-v="3"]');
+  await page.click('[data-act="losZiehen"]');
+  const r = await page.evaluate(() => UI.losErg);
+  expect(r.neu).toBe(true);
+  expect(new Set(r.g[0]).size).toBe(3);
+  await expect(page.locator(".loserg")).toContainText("neue Runde");
+  // Gruppen: 4 je Gruppe, alle Anwesenden genau einmal
+  await page.fill('[data-chg="losG"][data-f="n"]', "4");
+  await page.selectOption('[data-chg="losG"][data-f="art"]', "je");
+  await page.click('[data-act="losGruppen"]');
+  const g = await page.evaluate(() => UI.losErg.g);
+  expect(g.length).toBe(Math.round((n - 1) / 4));
+  expect(g.flat().sort()).toEqual(gezogen.slice().sort());
+  expect(Math.max(...g.map((x) => x.length)) - Math.min(...g.map((x) => x.length))).toBeLessThanOrEqual(1);
+  await page.click('[data-act="losDruck"]');
+  await expect(page.locator("#dlg .page")).toContainText("Gruppe 1");
+  await page.keyboard.press("Escape");
+  // Großanzeige: Leertaste zieht, Vornamen lassen sich einblenden
+  await page.click('[data-act="losGross"]');
+  await expect(page.locator("#dlg.dlg-los #losBuehne")).toBeVisible();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.keyboard.press(" ");
+  await expect(page.locator("#losBuehne .losname")).toHaveCount(3);
+  await page.click('#dlg [data-act="losN"][data-v="1"]');
+  await page.click('#dlg [data-act="losNamenAn"]');
+  await page.keyboard.press("Enter");
+  const name = await page.evaluate(() => { const k = kidById(UI.losErg.g[0][0].slice(2)); return kurzName(k); });
+  await expect(page.locator("#losBuehne .losname")).toHaveText(name);
+  await page.click('#dlg [data-act="closeDlg"]');
+  await expect(page.locator("#dlg")).not.toHaveClass(/dlg-los/);
+  // Verlauf bleibt gespeichert
+  expect(await page.evaluate(() => S.lose[0].verlauf.map((v) => v.art))).toEqual(["los", ...Array(n - 2).fill("los"), "los", "gruppen", "los", "los"].slice(-20));
+});
+
+test("Los-Liste: eigene Lose, Auswahl von Kindern, Schnellsuche und Löschen eines Kindes", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="lose"]');
+  await page.click('[data-act="losNeu"]');
+  await askAntwort(page, "Lesegruppe");
+  await expect(page.locator(".lwrap h3")).toHaveText("Lesegruppe");
+  await page.check('input[name="losK"][value="wahl"]');
+  await page.click('[data-act="losWahl"][data-v="keine"]');
+  const [a, b] = await page.evaluate(() => sortedKids("alle").slice(0, 2).map((k) => k.id));
+  await page.check(`[data-chg="losKind"][data-k="${a}"]`);
+  await page.check(`[data-chg="losKind"][data-k="${b}"]`);
+  await page.fill('textarea[data-chg="losFeld"][data-f="eigene"]', "Vorlesen\n\nVorlesen\nTafel wischen");
+  await page.locator('textarea[data-chg="losFeld"][data-f="eigene"]').blur();
+  const l = await page.evaluate(() => losVon(UI.los));
+  expect(l.kinder).toEqual([a, b]);
+  expect(l.eigene).toEqual(["Vorlesen", "Tafel wischen"]);
+  expect(await page.evaluate(() => losPool(losVon(UI.los)))).toEqual([`k:${a}`, `k:${b}`, "t:Vorlesen", "t:Tafel wischen"]);
+  await page.click('[data-act="losReihe"]');
+  await expect(page.locator(".losreihe li")).toHaveCount(4);
+  // Schnellsuche öffnet die Großanzeige dieser Liste
+  await page.keyboard.press("Control+k");
+  await page.fill("#suIn", "auslosen lese");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#dlg.dlg-los")).toContainText("Lesegruppe");
+  await page.click('#dlg [data-act="closeDlg"]');
+  // Verlässt ein Kind die Klasse, verschwindet es aus Auswahl, Runde und Verlauf
+  await page.evaluate((k) => { const l = losVon(UI.los); l.gezogen = ["k:" + k]; kindLoeschen(k); }, a);
+  const nach = await page.evaluate(() => losVon(UI.los));
+  expect(nach.kinder).toEqual([b]);
+  expect(nach.gezogen).toEqual([]);
+  expect(JSON.stringify(nach.verlauf)).not.toContain(a);
+  // Bereinigen: Unsinn fliegt raus, ohne Listen gibt es „Ganze Klasse“
+  const r = await page.evaluate(() => ({
+    leer: loseBereinigen("x"),
+    l: loseBereinigen([{ id: "<x>", name: 3, kinder: ["S01", "<b>"], eigene: ["a", "a", 7, " "], fair: 0, gezogen: ["k:S01", "x:1", "t:"], verlauf: [{ t: 1, art: "los", g: [["k:S01", "<x>"]] }, { t: 2, art: "boom", g: [] }] }]),
+  }));
+  expect(r.leer).toHaveLength(1);
+  expect(r.leer[0]).toMatchObject({ name: "Ganze Klasse", kinder: null, fair: true, fehlt: true });
+  expect(r.l[0]).toMatchObject({ name: "Lose", kinder: ["S01"], eigene: ["a"], fair: true, gezogen: ["k:S01"], verlauf: [{ t: 1, art: "los", g: [["k:S01"]] }] });
+});
+
 test("GiroCode: QR-Code hat Größe, Suchmuster, Taktlinien und Formatinformation an der richtigen Stelle", async ({ page }) => {
   await page.goto(URL);
   const r = await page.evaluate(() => [1, 40, 150, 330].map((n) => {
