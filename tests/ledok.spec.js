@@ -654,3 +654,30 @@ test("Dokumente: Druckbild mit Schriftgröße, Schriftart und Graustufen", async
   await expect.poll(() => page.evaluate(() => window.__druck)).toEqual({ k: "d-sans d-grau", z: "1.25" });
   expect(await page.evaluate(() => druckBereinigen({ groesse: 300, schrift: "<x>", grau: "ja" }))).toEqual({ groesse: 100, schrift: "serif", grau: true });
 });
+
+test("Datenprüfung: findet Reste ohne Kind oder Thema und räumt sie auf", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="daten"]');
+  await page.click('[data-act="datenPruefen"]');
+  await expect(page.locator("dialog[open]")).toContainText("Alles in Ordnung");
+  await page.locator("dialog[open] button[type=submit]").click();
+
+  const vorher = await page.evaluate(() => {
+    const e = S.eintraege[0], k = S.kinder[0].id;
+    S.eintraege.push({ ...e, k: "X99", t: 1 }, { ...e, c: "weg01", t: 2 });
+    S.notizen.push({ k: "X99", ts: new Date().toISOString(), text: "alt" });
+    S.texte["X99|2026/27|1"] = { bericht: "alt" };
+    S.foerderplaene.X99 = fpBereinigen({ X99: { ziele: [] } }).X99;
+    return { e: S.eintraege.length, n: S.notizen.length, k };
+  });
+  await page.click('[data-act="datenPruefen"]');
+  const dlg = page.locator("dialog[open]");
+  await expect(dlg).toContainText("1 Bewertungen zu Kindern");
+  await expect(dlg).toContainText("1 Bewertungen zu Themen");
+  await expect(dlg).toContainText("1 Förderpläne");
+  await page.click("#msgJa");
+  await expect(page.locator(".toast, #toast").first()).toContainText("Aufgeräumt");
+  const nachher = await page.evaluate(() => ({ e: S.eintraege.length, n: S.notizen.length, t: Object.keys(S.texte).some((x) => x.startsWith("X99")), f: "X99" in S.foerderplaene }));
+  expect(nachher).toEqual({ e: vorher.e - 2, n: vorher.n - 1, t: false, f: false });
+});

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xQ3oX+lSD3asRliI/v5HsGBxPbAqNC++vZpHWJERnGY='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-s4yXz1hjf61HfeNSMJ46f4Lst8jfX8eoKD+FCWdxAy8='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -3067,6 +3067,29 @@ function datenBereinigen(st){
   st.raster=st.raster.filter(r=>r&&idOk(r.id));
   return st;
 }
+/* Datenprüfung: Reste, die zu keinem Kind oder Thema mehr gehören. weg=true → lässt sich aufräumen */
+function datenPruefung(){
+  const kids=new Set(S.kinder.map(k=>k.id)),thema=c=>!!knoten(c)||ASV.some(a=>a.id===c),heute=today();
+  const ohneKind=S.eintraege.filter(e=>!kids.has(e.k)),ohneThema=S.eintraege.filter(e=>kids.has(e.k)&&!thema(e.c));
+  const notizen=S.notizen.filter(n=>!kids.has(n.k)),texte=Object.keys(S.texte).filter(key=>!kids.has(key.split("|")[0]));
+  const fp=Object.keys(S.foerderplaene).filter(k=>!kids.has(k)),zukunft=S.eintraege.filter(e=>e.d>heute);
+  return [
+    {n:ohneKind.length,text:"Bewertungen zu Kindern, die es nicht mehr gibt",weg:true},
+    {n:ohneThema.length,text:"Bewertungen zu Themen, die nicht mehr im Raster stehen",weg:true},
+    {n:notizen.length,text:"Notizen zu Kindern, die es nicht mehr gibt",weg:true},
+    {n:texte.length,text:"Berichte und LEG-Texte zu Kindern, die es nicht mehr gibt",weg:true},
+    {n:fp.length,text:"Förderpläne zu Kindern, die es nicht mehr gibt",weg:true},
+    {n:zukunft.length,text:"Bewertungen mit einem Datum in der Zukunft (bitte unter „Kind“ prüfen)",weg:false}
+  ].filter(x=>x.n);
+}
+function datenAufraeumen(){
+  const kids=new Set(S.kinder.map(k=>k.id)),thema=c=>!!knoten(c)||ASV.some(a=>a.id===c);
+  S.eintraege=S.eintraege.filter(e=>kids.has(e.k)&&thema(e.c));
+  S.notizen=S.notizen.filter(n=>kids.has(n.k));
+  for(const key of Object.keys(S.texte))if(!kids.has(key.split("|")[0]))delete S.texte[key];
+  for(const k of Object.keys(S.foerderplaene))if(!kids.has(k))delete S.foerderplaene[k];
+  DV++;
+}
 
 /* ---------- Berechnungen ---------- */
 /* ---- Kompetenzbaum: Struktur und Kaskadierung ---- */
@@ -4271,6 +4294,9 @@ daten(){
   <div class="card"><h3 style="margin-top:0">CSV-Export und -Import (pseudonymisiert)</h3>
    <p class="small">Alle Bewertungen und Freitexte der Klasse als Tabelle – nur mit Kürzeln, ohne Namen. Die Datei ist <b>unverschlüsselt</b>: nur auf dem verschlüsselten Gerät speichern und nach Gebrauch löschen. Beim Import wählst du für jedes Kürzel, ob ein neues Kind angelegt oder ein bestehendes ergänzt wird.</p>
    <div class="row"><button class="btn" data-act="csv">CSV herunterladen</button><button class="btn" data-act="csvImport">CSV importieren …</button></div></div>
+  <div class="card"><h3 style="margin-top:0">Datenprüfung</h3>
+   <p class="small">Sucht nach Resten, die zu keinem Kind oder Thema mehr gehören, etwa nach dem Löschen eines Kindes in einer älteren Version oder nach einem Import. Vor dem Aufräumen legt LeDoK automatisch eine Sicherung an.</p>
+   <div class="row"><button class="btn" data-act="datenPruefen">Daten prüfen</button></div></div>
   <div class="card"><h3 style="margin-top:0">Löschen</h3>
    <p class="small">Schülerdaten löschen behält Raster, Textbausteine und Einstellungen – praktisch, um nach dem Ausprobieren mit der echten Klasse zu starten.</p>
    <div class="row"><button class="btn danger" data-act="wipeKids">Schülerdaten löschen …</button><button class="btn danger" data-act="wipeAll">${profile().length>1?"Dieses LeDoK löschen …":`Alles ${DESKTOP?"auf diesem Rechner":"im Browser"} löschen …`}</button></div></div>
@@ -5922,6 +5948,13 @@ const ACT = {
     if(!await frage("Die Beispielklasse mit allen Kindern, Bewertungen, Notizen und Proben entfernen? Raster und Textbausteine bleiben. Danach legst du deine eigenen Kinder an.",{titel:"Beispiel entfernen",ja:"Entfernen"}))return;
     const d=defaultState();S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.proben=[];S.meta.schule=d.meta.schule;S.meta.klasse=d.meta.klasse;S.meta.demo=false;
     protokoll("Beispielklasse entfernt");DV++;save();UI.kind=null;UI.tab="einst";UI.einst="klasse";UI.klasseOffen=true;render();toast("Beispiel entfernt. Lege jetzt deine Kinder an.",5000)},
+  datenPruefen:async()=>{const p=datenPruefung(),weg=p.filter(x=>x.weg).reduce((a,x)=>a+x.n,0);
+    if(!p.length)return info("Alles in Ordnung: Jede Bewertung, Notiz, jeder Text und jeder Förderplan gehört zu einem Kind und einem Thema.");
+    const liste=p.map(x=>`• ${x.n} ${x.text}`).join("\n");
+    if(!weg)return info("Die Prüfung hat Folgendes gefunden:\n\n"+liste);
+    if(!await frage(`Die Prüfung hat Folgendes gefunden:\n\n${liste}\n\nAufräumen entfernt die ${weg} Reste ohne Kind oder Thema. Vorher legt LeDoK automatisch eine Sicherung an.`,{titel:"Datenprüfung",ja:"Aufräumen"}))return;
+    const sich=await vorherSichern("vor-aufraeumen");datenAufraeumen();save();render();
+    toast(`Aufgeräumt.${sich?` Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`:""}`,8000)},
   wipeKids:async()=>{if(!await frage("Alle Kinder, Einträge, Freitexte und Texte löschen? Raster und Textbausteine bleiben. Vorher legt LeDoK automatisch eine Sicherung an.",{ja:"Alle löschen",gefahr:true,tippen:"LÖSCHEN"}))return;
     const sich=await vorherSichern("vor-loeschen");S.kinder=[];S.eintraege=[];S.notizen=[];S.texte={};S.foerderplaene={};S.meta.demo=false;save();render();
     if(sich)toast(`Gelöscht. Der Stand davor ist als „${esc(sich.name)}“ ${ortText(sich)} gesichert.`,8000)},
