@@ -382,3 +382,98 @@ test("Druck: alle Dokumente der Beispielklasse sind vollständig und ergeben ein
   const seiten = (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) || []).length;
   expect(seiten).toBeGreaterThanOrEqual(kinder * 3 + 3);
 });
+
+test("Dokumente: weitere LEG-Vorlage gilt für gewählte Jahrgangsstufen", async ({ page }) => {
+  await neueKlasse(page);
+  await zuDokumente(page);
+  await page.click('[data-act="legVNeu"]');
+  await page.fill("#atx", "LEG Jgst. 1");
+  await page.click('#atf button[type="submit"]');
+  await expect(page.locator('[aria-label="Vorlage bearbeiten"]')).toHaveValue(/.+/);
+  await page.check('[data-chg="legVJgst"][data-v="1"]');
+  await page.fill('[aria-label="Überschrift Stärken"]', "Das klappt super");
+  await page.locator('[aria-label="Überschrift Stärken"]').blur();
+  const r = await page.evaluate(() => {
+    const k1 = S.kinder.find((k) => +k.jgst === 1), k2 = S.kinder.find((k) => +k.jgst !== 1);
+    return { v: S.meta.legVorlagen.map((v) => ({ name: v.name, jgst: v.jgst })), l1: k1 && legSeite(k1), l2: k2 && legSeite(k2), std: legTitel("stark") };
+  });
+  expect(r.v).toEqual([{ name: "LEG Jgst. 1", jgst: [1] }]);
+  expect(r.std).toBe("Das kannst du schon gut");
+  if (r.l1) expect(r.l1).toContain("Das klappt super");
+  if (r.l2) expect(r.l2).toContain("Das kannst du schon gut");
+
+  // Eine zweite Vorlage, die Jgst. 1 übernimmt, nimmt sie der ersten weg
+  await page.click('[data-act="legVNeu"]');
+  await page.fill("#atx", "Zweite");
+  await page.click('#atf button[type="submit"]');
+  await page.check('[data-chg="legVJgst"][data-v="1"]');
+  expect(await page.evaluate(() => S.meta.legVorlagen.map((v) => v.jgst))).toEqual([[], [1]]);
+
+  await page.click('[data-act="legVWeg"]');
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => S.meta.legVorlagen.map((v) => v.name))).toEqual(["LEG Jgst. 1"]);
+  await expect(page.locator('[aria-label="Vorlage bearbeiten"]')).toHaveValue("std");
+});
+
+test("Dokumente: Vorlage als Datei exportieren und in einem anderen LeDoK einlesen", async ({ page }) => {
+  await neueKlasse(page);
+  const namen = await page.evaluate(() => {
+    S.meta.kopf.anschrift = "Schulstraße 1";
+    S.meta.leg.bloecke.push({ typ: "frei", an: true, titel: "Termin", text: "Am {Datum}", linien: 1, id: neueId() });
+    save();
+    return S.kinder.map((k) => k.vorname).filter(Boolean);
+  });
+  await zuDokumente(page);
+  await page.click('[data-act="vorlageExport"]');
+  await expect(page.locator("#vexKopf")).toBeChecked();
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click('#vexf button[type="submit"]')]);
+  expect(dl.suggestedFilename()).toBe("LeDoK-Vorlage-Standard.ledok-vorlage");
+  const text = require("fs").readFileSync(await dl.path(), "utf8");
+  const d = JSON.parse(text);
+  expect(d.app).toBe("ledok-vorlage");
+  expect(d.kopf.anschrift).toBe("Schulstraße 1");
+  for (const n of namen) expect(text).not.toContain(n);
+  expect(text).not.toContain('"kinder"');
+
+  // Zweites LeDoK ohne Beispielklasse liest die Datei ein
+  await page.evaluate(() => lock());
+  await page.click('[data-act="profilNeu"]');
+  await page.fill("#profilName", "Frau Huber");
+  await page.fill("#pw1", PW + "2");
+  await page.fill("#pw2", PW + "2");
+  await page.setChecked("#demo", false);
+  await page.click('#setupForm button[type="submit"]');
+  await page.click('#setupForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  await zuDokumente(page);
+  const [wahl] = await Promise.all([page.waitForEvent("filechooser"), page.click('[data-act="vorlageImport"]')]);
+  await wahl.setFiles({ name: "v.ledok-vorlage", mimeType: "application/json", buffer: Buffer.from(text) });
+  await expect(page.locator("#dlgMsg")).toContainText("Briefkopf");
+  await page.click("#msgJa");
+  const neu = await page.evaluate(() => ({ v: S.meta.legVorlagen, kopf: S.meta.kopf.anschrift }));
+  expect(neu.kopf).toBe("Schulstraße 1");
+  expect(neu.v).toHaveLength(1);
+  expect(neu.v[0].name).toBe("Standard (2)");
+  expect(neu.v[0].bloecke.some((b) => b.typ === "frei" && b.titel === "Termin")).toBe(true);
+
+  // Fremde oder kaputte Dateien werden abgelehnt
+  const [w2] = await Promise.all([page.waitForEvent("filechooser"), page.click('[data-act="vorlageImport"]')]);
+  await w2.setFiles({ name: "x.ledok-vorlage", mimeType: "application/json", buffer: Buffer.from('{"app":"ledok-fachpaket"}') });
+  await expect(page.locator("dialog[open]")).toContainText("kann nicht gelesen werden");
+  expect(await page.evaluate(() => S.meta.legVorlagen.length)).toBe(1);
+});
+
+test("Dokumente: LEG-Vorlagen aus Dateien werden bereinigt", async ({ page }) => {
+  await neueKlasse(page, { demo: false });
+  const v = await page.evaluate(() => legVorlageBereinigen({ id: "<b>", name: "  ", jgst: [0, 2, 2, "3", 9], bloecke: [{ typ: "frei", titel: 5 }] }));
+  expect(v.id).toMatch(/^[0-9a-f]{16}$/);
+  expect(v.name).toBe("Vorlage");
+  expect(v.jgst).toEqual([2, 3]);
+  expect(v.bloecke[0]).toMatchObject({ typ: "frei", titel: "" });
+  const r = await page.evaluate(() => {
+    try { vorlageEinlesen({ app: "ledok-vorlage", name: "X", leg: { bloecke: [] }, kopf: { logo: "javascript:alert(1)", anschrift: "A" } }); }
+    catch (e) { return "fehler"; }
+    return vorlageEinlesen({ app: "ledok-vorlage", name: "X", leg: { bloecke: [] }, kopf: { logo: "javascript:alert(1)", anschrift: "A" } }).kopf;
+  });
+  expect(r).toMatchObject({ logo: "", anschrift: "A" });
+});
