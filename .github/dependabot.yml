@@ -1,0 +1,24 @@
+# Meldet einmal im Monat neue Versionen der GitHub Actions und der Werkzeuge (Electron, Playwright, electron-builder).
+# Jede Meldung kommt als Pull Request; die Tests laufen darauf automatisch. Große Versionssprünge bei Electron
+# bleiben außen vor, weil sie ein neues Installationspaket und einen Test der Desktop-App brauchen.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      werkzeuge:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: electron
+        update-types: [version-update:semver-major]
