@@ -112,19 +112,26 @@ function updateSuchen() {
   const { eigener, liste } = suchOrdner(), a = aktiv(), k = schluessel();
   gefunden = null;
   if (!k) return { ok: true, gefunden: false, ordner: eigener };
-  let best = null;
+  // Was nicht gelesen oder abgelehnt wurde, meldet „Jetzt suchen“ mit Grund – sonst sieht man nur „nichts gefunden“.
+  let best = null; const probleme = [];
   for (const ordner of liste) {
     let namen = [];
-    try { namen = fs.readdirSync(ordner).filter((f) => /\.ledok-update$/i.test(f)).slice(0, 200); } catch (err) { continue; } // Stick abgezogen, Server nicht erreichbar
+    try { namen = fs.readdirSync(ordner).filter((f) => /\.ledok-update$/i.test(f)).slice(0, 200); }
+    catch (err) {
+      if (err.code === "EPERM" || err.code === "EACCES") probleme.push({ ort: ordner, grund: process.platform === "darwin" ? "Kein Zugriff. Erlaube ihn unter Systemeinstellungen → Datenschutz & Sicherheit → Dateien und Ordner → LeDoK." : "Kein Zugriff auf diesen Ordner." });
+      else if (ordner === eigener) probleme.push({ ort: ordner, grund: "Ordner nicht erreichbar (Stick abgezogen oder Server nicht verbunden?)." });
+      continue;
+    }
     for (const f of namen) {
       const datei = path.join(ordner, f);
       let r;
-      try { r = U.pruefen(leseUpdateDatei(datei), k); } catch (err) { continue; }
-      if (!r.ok || U.vergleiche(r.version, a.version) <= 0) continue;
+      try { r = U.pruefen(leseUpdateDatei(datei), k); } catch (err) { probleme.push({ ort: datei, grund: "Die Datei kann nicht gelesen werden." }); continue; }
+      if (!r.ok) { probleme.push({ ort: datei, grund: r.fehler }); continue; }
+      if (U.vergleiche(r.version, a.version) <= 0) { if (!ordner.startsWith(updateOrdner())) probleme.push({ ort: datei, grund: `Version ${r.version} ist nicht neuer als die installierte ${a.version}.` }); continue; }
       if (!best || U.vergleiche(r.version, best.r.version) > 0) best = { datei, r };
     }
   }
-  if (!best) return { ok: true, gefunden: false, ordner: eigener };
+  if (!best) return { ok: true, gefunden: false, ordner: eigener, durchsucht: liste.filter((o) => !o.startsWith(updateOrdner())), probleme: probleme.slice(0, 10) };
   gefunden = best.datei;
   const { version, datum, hinweise, fp } = best.r;
   const online = path.dirname(best.datei) === path.join(updateOrdner(), "download"); // früher von GitHub geladen

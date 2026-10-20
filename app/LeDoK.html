@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Datenschutz: Diese Datei darf keinerlei Netzwerkverbindungen aufbauen. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-yyKF7w+0qyMsxvkIW3pgS8+5pauR8ktK5wEOnpeOpSQ='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-OUd+83A1FC9uBz4n57RzIX9sMwfy20zhmTEZYwZMtrk='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>LeDoK – Lernentwicklungsdokumentation</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f3d5c'/%3E%3Cpath d='M32 51C25.5 47.6 17.5 47 9 48.6V30.5c8.5-1.6 16.5-1 23 2.6z' fill='%23fff'/%3E%3Cpath d='M32 51c6.5-3.6 14.5-4.2 23-2.4V30.5c-8.5-1.6-16.5-1-23 2.6z' fill='%23dfe8ef'/%3E%3Cpath d='M14 36.2c4.6-.7 9-.4 13 1.1M14 41.2c4.6-.7 9-.4 13 1.1M50 36.2c-4.6-.7-9-.4-13 1.1M50 41.2c-4.6-.7-9-.4-13 1.1' stroke='%239fb3c4' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M32 33V18' stroke='%235bb37c' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M32 24C32 17 26.5 12.5 19.5 13.5 19.5 20.5 25 25 32 24z' fill='%235bb37c'/%3E%3Cpath d='M32 20.5C32 13.5 37.5 9 45 10 45 17 39 21.5 32 20.5z' fill='%238fd16a'/%3E%3C/svg%3E">
 <style>
@@ -5460,10 +5460,14 @@ async function ueberDialog(msg=""){
   const such=$("#updSuchen");if(such)such.onclick=async()=>{
     such.disabled=true;such.textContent="Suche …";
     let r=null;try{r=await DESKTOP.updateSuchen()}catch(e){r={ok:false,fehler:String(e&&e.message||e)}}
+    const lokal=r;
     if(r&&r.ok&&!r.gefunden&&onlineFrei()){try{r=await DESKTOP.updateOnlineSuchen(true)}catch(e){r={ok:false,fehler:String(e&&e.message||e)}}}
     UPD_GEFUNDEN=r&&r.ok&&r.gefunden&&verCmp(r.version,APP_VERSION)>0?r:null;verTag();
     if(UPD_GEFUNDEN){d.close();UPD_GEFRAGT[UPD_GEFUNDEN.version]=true;return updateAnbieten(UPD_GEFUNDEN)}
-    ueberDialog(r&&!r.ok?`<b>Suche nicht möglich:</b> ${esc(r.fehler)}`:`Keine neuere Version gefunden. Installiert ist ${esc(APP_VERSION)}.`)};
+    // Ältere Programme liefern weder durchsuchte Ordner noch Gründe
+    const wo=lokal&&lokal.durchsucht&&lokal.durchsucht.length?`<br><span class="small">Durchsucht: ${lokal.durchsucht.map(o=>`<code>${esc(o)}</code>`).join(", ")}</span>`:"";
+    const pr=lokal&&lokal.probleme&&lokal.probleme.length?`<ul class="small" style="margin:.4rem 0 0">${lokal.probleme.map(p=>`<li><code>${esc(p.ort)}</code>: ${esc(p.grund)}</li>`).join("")}</ul>`:"";
+    ueberDialog(r&&!r.ok?`<b>Suche nicht möglich:</b> ${esc(r.fehler)}${pr}`:`Keine neuere Version gefunden. Installiert ist ${esc(APP_VERSION)}.${wo}${pr}`)};
   const ow=$("#updOrdnerWahl");if(ow)ow.onclick=async()=>{const r=await DESKTOP.updateOrdnerWaehlen();if(r&&r.ok){await updateAutoPruefen();ueberDialog(`Update-Ordner gespeichert: <code>${esc(r.ordner)}</code>`)}};
   const ox=$("#updOrdnerWeg");if(ox)ox.onclick=async()=>{await DESKTOP.updateOrdnerEntfernen();ueberDialog("Update-Ordner entfernt. LeDoK sucht jetzt nur noch im Download-Ordner.")};
 }
