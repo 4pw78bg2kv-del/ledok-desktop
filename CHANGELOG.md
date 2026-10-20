@@ -9,6 +9,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+## 1.1.0 (Beta)
+
 **Neu**
 - Unter **Einstellungen → Daten & Sicherheit** gibt es die **Datenprüfung**. Sie findet Bewertungen, Notizen, Texte und Förderpläne, die zu keinem Kind oder Thema mehr gehören, und räumt sie auf Wunsch auf. Vorher legt LeDoK automatisch eine Sicherung an.
 - Unter **Einstellungen → Dokumente → Druckbild** stellst du für alle Ausdrucke die **Schriftgröße** (klein bis sehr groß) und die **Schriftart** (mit oder ohne Serifen) ein. Auf Wunsch druckt LeDoK Logo und Diagramme in **Graustufen**, das spart Farbe am Schulkopierer.
