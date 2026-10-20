@@ -1,6 +1,6 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 20.10.2026 · `main` nach PR #25 · App-Version 1.1.0 Beta (mit unveröffentlichten Änderungen)
+Stand: 20.10.2026 · `main` nach PR #28 · App-Version 1.1.1 Beta (mit unveröffentlichten Änderungen)
 
 Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung ([`docs/LeDoK-Bedienungsanleitung.docx`](LeDoK-Bedienungsanleitung.docx), auch in der App unter Hilfe), Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
@@ -409,7 +409,7 @@ Bei Änderungen an `desktop/`, `build/`, `package.json`/`package-lock.json` (Ele
 
 ### Automatische Suche
 
-- **Ordner (immer):** Beim Start, nach der Anmeldung (`startApp`) und stündlich ruft die App `updateSuchen` auf. Der Hauptprozess liest `*.ledok-update` (höchstens 200 Dateien, je ≤ 30 MB) aus dem Update-Ordner, dem Download-Ordner und `userData/update/download`, prüft jede mit `pruefen` und merkt sich den Pfad der neuesten gültigen Datei, die neuer als die aktive Version ist. Die App bekommt nur Version, Datum, Hinweise und Dateiname, nie einen Pfad zum Zurückgeben.
+- **Ordner (immer):** Beim Start, nach der Anmeldung (`startApp`) und stündlich ruft die App `updateSuchen` auf. Der Hauptprozess liest `*.ledok-update` (höchstens 200 Dateien, je ≤ 30 MB) aus dem Update-Ordner, dem Download-Ordner und `userData/update/download`, prüft jede mit `pruefen` und merkt sich den Pfad der neuesten gültigen Datei, die neuer als die aktive Version ist. Die App bekommt nur Version, Datum, Hinweise und Dateiname, nie einen Pfad zum Zurückgeben. Ohne Fund liefert `updateSuchen` zusätzlich `durchsucht` (die Ordner außer dem eigenen `userData/update`) und `probleme` (höchstens 10 `{ort, grund}`: kein Zugriff bei `EPERM`/`EACCES`, auf dem Mac mit Hinweis auf Datenschutz & Sicherheit; eigener Update-Ordner nicht erreichbar; Datei unlesbar, Prüfung fehlgeschlagen oder nicht neuer). „Jetzt suchen“ zeigt beides im Versionsdialog; ältere Hüllen ohne diese Felder verhalten sich wie zuvor.
 - **Online (nur mit `schulKey.online`):** `updateOnlineSuchen` läuft im Hauptprozess in der Sitzung `ledok-update-online` (ohne Cache und Cookies). `onBeforeRequest` erlaubt dort nur HTTPS zu `api.github.com`, `github.com`, `objects.githubusercontent.com` und `release-assets.githubusercontent.com`. Abgefragt wird `/repos/4pw78bg2kv-del/ledok-desktop/releases?per_page=10`; Entwürfe und Vorabversionen zählen nicht. Gesucht wird ein Anhang `LeDoK-x.y.z.ledok-update`, der neuer ist; erst dann wird er geladen, mit `pruefen` geprüft und nach `userData/update/download` gelegt. Automatisch höchstens alle 12 Stunden (`zuletztOnline` in `update-suche.json`), „Jetzt suchen“ fragt sofort. Die Standardsitzung bleibt vollständig gesperrt, die CSP der App unverändert.
 - **Bestätigung:** Ist ein Update gefunden und jemand angemeldet, fragt `updateAnbieten` „Update x.y.z verfügbar – jetzt einspielen?“ (einmal je Version und Sitzung; ist gerade ein anderer Dialog offen, 30 s später). Unten rechts steht bis dahin „Update x.y.z verfügbar“. „Jetzt aktualisieren“ ruft `updateGefundenInstallieren`, das die Datei erneut liest und über `installieren()` denselben Weg wie `updateInstallieren` nimmt.
 - **Nachträglich einschalten:** Liest die Lehrkraft einen Schulschlüssel mit neu eingeschaltetem `online` ein, steht das im Protokoll und die Online-Suche startet sofort.
@@ -439,7 +439,7 @@ npm run dist:win | dist:mac | dist:linux
 **Installer:**
 
 - Windows: NSIS, x64, pro Benutzer (`perMachine: false`), Zielordner wählbar, Deutsch, Desktop-Verknüpfung, `deleteAppDataOnUninstall: false`. Datei `LeDoK-Setup-x.y.z.exe`.
-- macOS: DMG universal, ad-hoc signiert (`identity: "-"`), nicht notarisiert. Datei `LeDoK-x.y.z-mac.dmg`.
+- macOS: DMG universal, ad-hoc signiert (`identity: "-"`), nicht notarisiert. Datei `LeDoK-x.y.z-mac.dmg`. `build.mac.extendInfo` trägt Begründungen für Downloads, Dokumente, Wechseldatenträger und Netzlaufwerke ein (`NS…UsageDescription`), damit macOS beim ersten Zugriff um Erlaubnis fragt.
 - `appId` `com.deep-moments.ledok`.
 - Build-Jobs haben nur Leserechte; nur der Release-Job darf schreiben. Alle Actions sind auf Commit-SHAs festgelegt.
 
