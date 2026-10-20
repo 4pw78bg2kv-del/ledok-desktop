@@ -1320,3 +1320,99 @@ test("Klassenbuch: Daten aus Dateien werden bereinigt und Kürzel im Raster wand
   });
   expect(lz).toEqual(["M-1.1.1x"]);
 });
+
+test("Klassenrat: Briefkasten, Sitzung mit Rollen, Abstimmung, Beschluss und Protokoll @handy", async ({ page }) => {
+  await neueKlasse(page);
+  await page.evaluate(() => { S.klassenrat = krLeer(); save(); });
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="klassenrat"]');
+  await page.click('[data-act="krTab"][data-v="anliegen"]');
+  // Zwei Anliegen in den Briefkasten, eins davon ein Lob
+  await page.click('[data-act="krArt"][data-v="lob"]');
+  await page.fill("#krText", "Ich lobe Ben fürs Helfen.");
+  await page.press("#krText", "Enter");
+  await page.click('[data-act="krArt"][data-v="problem"]');
+  await page.fill("#krText", "In der Garderobe wird gedrängelt.");
+  await page.selectOption("#krVon", "S02");
+  await page.click('[data-act="krNeu"]');
+  expect(await page.evaluate(() => krBriefkasten().map((a) => [a.art, a.von]))).toEqual([["lob", ""], ["problem", "S02"]]);
+  // Neue Sitzung übernimmt den Briefkasten und verteilt vier Rollen an verschiedene Kinder
+  await page.click('[data-act="krTab"][data-v="sitzung"]');
+  await page.click('[data-act="krSitzungNeu"]');
+  const s = await page.evaluate(() => S.klassenrat.sitzungen[0]);
+  expect(s.nr).toBe(1);
+  expect(new Set(Object.values(s.rollen)).size).toBe(4);
+  expect(await page.evaluate(() => krBriefkasten().length)).toBe(0);
+  await expect(page.locator(".krpunkt")).toContainText("Garderobe");
+  // Die nächste Verteilung macht reihum weiter
+  const r2 = await page.evaluate(() => krRollenVerteilen(today()));
+  expect(Object.values(r2).some((k) => Object.values(s.rollen).includes(k))).toBe(false);
+  // Abstimmen mit Vorschlägen aus der Besprechung
+  await page.fill('.krpunkt textarea[data-f="notiz"]', "Ideen:\n- Nacheinander gehen\n- Zwei Gruppen");
+  await page.locator('.krpunkt textarea[data-f="notiz"]').blur();
+  await page.click('.krpunkt [data-act="krUNeu"]');
+  await expect(page.locator("#kruOpt")).toHaveValue("Nacheinander gehen\nZwei Gruppen");
+  await page.click('#kruf button[type="submit"]');
+  await page.click('[data-act="krZahl"][data-i="1"][data-d="1"]');
+  await page.click('[data-act="krGross"]');
+  await expect(page.locator("#krGross")).toContainText("Zwei Gruppen");
+  await page.click('#krGross [data-act="krZahl"][data-i="1"][data-d="1"]');
+  await page.click('#krGross [data-act="krZahl"][data-i="0"][data-d="1"]');
+  await expect(page.locator("#krGross .krgm")).toContainText("2 von 3");
+  await page.click('#krGross [data-act="closeDlg"]');
+  await page.click('[data-act="krUBeschluss"]');
+  expect(await page.evaluate(() => S.klassenrat.anliegen.find((a) => a.art === "problem").beschluss)).toBe("Zwei Gruppen");
+  // Abschließen und Protokoll drucken
+  await page.click('[data-act="krGoS"]');
+  await page.click('[data-act="krBlitz"][data-i="0"][data-d="1"]');
+  await page.click('[data-act="krZu"]');
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => S.klassenrat.sitzungen[0].zu)).toBe(true);
+  await page.click('[data-act="krPrint"]');
+  const prev = page.locator(".druckprev");
+  await expect(prev).toContainText("Protokoll Klassenrat 1");
+  await expect(prev).toContainText("Zwei Gruppen");
+  await expect(prev).toContainText("Ich lobe Ben");
+  await expect(prev).not.toContainText("undefined");
+  await page.click('#dlg [data-act="closeDlg"]');
+  // Im Rückblick der nächsten Sitzung steht der Beschluss
+  await page.click('[data-act="krSitzungNeu"]');
+  await expect(page.locator(".krh", { hasText: "Rückblick" }).locator("xpath=following-sibling::*[1]")).toContainText("Zwei Gruppen");
+});
+
+test("Klassenrat: namentliche Abstimmung, Kind löschen und Daten aus Dateien", async ({ page }) => {
+  await neueKlasse(page);
+  const r = await page.evaluate(() => {
+    const u = { id: "u1", d: today(), frage: "Spiel?", art: "wahl", opt: ["A", "B"], modus: "namen", zahl: [0, 0], namen: { S01: 0, S02: 1, S03: 1 }, s: "", a: "" };
+    S.klassenrat.umfragen.push(u);
+    const vorher = krErgebnis(u).n;
+    kindLoeschen("S02");
+    const k = klassenratBereinigen({ anliegen: [{ id: "x", art: "böse", text: "a" }, { id: "y", art: "lob", text: "<b>Hallo</b>", von: 'S"1', s: "gibtsnicht" }],
+      sitzungen: [{ id: "s", nr: "x", d: "kaputt", rollen: { leitung: "S01", foo: "S02" }, blitz: [1, -3, "9", 500] }],
+      umfragen: [{ opt: ["nur eins"], zahl: [5, 7, 9], namen: { S01: 4, S02: 0 }, modus: "egal" }] });
+    const demo = krProtokollSeite(krS("kr1")) + krAushangSeite() + krStimmzettelSeiten(krU("ku2"));
+    return { vorher, nachher: krErgebnis(u).n, namen: u.namen, k, demo };
+  });
+  expect(r.nachher).toEqual(r.vorher);
+  expect(r.demo).not.toMatch(/undefined|NaN|\[object /);
+  expect(r.demo).toContain("Ballplan nach Wochentagen");
+  expect(r.namen).toEqual({ S01: 0, S03: 1 });
+  expect(r.k.anliegen).toHaveLength(1);
+  expect(r.k.anliegen[0]).toMatchObject({ art: "lob", von: "", s: "" });
+  expect(r.k.sitzungen[0].rollen).toEqual({ leitung: "S01", protokoll: "", zeit: "", regel: "" });
+  expect(r.k.sitzungen[0].blitz).toEqual([1, 0, 9, 99]);
+  expect(r.k.umfragen[0]).toMatchObject({ opt: ["nur eins", ""], zahl: [5, 7], namen: { S02: 0 }, modus: "hand" });
+  // Namentlich abstimmen in der Oberfläche
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="klassenrat"]');
+  await page.click('[data-act="krTab"][data-v="umfragen"]');
+  await page.click('[data-act="krUmfrage"][data-v="u1"]');
+  await page.click('[data-act="krStimme"][data-k="S04"][data-i="0"]');
+  expect(await page.evaluate(() => krErgebnis(krU("u1")).n)).toEqual([2, 2]);
+  await expect(page.locator("main")).toContainText("Gleichstand");
+  // Stimmzettel und Briefkasten-Zettel lassen sich drucken
+  await page.click('[data-act="krModus"][data-v="zettel"]');
+  await expect(page.locator(".toast")).toContainText("zurück");
+  await page.click('[data-act="krZettel"]');
+  await expect(page.locator(".druckprev .krz").first()).toContainText("Ich wünsche mir");
+});
