@@ -1446,6 +1446,38 @@ test("Ferien und Feiertage: Kalender für Bayern, eigene freie Tage und Druck @h
   expect(d).toEqual([true, 5, 7, 7, false]);
 });
 
+test("LEG-Planer: höchstens n Termine pro Tag, Rest an den nächsten Schultagen", async ({ page }) => {
+  await neueKlasse(page);
+  // Planung ohne Oberfläche: Freitag 30.10.2026, danach Herbstferien bis 6.11. → weiter am Montag 9.11.
+  const p = await page.evaluate(() => legTerminPlan(7, { tag: "2026-10-30", start: 14 * 60, dauer: 20, pause: 10, max: 3, bis: "18:00" }).liste);
+  expect(p.map((x) => x.d)).toEqual(["2026-10-30", "2026-10-30", "2026-10-30", "2026-11-09", "2026-11-09", "2026-11-09", "2026-11-10"]);
+  expect(p.map((x) => x.z)).toEqual(["14:00", "14:30", "15:00", "14:00", "14:30", "15:00", "14:00"]);
+  // Späteste Uhrzeit begrenzt ebenfalls, auch ohne Höchstzahl
+  const q = await page.evaluate(() => legTerminPlan(4, { tag: "2026-11-10", start: 17 * 60, dauer: 20, pause: 5, max: 0, bis: "18:00" }).liste);
+  expect(q).toEqual([{ d: "2026-11-10", z: "17:00" }, { d: "2026-11-10", z: "17:25" }, { d: "2026-11-11", z: "17:00" }, { d: "2026-11-11", z: "17:25" }]);
+  expect(await page.evaluate(() => legTerminPlan(1, { tag: "2026-11-10", start: 17 * 60 + 50, dauer: 20, pause: 0, max: 0, bis: "18:00" }).fehler)).toBeTruthy();
+
+  await page.click('nav.tabs [data-v="export"]');
+  const n = await page.evaluate(() => sortedKids(UI.expJgst).length);
+  await page.click('[data-act="terminFolge"]');
+  await expect(page.locator("#tfMax")).toHaveValue("8");
+  await expect(page.locator("#tfBis")).toHaveValue("18:00");
+  await page.fill("#tfD", "2026-11-10");
+  await page.fill("#tfMax", "2");
+  await expect(page.locator("#tfPlan")).toContainText(`an ${Math.ceil(n / 2)} Tag`);
+  await page.click('#tff button[type="submit"]');
+  const t = await page.evaluate(() => sortedKids(UI.expJgst).map((k) => terminVon(k)));
+  expect(t.every(Boolean)).toBe(true);
+  const proTag = {};
+  for (const x of t) proTag[x.d] = (proTag[x.d] || 0) + 1;
+  expect(Math.max(...Object.values(proTag))).toBeLessThanOrEqual(2);
+  expect(await page.evaluate((tage) => tage.every((d) => !schulfrei(d)), Object.keys(proTag))).toBe(true);
+  expect(await page.evaluate(() => S.meta.legTermin.max)).toBe(2);
+  // Beim nächsten Öffnen stehen die zuletzt gewählten Werte im Fenster
+  await page.click('[data-act="terminFolge"]');
+  await expect(page.locator("#tfMax")).toHaveValue("2");
+});
+
 test("Ferien: „Heute“, Klassenbuch und Dienste an einem Ferientag", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-11-03T09:00:00")); // Herbstferien
   await neueKlasse(page);
