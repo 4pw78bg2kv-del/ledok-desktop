@@ -1187,6 +1187,13 @@ test("Dienste: Plan rolliert fair, „Heute“ nennt Vertretungen und Tausch gil
   expect(r.doppelt).toBe(false);
   expect([r.jetzt, r.naechste, r.wochenende]).toEqual([0, 1, 0]);
   expect(r.zeit).toEqual({ von: "2026-10-26", bis: "2026-10-30" });
+  // Ferien: die Herbstferien zählen nicht, danach kommt die nächste Runde dran
+  expect(await page.evaluate(() => [S.dienste.ferien, dienstRunde("2026-11-03"), dienstRunde("2026-11-10"), rundeZeit(2)]))
+    .toEqual([true, 2, 2, { von: "2026-11-09", bis: "2026-11-13" }]);
+  await page.uncheck('[data-chg="dFerien"]');
+  expect(await page.evaluate(() => [dienstRunde(today()), dienstRunde("2026-11-10")])).toEqual([0, 3]);
+  await page.check('[data-chg="dFerien"]');
+  expect(await page.evaluate(() => [dienstRunde(today()), dienstRunde("2026-11-10")])).toEqual([0, 2]);
 
   // Tausch: nur in dieser Runde, das andere Kind übernimmt den freien Platz
   const vorher = await page.evaluate(() => dienstPlan(0).map((x) => x.k.id));
@@ -1246,6 +1253,109 @@ test("Dienste: Daten aus Dateien werden bereinigt", async ({ page }) => {
   expect(r.aemter[2].id).not.toContain("|");
   expect(r).toMatchObject({ rhythmus: "woche", start: "", versatz: 3, reihe: ["S01"], aus: [], tausch: { 2: { "a1|0": "S03" } } });
   expect(Object.keys(r.tausch)).toEqual(["2"]);
+});
+
+test("Ferien und Feiertage: Kalender für Bayern, eigene freie Tage und Druck @handy", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00")); // ein Dienstag
+  await neueKlasse(page);
+  const r = await page.evaluate(() => ({
+    ostern: [2024, 2025, 2026, 2027, 2028, 2029, 2030].map(osterSonntag),
+    sortiert: FERIEN_BY.every((f, i) => f.von <= f.bis && (!i || FERIEN_BY[i - 1].bis < f.von)),
+    tage: ["2026-11-03", "2026-11-18", "2026-12-08", "2027-05-06", "2027-01-06", "2026-10-24", "2026-10-20"].map((d) => [kalTag(d).name, schulfrei(d)]),
+    sj: ["2024/25", "2025/26", "2026/27", "2027/28", "2028/29", "2029/30", "2030/31"].map((sj) => { const k = kalSchuljahr(sj); return [k.erster, k.letzter, k.bekannt, k.eintraege.filter((e) => e.art === "ferien").length]; }),
+    schultage: kalSchuljahr("2026/27").schultage,
+  }));
+  expect(r.ostern).toEqual(["2024-03-31", "2025-04-20", "2026-04-05", "2027-03-28", "2028-04-16", "2029-04-01", "2030-04-21"]);
+  expect(r.sortiert).toBe(true);
+  expect(r.tage).toEqual([["Herbstferien", true], ["Buß- und Bettag", true], ["", false], ["Christi Himmelfahrt", true], ["Heilige Drei Könige · Weihnachtsferien", true], ["", true], ["", false]]);
+  expect(r.sj[2]).toEqual(["2026-09-15", "2027-07-30", true, 6]);
+  expect(r.sj.slice(0, 6).every((x) => x[2] && x[3] === 6)).toBe(true);
+  expect(r.sj[6][2]).toBe(false); // ab 2030/31 noch nicht hinterlegt
+  expect(r.schultage).toBe(185);
+
+  // Heute: Countdown bis zu den Herbstferien
+  await expect(page.locator("#ferienHeute")).toContainText("Herbstferien");
+  await expect(page.locator("#ferienHeute")).toContainText("noch 9 Schultage mit heute");
+  await expect(page.locator("#ferienHeute")).toContainText("Buß- und Bettag");
+
+  // Einstellungen → Ferien & Feiertage: Übersicht, Monate, eigener freier Tag
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="ferien"]');
+  await expect(page.locator(".kaltab")).toContainText("Weihnachtsferien");
+  await expect(page.locator(".kalm")).toHaveCount(12);
+  await expect(page.locator(".kalm td.hz")).toHaveText("20");
+  await page.fill("#kfVon", "2026-10-23");
+  await page.fill("#kfName", "Pädagogischer Tag");
+  await page.click('[data-act="kalFreiNeu"]');
+  expect(await page.evaluate(() => [kalTag("2026-10-23").eigen, kalSchuljahr("2026/27").schultage, S.meta.freieTage.length])).toEqual(["Pädagogischer Tag", 184, 1]);
+  await expect(page.locator(".kaltab")).toContainText("freier Tag der Schule");
+  await page.click('[data-act="printKalender"]');
+  await expect(page.locator("#dlg .page")).toContainText("Ferien und Feiertage 2026/27");
+  await expect(page.locator("#dlg .page")).toContainText("Pädagogischer Tag");
+  await expect(page.locator("#dlg .page .kalm")).toHaveCount(12);
+  await page.keyboard.press("Escape");
+  // eigene freie Tage bleiben nach dem Neuladen erhalten und lassen sich löschen
+  await page.locator('.kaltab [data-act="kalFreiWeg"]').click();
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => S.meta.freieTage)).toEqual([]);
+  const b = await page.evaluate(() => freieTageBereinigen([null, { von: "2026-12-01", bis: "2026-11-01", name: "<b>x</b>".repeat(20) }, { von: "morgen" }, { id: "f1", von: "2027-03-01", bis: "2027-03-02", name: "" }]));
+  expect(b).toHaveLength(2);
+  expect(b[0]).toMatchObject({ von: "2026-12-01", bis: "2026-12-01" });
+  expect(b[0].name).toHaveLength(60);
+  expect(b[1]).toEqual({ id: "f1", von: "2027-03-01", bis: "2027-03-02", name: "schulfrei" });
+
+  // Fehltage über mehrere Tage: nur Schultage, die Herbstferien zählen nicht
+  await page.click('nav.tabs [data-v="listen"]');
+  await page.click('[data-act="lTab"][data-v="fehltage"]');
+  const k = await page.evaluate(() => sortedKids("alle")[0].id);
+  await page.selectOption("#fK", k);
+  await page.fill("#fD", "2026-10-29");
+  await page.fill("#fB", "2026-11-10");
+  await page.click('[data-act="fehltagNeu"]');
+  await expect(page.locator("dialog[open]")).toContainText("4 Schultage");
+  await page.click("#msgJa");
+  expect(await page.evaluate((k) => S.fehltage.filter((f) => f.k === k && f.d >= "2026-10-29" && f.d <= "2026-11-10").map((f) => f.d), k))
+    .toEqual(["2026-10-29", "2026-10-30", "2026-11-09", "2026-11-10"]);
+  await page.fill("#fD", "2026-11-04");
+  await page.click('[data-act="fehltagNeu"]');
+  await expect(page.locator("dialog[open]")).toContainText("schulfrei (Herbstferien)");
+  await page.click("#msgNein");
+
+  // LEG-Planer: Vorschlag ist der nächste Schultag, Warnung bei schulfreiem Termin
+  await page.click('nav.tabs [data-v="export"]');
+  await page.click('[data-act="terminFolge"]');
+  await expect(page.locator("#tfD")).toHaveValue("2026-10-27");
+  await page.fill("#tfD", "2026-11-18");
+  await expect(page.locator("#tfFrei")).toContainText("Buß- und Bettag");
+  await page.click('#tff button[type="submit"]');
+  await expect(page.locator(".kalhin").first()).toContainText("Buß- und Bettag");
+
+  // Diensteplan aus der Zeit vor dem Ferienkalender: die laufende Runde bleibt gleich
+  const d = await page.evaluate(() => { const D = diensteBereinigen({ aemter: [{ id: "a1", name: "Tafel", n: 1 }], rhythmus: "woche", start: "2026-09-14", versatz: 0 });
+    return [D.ferien, dienstRunde("2026-10-20", D), dienstRunde("2026-11-03", D), dienstRunde("2026-11-09", D), diensteBereinigen({ ferien: false }).ferien]; });
+  expect(d).toEqual([true, 5, 7, 7, false]);
+});
+
+test("Ferien: „Heute“, Klassenbuch und Dienste an einem Ferientag", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-11-03T09:00:00")); // Herbstferien
+  await neueKlasse(page);
+  await expect(page.locator("#ferienHeute")).toContainText("Heute ist schulfrei: Herbstferien");
+  await expect(page.locator("#ferienHeute")).toContainText("Montag, 09.11.2026");
+  await expect(page.locator("#anwesenheit")).toHaveCount(0);
+  await expect(page.locator("#klassenbuchHeute")).toHaveCount(0);
+  await expect(page.locator("#diensteHeute")).toHaveCount(0);
+  await expect(page.locator(".hcard", { hasText: "Fokustag" }).first()).toContainText("kein Schultag");
+  await page.click('nav.tabs [data-v="klassenbuch"]');
+  await expect(page.locator(".kbtag.frei")).toHaveCount(5);
+  await expect(page.locator(".kbtag").first()).toContainText("Herbstferien");
+  await expect(page.locator(".kbrow")).toHaveCount(0);
+  await page.click('[data-act="printKbWoche"]');
+  await expect(page.locator("#dlg .page")).toContainText("schulfrei: Herbstferien");
+  await page.keyboard.press("Escape");
+  await page.click('[data-act="kbWoche"][data-v="7"]');
+  await expect(page.locator(".kbtag.frei")).toHaveCount(0);
+  await page.click('nav.tabs [data-v="erfassen"]');
+  await expect(page.locator(".badge", { hasText: "Herbstferien" })).toBeVisible();
 });
 
 test("Klassenbuch: Stunde mit Lernzielen eintragen, Lehrplanbezug ansehen und drucken @handy", async ({ page }) => {

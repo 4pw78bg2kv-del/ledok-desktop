@@ -9,6 +9,15 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- **Ferien und Feiertage:** LeDoK kennt jetzt die Schulferien in Bayern bis zu den Sommerferien 2030 (nach der Ferienordnung des Kultusministeriums) und alle Feiertage, auch ohne Internet. Unter **Einstellungen → Ferien & Feiertage** siehst du für jedes Schuljahr den ersten und letzten Schultag, die Zahl der Schultage, alle Ferien und freien Tage und einen Kalender von September bis August. **Drucken** gibt den Ferienkalender auf einer Seite aus.
+- Unter **Freie Tage deiner Schule** trägst du zusätzliche schulfreie Tage ein, zum Beispiel einen pädagogischen Tag. Sie zählen in LeDoK wie Ferien.
+- Auf **Heute** zeigt die Karte **Ferien**, wie viele Schultage es noch bis zu den nächsten Ferien sind und welche Feiertage bald kommen. In den Ferien und an Feiertagen steht dort „Heute ist schulfrei“ mit dem nächsten Schultag, und die Karten für Fehltage, Stundenplan, Dienste und Klassenbuch sowie der Tagesfortschritt entfallen.
+- **Dienste** pausieren in den Ferien und an Feiertagen: Nach den Ferien machen die Kinder weiter, die als Nächstes dran wären. Du kannst das unter **Listen → Dienste** abschalten. Bestehende Pläne behalten die laufende Runde.
+- Im **Klassenbuch** stehen an schulfreien Tagen keine Stunden aus dem Stundenplan; neben dem Datum steht, warum frei ist, auch in der gedruckten Woche.
+- Unter **Listen → Fehltage** trägst du mit **bis** mehrere Tage auf einmal ein. LeDoK zählt dabei nur Schultage, ohne Wochenenden, Ferien und Feiertage.
+- Im **LEG-Planer**, bei der Frist einer **Sammelliste** und beim Datum in **Erfassen** weist LeDoK auf schulfreie Tage hin. „Termine fortlaufend vergeben“ schlägt einen Schultag vor.
+
 ## 1.1.3 (Beta)
 
 **Neu**
