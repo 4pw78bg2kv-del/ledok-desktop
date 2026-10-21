@@ -158,7 +158,7 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, lernApp, lernApps[] /*zuletzt genutzte Lern-Apps, höchstens 8*/, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, heuteZu{}, aus[], freieTage[ {id, von, bis, name} ], faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, lernApp, lernApps[] /*zuletzt genutzte Lern-Apps, höchstens 8*/, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, heuteZu{}, kompBaum{tiefe /*0 = bis zur Bewertungsebene, 1–4*/, aus[] /*ausgeblendete Ebenen*/}, aus[], freieTage[ {id, von, bis, name} ], faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
@@ -498,6 +498,7 @@ npm run dist:win | dist:mac | dist:linux
 | Erfassen speichert eine Bewertung | Eintrag entsteht |
 | Ansicht: Reiter, Erfassen-Arten, Listen und Karten aus- und wieder einblenden (`@handy`) | Heute fest, Reiter verschwindet aus Leiste und Schnellsuche, abhängige Karte mit Hinweis, letzter Modus gesperrt, Listen-Seite und Karte weg, Link öffnet ausgeblendeten Modus, alle Listen aus → Reiter weg, „Alles wieder einblenden“, `ausListe` filtert fremde Werte |
 | Heute: Karten in Bereichen, Bereiche zuklappen und Sicherung nur bei Fälligkeit | drei Bereiche in fester Reihenfolge, 4/8 Kinder bei Schwierigkeiten, `S.meta.heuteZu` bleibt nach Reiterwechsel, Sicherungshinweis verschwindet nach Sicherung |
+| Kind: Kompetenzen im Detail bis zur Bewertungsebene, Überblick je Ebene und Zeilen ausblenden | Voreinstellung folgt `hier`/`hierVon` (feinerer Lernbereich tiefer), Überblick bis LB, einzeln aufklappen (`UI.bOpen`), Ebenen ausblenden, letzte Ebene gesperrt, `S.meta.kompBaum` bleibt nach Reiterwechsel |
 | Lern-App: Ergebnisse mit Prozent oder Wert eintragen … (`@handy`) | Prozent → Skala mit Quelle `a` und Notiz, App-Name gemerkt, Fokus springt weiter, Wert ersetzt den Eintrag des Tages, getrennt von Beobachtungen, Quelle in den Einträgen, `eintragOk`, Prüfung 0–100 |
 | Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausblenden | Zählung, Ausblenden bleibt nach erneutem Zeichnen, Einblenden über den Knopf oben |
 | Daten bleiben verschlüsselt erhalten … | Neuladen, falsches und richtiges Passwort |

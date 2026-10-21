@@ -9,6 +9,10 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- **Kompetenzen im Detail nach Ebenen:** Unter **Kind → Kompetenzen im Detail** wählst du mit **Überblick bis**, wie weit der Kompetenzbaum aufgeklappt ist. **Bewertungsebene** (Voreinstellung) klappt jedes Fach bis zu der Ebene auf, die du unter **Einstellungen → Fächer & Raster** bei „Bewertungsebene in …“ eingestellt hast. **LB**, **K** und **KE** zeigen alle Fächer bis zu den Lernbereichen, Kompetenzen oder Kompetenzerwartungen mit den zusammengefassten Werten (Σ), **alles** klappt alles auf. Einzelne Bereiche klappst du mit ▸ und ▾ auf und zu.
+- Mit **Zeilen zeigen** blendest du alle Zeilen einer Ebene aus, zum Beispiel die Teilbereiche oder die Lernbereiche. LeDoK merkt sich die Auswahl für alle Kinder. Bereiche, die du als Ganzes bewertest, sind mit ◎ markiert.
+
 ## 1.1.5 (Beta)
 
 **Neu**
