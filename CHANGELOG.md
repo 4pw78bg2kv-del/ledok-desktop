@@ -19,6 +19,9 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 - Im **LEG-Planer**, bei der Frist einer **Sammelliste** und beim Datum in **Erfassen** weist LeDoK auf schulfreie Tage hin. „Termine fortlaufend vergeben“ schlägt einen Schultag vor.
 - **Lern-App:** Unter **Erfassen → Lern-App** überträgst du Ergebnisse aus einer Lern-App wie ANTON. Du trägst den Namen der App und auf Wunsch die Übung ein und gibst je Kind den Prozentwert aus der App ein oder gleich einen Wert von 1 bis 9. Die Werte zählen wie Beobachtungen und tragen die Quelle „Lern-App“, in der Notiz stehen App, Übung und Prozent. LeDoK verbindet sich dabei nicht mit der App.
 
+**Geändert**
+- **Heute** ist übersichtlicher: Die Karten stehen jetzt in drei Bereichen, **Jetzt im Unterricht**, **Lernstand im Blick** und **Organisation**. Mit einem Klick auf die Überschrift klappst du einen Bereich zu; LeDoK merkt sich das. **Größte Schwierigkeiten** zeigt zuerst vier Kinder, **mehr anzeigen** bis zu acht. Die Erklärungen zu Schwierigkeiten und fallendem Trend stehen unter **Wie wird das berechnet?**. Die Karte **Sicherung** ist einem Hinweis ganz oben gewichen, der nur erscheint, wenn eine Sicherungskopie fällig ist.
+
 ## 1.1.3 (Beta)
 
 **Neu**
