@@ -117,6 +117,7 @@ Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen 
 - Alle Texte aus Daten laufen durch `esc()`.
 - `UI` hält den flüchtigen Zustand (aktiver Reiter, Filter, Namen-Schalter). Er wird nicht gespeichert.
 - **Schnellsuche** (Strg/⌘+K, Knopf ⌕): `sucheQuellen()` sammelt Bereiche, Einstellungsseiten, Kinder, beobachtbare Themen und drei Aktionen (Sicherungskopie, Bedienungsanleitung, Sperren); `sucheTreffer()` filtert und sortiert (höchstens 12), `sucheOeffnen()` zeigt das Ergebnis in `#dlg`. Im Kürzel-Modus wird nur nach Kürzeln gesucht.
+- **Heute** (`VIEWS.heute`): oben `hinweisS` (nur wenn die Sicherung fällig ist, `#sicherungHeute`) und `tagesFortschritt()`, dann die Karten in drei Bereichen über `heuteBereich(id, titel, karten)`: `jetzt` (teamCard, Anwesenheit, Stundenplan, Fokustag, Klassenbuch, Fokuswoche), `lernstand` (`heuteProbleme`, `heuteFallend`, Wenig beobachtet, Aktuelle Themen), `orga` (Ferien, Dienste, Listen, Klassenrat). Karten, die `""` liefern, und leere Bereiche fallen weg. Zugeklappte Bereiche stehen in `S.meta.heuteZu` (`{id: true}`, `ACT.heuteSek`). `heuteProbleme` zeigt 4 Kinder, mit `UI.probAlle` (flüchtig) 8.
 - **Dein Tag** (Heute): `tagesFortschritt()` fasst Fokustag und Fokuswoche zu einem Balken zusammen. Ein Kind des Fokustags zählt als erledigt, wenn alle seine Fokus-Themen bewertet sind; dazu kommen die erledigten Kinder der Fokuswoche. Bei 100 % bekommt die Karte die Klasse `fertig` (grün). Nicht an Wochenenden, nicht für Fachlehrkräfte und nicht, wenn `S.meta.tagesbalken === false`.
 - **Bedienungsanleitung:** Der Knopf „Bedienungsanleitung (Word)“ in der Hilfe und die gleichnamige Aktion der Schnellsuche rufen `ACT.anleitungLaden`. Es dekodiert den Inhalt von `#anleitung-docx` und lädt ihn über `download()` als `LeDoK-Bedienungsanleitung-<APP_VERSION>.docx` herunter. Fehlt der Block, erscheint ein Hinweis.
 - **Druck:** Jeder Druck läuft über `drucke(html)`. Es zeigt zuerst eine Vorschau in `#dlg`; erst „Drucken …“ schreibt das HTML in `#print-root` und ruft `window.print()`. Nach `afterprint` wird `#print-root` geleert.
@@ -156,7 +157,7 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, lernApp, lernApps[] /*zuletzt genutzte Lern-Apps, höchstens 8*/, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, freieTage[ {id, von, bis, name} ], faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, lernApp, lernApps[] /*zuletzt genutzte Lern-Apps, höchstens 8*/, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, heuteZu{}, freieTage[ {id, von, bis, name} ], faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
@@ -494,6 +495,7 @@ npm run dist:win | dist:mac | dist:linux
 | Beispielklasse: alle Tabs und Einstellungen öffnen | alle Reiter und Einstellungsseiten, Hilfe |
 | Hilfe bietet die Bedienungsanleitung als Word-Datei an | Dateiname mit Version, Word-Datei, SHA-256 passt zu `data-sha256` |
 | Erfassen speichert eine Bewertung | Eintrag entsteht |
+| Heute: Karten in Bereichen, Bereiche zuklappen und Sicherung nur bei Fälligkeit | drei Bereiche in fester Reihenfolge, 4/8 Kinder bei Schwierigkeiten, `S.meta.heuteZu` bleibt nach Reiterwechsel, Sicherungshinweis verschwindet nach Sicherung |
 | Lern-App: Ergebnisse mit Prozent oder Wert eintragen … (`@handy`) | Prozent → Skala mit Quelle `a` und Notiz, App-Name gemerkt, Fokus springt weiter, Wert ersetzt den Eintrag des Tages, getrennt von Beobachtungen, Quelle in den Einträgen, `eintragOk`, Prüfung 0–100 |
 | Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausblenden | Zählung, Ausblenden bleibt nach erneutem Zeichnen, Einblenden über den Knopf oben |
 | Daten bleiben verschlüsselt erhalten … | Neuladen, falsches und richtiges Passwort |

@@ -132,6 +132,33 @@ test("Lern-App: Ergebnisse mit Prozent oder Wert eintragen und als Quelle kennze
   expect(await page.locator('[data-chg="appPct"] >> nth=2').inputValue()).toBe("");
 });
 
+test("Heute: Karten in Bereichen, Bereiche zuklappen und Sicherung nur bei Fälligkeit", async ({ page }) => {
+  await neueKlasse(page);
+  const bereiche = page.locator("section.hsek");
+  await expect(bereiche.locator(".hsek-k")).toHaveText([/Jetzt im Unterricht/, /Lernstand im Blick/, /Organisation/]);
+  await expect(page.locator('section[data-sek="lernstand"] .hcard', { hasText: "Größte Schwierigkeiten" })).toBeVisible();
+  await expect(page.locator('section[data-sek="orga"] .hcard', { hasText: "Offene Listen" })).toBeVisible();
+  // Größte Schwierigkeiten zeigt zuerst 4 Kinder, auf Wunsch bis zu 8.
+  const prob = page.locator(".hcard", { hasText: "Größte Schwierigkeiten" });
+  await expect(prob.locator(".prow")).toHaveCount(4);
+  await prob.locator('[data-act="probAlle"]').click();
+  await expect(prob.locator(".prow")).toHaveCount(8);
+  // Zuklappen bleibt gespeichert.
+  await page.click('[data-act="heuteSek"][data-v="lernstand"]');
+  await expect(page.locator('section[data-sek="lernstand"] .hcard')).toHaveCount(0);
+  await expect(page.locator('section[data-sek="lernstand"]')).toContainText("zugeklappt");
+  expect(await page.evaluate(() => S.meta.heuteZu)).toEqual({ lernstand: true });
+  await page.click('nav.tabs [data-v="uebersicht"]');
+  await page.click('nav.tabs [data-v="heute"]');
+  await expect(page.locator('section[data-sek="lernstand"] .hcard')).toHaveCount(0);
+  await page.click('[data-act="heuteSek"][data-v="lernstand"]');
+  await expect(page.locator('section[data-sek="lernstand"] .hcard').first()).toBeVisible();
+  // Sicherung: Hinweis nur, solange sie fällig ist.
+  await expect(page.locator("#sicherungHeute")).toBeVisible();
+  await page.evaluate(() => { S.meta.lastBackup = new Date().toISOString(); render(); });
+  await expect(page.locator("#sicherungHeute")).toHaveCount(0);
+});
+
 test("Daten bleiben verschlüsselt erhalten und öffnen nur mit dem Passwort", async ({ page }) => {
   await neueKlasse(page);
   const kinder = await page.evaluate(() => S.kinder.length);
