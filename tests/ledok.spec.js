@@ -159,6 +159,51 @@ test("Heute: Karten in Bereichen, Bereiche zuklappen und Sicherung nur bei Fäll
   await expect(page.locator("#sicherungHeute")).toHaveCount(0);
 });
 
+test("Ansicht: Reiter, Erfassen-Arten, Listen und Karten aus- und wieder einblenden @handy", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="ansicht"]');
+  const sw = (id) => page.locator(`[data-chg="ansichtSw"][data-v="${id}"]`);
+  await expect(sw("tab:heute")).toBeDisabled();
+  // Reiter Klassenbuch ausblenden: verschwindet aus der Leiste, aus der Schnellsuche und mit ihm die Karte auf „Heute“.
+  await sw("tab:klassenbuch").uncheck();
+  await expect(page.locator('nav.tabs [data-v="klassenbuch"]')).toHaveCount(0);
+  expect(await page.evaluate(() => S.meta.aus)).toEqual(["tab:klassenbuch"]);
+  expect(await page.evaluate(() => sucheQuellen().some((q) => q.art === "Bereich" && q.text === "Klassenbuch"))).toBe(false);
+  await expect(page.locator('[data-chg="ansichtSw"][data-v="karte:klassenbuch"]').locator("xpath=..")).toContainText("ausgeblendet, weil");
+  // Erfassen: Probe ausblenden, die letzte Art bleibt immer sichtbar.
+  for (const m of ["fokus", "asv", "lzk", "app"]) await sw("mode:" + m).uncheck();
+  await expect(sw("mode:beob")).toBeDisabled();
+  // Listen: Klassenkasse ausblenden; sind alle Bereiche weg, verschwindet der Reiter.
+  await sw("liste:kasse").uncheck();
+  // Karte „Wenig beobachtet“ ausblenden.
+  await sw("karte:wenig").uncheck();
+  await page.click('nav.tabs [data-v="heute"]');
+  await expect(page.locator(".hcard", { hasText: "Wenig beobachtet" })).toHaveCount(0);
+  await expect(page.locator(".hcard", { hasText: "Klassenbuch" })).toHaveCount(0);
+  await page.click('nav.tabs [data-v="erfassen"]');
+  await expect(page.locator('[data-act="mode"]')).toHaveText(["Beobachtung"]);
+  await page.click('nav.tabs [data-v="listen"]');
+  await expect(page.locator('[data-act="lTab"][data-v="kasse"]')).toHaveCount(0);
+  await expect(page.locator('[data-act="lTab"][data-v="listen"]')).toBeVisible();
+  // Ein Link aus einem anderen Bereich führt trotzdem zum ausgeblendeten Modus.
+  await page.evaluate(() => ACT.goFokus({ dataset: { v: "A" } }));
+  await expect(page.locator('[data-act="mode"][data-v="fokus"]')).toHaveClass(/on/);
+  await page.click('nav.tabs [data-v="heute"]');
+  await page.click('nav.tabs [data-v="erfassen"]');
+  await expect(page.locator('[data-act="mode"]')).toHaveText(["Beobachtung"]);
+  // Alle Listen aus → Reiter weg; alles wieder einblenden.
+  await page.evaluate(() => { S.meta.aus = [...S.meta.aus, ...LISTEN_TABS.map(([k]) => "liste:" + k)]; UI.tab = "heute"; render(); });
+  await expect(page.locator('nav.tabs [data-v="listen"]')).toHaveCount(0);
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="ansicht"]');
+  await page.click('[data-act="ansichtAlle"]');
+  expect(await page.evaluate(() => S.meta.aus)).toEqual([]);
+  await expect(page.locator("nav.tabs button")).toHaveCount(7);
+  // Fremde Werte in S.meta.aus werden ignoriert.
+  expect(await page.evaluate(() => { S.meta.aus = ["tab:<b>", 5, "karte:wenig"]; return ausListe(); })).toEqual(["karte:wenig"]);
+});
+
 test("Daten bleiben verschlüsselt erhalten und öffnen nur mit dem Passwort", async ({ page }) => {
   await neueKlasse(page);
   const kinder = await page.evaluate(() => S.kinder.length);
