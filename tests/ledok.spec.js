@@ -94,6 +94,44 @@ test("Erfassen speichert eine Bewertung", async ({ page }) => {
   expect(await page.evaluate(() => S.eintraege.length)).toBe(vorher + 1);
 });
 
+test("Lern-App: Ergebnisse mit Prozent oder Wert eintragen und als Quelle kennzeichnen @handy", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('nav.tabs [data-v="erfassen"]');
+  await page.click('[data-act="mode"][data-v="app"]');
+  await page.fill('[data-chg="lernApp"]', "ANTON");
+  await page.locator('[data-chg="lernApp"]').press("Tab");
+  await page.fill('[data-chg="lernUebung"]', "Einmaleins mit 7");
+  await page.locator('[data-chg="lernUebung"]').press("Tab");
+  const vorher = await page.evaluate(() => S.eintraege.length);
+  const erste = page.locator('[data-chg="appPct"]').first();
+  const kid = await erste.getAttribute("data-k");
+  await erste.fill("80");
+  await erste.press("Enter");
+  const e = await page.evaluate((k) => S.eintraege.filter((x) => x.k === k && x.q === "a").pop(), kid);
+  expect(e).toMatchObject({ w: 7, q: "a", n: "ANTON · Einmaleins mit 7: 80 %" });
+  expect(await page.evaluate(() => S.eintraege.length)).toBe(vorher + 1);
+  expect(await page.evaluate(() => S.meta.lernApps)).toEqual(["ANTON"]);
+  // Der Fokus springt zum nächsten Kind; ein Wert 1–9 ersetzt das Ergebnis desselben Tages.
+  await expect(page.locator('[data-chg="appPct"]').nth(1)).toBeFocused();
+  await page.locator(`#kid-${kid} [data-act="rate"][data-w="5"]`).click();
+  expect(await page.evaluate((k) => S.eintraege.filter((x) => x.k === k && x.q === "a").map((x) => [x.w, x.n]), kid)).toEqual([[5, "ANTON · Einmaleins mit 7"]]);
+  // Eine Beobachtung am selben Tag bleibt davon getrennt.
+  await page.click('[data-act="mode"][data-v="beob"]');
+  const komp = await page.evaluate(() => UI.komp);
+  await expect(page.locator(`#kid-${kid} [data-act="rate"].sel`)).toHaveCount(await page.evaluate(({ k, c }) => (S.eintraege.some((x) => x.k === k && x.c === c && x.d === UI.datum && x.q !== "a") ? 1 : 0), { k: kid, c: komp }));
+  // Quelle „Lern-App“ in den Einträgen des Kindes und in Dateien aus anderen Versionen.
+  await page.click('[data-act="mode"][data-v="app"]');
+  await page.locator(`#kid-${kid} [data-act="hist"]`).click();
+  await expect(page.locator("#dlg")).toContainText("Lern-App");
+  expect(await page.evaluate(() => eintragOk({ t: 1, d: "2026-10-01", k: "S01", c: "X", w: 5, q: "a", n: "" }))).toMatchObject({ q: "a" });
+  expect(await page.evaluate(() => QUELLE.a)).toBe("Lern-App");
+  await page.click('#dlg [data-act="closeDlg"]');
+  await page.fill('[data-chg="appPct"] >> nth=2', "120");
+  await page.locator('[data-chg="appPct"] >> nth=2').press("Enter");
+  await expect(page.getByText("Bitte eine Zahl von 0 bis 100 eintragen.")).toBeVisible();
+  expect(await page.locator('[data-chg="appPct"] >> nth=2').inputValue()).toBe("");
+});
+
 test("Daten bleiben verschlüsselt erhalten und öffnen nur mit dem Passwort", async ({ page }) => {
   await neueKlasse(page);
   const kinder = await page.evaluate(() => S.kinder.length);
