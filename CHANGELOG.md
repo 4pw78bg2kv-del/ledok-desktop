@@ -17,6 +17,7 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 - Im **Klassenbuch** stehen an schulfreien Tagen keine Stunden aus dem Stundenplan; neben dem Datum steht, warum frei ist, auch in der gedruckten Woche.
 - Unter **Listen → Fehltage** trägst du mit **bis** mehrere Tage auf einmal ein. LeDoK zählt dabei nur Schultage, ohne Wochenenden, Ferien und Feiertage.
 - Im **LEG-Planer**, bei der Frist einer **Sammelliste** und beim Datum in **Erfassen** weist LeDoK auf schulfreie Tage hin. „Termine fortlaufend vergeben“ schlägt einen Schultag vor.
+- **Lern-App:** Unter **Erfassen → Lern-App** überträgst du Ergebnisse aus einer Lern-App wie ANTON. Du trägst den Namen der App und auf Wunsch die Übung ein und gibst je Kind den Prozentwert aus der App ein oder gleich einen Wert von 1 bis 9. Die Werte zählen wie Beobachtungen und tragen die Quelle „Lern-App“, in der Notiz stehen App, Übung und Prozent. LeDoK verbindet sich dabei nicht mit der App.
 
 ## 1.1.3 (Beta)
 

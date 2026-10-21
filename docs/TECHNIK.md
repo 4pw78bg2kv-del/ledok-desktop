@@ -127,6 +127,7 @@ Die Zeilennummern verschieben sich mit jeder Änderung. Die Abschnitte beginnen 
 - **Ferien und Feiertage** (Einstellungsseite `ferien`): `FERIEN_BY` enthält die Schulferien Bayerns nach der Ferienordnung des Kultusministeriums (BayMBl. 2022 Nr. 747, Schuljahre 2024/25 bis 2029/30, dazu Sommerferien 2030); spätere Schuljahre kommen mit einem Update dazu (neue Zeilen anhängen, Test „Ferien und Feiertage“ anpassen). Gesetzliche Feiertage berechnet `kalJahr(y)` (feste Tage, Ostern nach Gauß über `osterSonntag`, Karfreitag bis Fronleichnam), dazu der unterrichtsfreie Buß- und Bettag (Mittwoch vor dem 23. November). Eigene freie Tage stehen in `S.meta.freieTage` (`freieTageBereinigen`, ändern nur über `freieTageSetzen`, das den Dienstplan von heute festhält). `kalTag(d)` liefert `{we, feiertag, frei, ferien, eigen, schulfrei, name}` und merkt sich das Ergebnis, bis `S.meta.freieTage` ein neues Array ist; `schulfrei`, `istSchultag`, `kalFrei` (Name an Wochentagen), `naechsterSchultag`, `vorigerSchultag`, `schultageZw` bauen darauf auf. `kalSchuljahr(sj)` liefert ersten und letzten Schultag, Einträge und Zahl der Schultage (`bekannt` = Ferien hinterlegt). Genutzt in: Heute (`schultag = istSchultag(t)`, Karte `ferienCard`, Fokustag nennt den nächsten Schultag; `stundenplanCard`, `anwesenheitCard`, `diensteCard`, `klassenbuchCard` entfallen an schulfreien Tagen), Klassenbuch (`kbPlan` liefert an schulfreien Tagen nichts, Woche und Druck nennen den Grund), Dienste (`S.dienste.ferien`), Fehltage (Zeitraum mit „bis“ trägt nur Schultage ein, Rückfrage bei schulfreiem Datum), LEG-Planer (⚠ am Termin, Vorschlag nächster Schultag), Sammelliste (⚠ an der Frist), Erfassen (Hinweis am Datum), Beispieldaten (Klassenbuch ohne schulfreie Tage). Druck: `kalenderSeite(sj)` mit `kalMonate` (September bis August).
 - **Auslosen** (`UI.lTab === "lose"`, `losView`): Los-Listen ziehen (`ziehe`), Gruppen bilden (`losGruppen`) und Reihenfolge auslosen (`mischen`). Zufall über `zufall(n)` mit `crypto.getRandomValues` ohne Modulo-Verzerrung. Das letzte Ergebnis steht flüchtig in `UI.losErg` (mit `vorher` für „Zurück in den Topf“). Die **Großanzeige** (`losGross`) nutzt `#dlg` mit der Klasse `dlg-los` (füllt das Fenster, kein Fullscreen-API, weil die Desktop-App alle Berechtigungen ablehnt); der Knopf „Ziehen“ hat den Fokus, damit Leertaste und Enter ziehen. Das Mischen der Namen ist nur Anzeige und entfällt bei `prefers-reduced-motion`. Einstiege: Knopf 🎲 in `anwesenheitCard` und Schnellsuche („Auslosen: <Liste>“).
 - **Zahlungsbrief:** `zahlbriefSeite(l, kid, {code})` füllt den Text der Liste ({Zweck}, {Betrag}, {Frist} und die üblichen Platzhalter). Ist die Bankverbindung gültig (`kontoOk`: Inhaber und IBAN mit Prüfziffer, deutsche IBAN 22 Zeichen), druckt er Überweisungsdaten und einen GiroCode: `epcText()` baut die EPC-Nutzlast (Version 002, UTF-8, ohne BIC zulässig), `qrSvg()` zeichnet sie. Der QR-Encoder ist eigener Code ohne Bibliothek (Byte-Modus, Fehlerkorrektur M, Versionen 1–20, Maskenwahl nach Strafpunkten). Ohne gültiges Konto gibt es stattdessen einen Abschnitt zum Zurückgeben mit dem Bargeld. Mit `kid = null` entsteht der allgemeine Brief: „ von {Vorname}“ fällt weg, übrige {Vorname}/{Name} werden „Ihr Kind“, {Klasse} und {Jgst} sind die Klassen bzw. Stufen der Kinder auf der Liste, und der Verwendungszweck endet mit „Kind:“, damit die Eltern den Namen ergänzen. `code: false` lässt nur den GiroCode weg, die Überweisungsdaten bleiben.
+- **Lern-App** (Erfassen, `UI.mode === "app"`): nutzt `viewBeob()` mit allen bewertbaren Themen eines Fachs (ohne ASV, unabhängig von `modus`) und allen Kindern des Fachs. `lernAppKopf()` zeigt App-Name (`S.meta.lernApp`, Vorschläge aus `S.meta.lernApps`) und Übung (`UI.lernUebung`, flüchtig). Je Kind ein Prozentfeld (`CHG.appPct` → `pct2skala`, danach Fokus aufs nächste Kind) neben den Werten 1–9. `rate(k, w, pct)` schreibt `q: "a"` und `n = appNotiz(pct)`. `passtQuelle(e)` trennt Lern-App-Einträge und übrige Einträge desselben Tages, sodass Beobachtung und Lern-App sich nicht gegenseitig ersetzen; `beobModus()` gilt für beide Modi (Tastatur, Markierung).
 - Darstellung hell/dunkel: pro Gerät in `localStorage` (`themeLesen`), nicht in den Daten.
 
 ### Berechnungen
@@ -155,14 +156,14 @@ Der entschlüsselte Zustand liegt nur im Arbeitsspeicher in der globalen Variabl
 S = {
   version: 1,
   meta: { schule, klasse, lehrkraft, schuljahr: "2026/27", halbjahr: 1|2, lastBackup, tagesSicherung,
-          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, freieTage[ {id, von, bis, name} ], faecher[], asvModus{}, jgStufen[],
+          notenGrenzen, skala9, rs2026, schema: 2, kiPrompt, lernApp, lernApps[] /*zuletzt genutzte Lern-Apps, höchstens 8*/, leg{bloecke[], selbst[]}, legVorlagen[], kopf{}, einladung{titel, text, rueck}, druck{groesse, schrift, grau}, tagesbalken, freieTage[ {id, von, bis, name} ], faecher[], asvModus{}, jgStufen[],
           rolle: "kl"|"fl", klassenId, schulKey, fachlehrer[], pakete[], protokoll[], demo, sjCheck{} },
   kinder:    [ { id: "S01", vorname, nachname, geburt, jgst: 1–4, klasse, gruppe: "A"–"E",
                  faecherNur[], begabt[] /* Fächer oder "*" */, pronomen, pk?, ausPaket? } ],
   raster:    [ { id: "D-1.1.1.1", fach, text, lp, info, ebene: 1–4, parent,
                  soll1–soll4, modus, modus1–modus4, hier, aus, hj1, hj2, akt } ],
   eintraege: [ { t /*ms, eindeutig*/, d: "JJJJ-MM-TT", k /*Kind*/, c /*Knoten oder SV1…AV4*/, w: 1–9,
-                 q: "b"|"l"|"f", n /*Notiz*/, p? /*Probe*/, vp? /*Fachlehrkraft-ID*/, von?, ext? } ],
+                 q: "b"|"l"|"f"|"a", n /*Notiz*/, p? /*Probe*/, vp? /*Fachlehrkraft-ID*/, von?, ext? } ],
   notizen:   [ { id, k, ts, kat, text, vp?, von?, ext? } ],
   bausteine: { asv: {SV1: {2|5|7|9: {b, l}, ziel}}, fach: {...}, phrasen: {...}, notizen: [] },
   texte:     { "S01|2026/27|1": { bericht, leg, termin: {d, z, ok} } },
@@ -185,7 +186,7 @@ S = {
 ```
 
 - `modus`: `beob`, `fokus`, `woche`, `kind`, `kein`, `auto`. `modus1`–`modus4` überschreiben ihn je Jahrgangsstufe.
-- `q` (Quelle): `b` Beobachtung, `l` Probe, `f` Fokuswoche.
+- `q` (Quelle): `b` Beobachtung, `l` Probe, `f` Fokuswoche, `a` Lern-App (Notiz `n` = „App · Übung: 80 %“). Ältere Versionen lesen `a` über `eintragOk` als `b`.
 - `vp`/`von`: Eintrag stammt aus der Rückmeldung einer Fachlehrkraft (bei der Klassenlehrkraft). `ext:1`: Eintrag der Klassenlehrkraft, der als Verlauf im Fachpaket kam (bei der Fachlehrkraft); er wird nie zurückgemeldet.
 - `S.meta.protokoll`: höchstens 60 Einträge `{ts, text}`, für die Lehrkraft sichtbar unter Daten & Sicherheit.
 
@@ -493,6 +494,7 @@ npm run dist:win | dist:mac | dist:linux
 | Beispielklasse: alle Tabs und Einstellungen öffnen | alle Reiter und Einstellungsseiten, Hilfe |
 | Hilfe bietet die Bedienungsanleitung als Word-Datei an | Dateiname mit Version, Word-Datei, SHA-256 passt zu `data-sha256` |
 | Erfassen speichert eine Bewertung | Eintrag entsteht |
+| Lern-App: Ergebnisse mit Prozent oder Wert eintragen … (`@handy`) | Prozent → Skala mit Quelle `a` und Notiz, App-Name gemerkt, Fokus springt weiter, Wert ersetzt den Eintrag des Tages, getrennt von Beobachtungen, Quelle in den Einträgen, `eintragOk`, Prüfung 0–100 |
 | Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausblenden | Zählung, Ausblenden bleibt nach erneutem Zeichnen, Einblenden über den Knopf oben |
 | Daten bleiben verschlüsselt erhalten … | Neuladen, falsches und richtiges Passwort |
 | Zweites LeDoK am selben Rechner löschen … | Profile, Löschen nur des gewählten |
