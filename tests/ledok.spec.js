@@ -1636,3 +1636,50 @@ test("Klassenrat: namentliche Abstimmung, Kind löschen und Daten aus Dateien", 
   await page.click('[data-act="krZettel"]');
   await expect(page.locator(".druckprev .krz").first()).toContainText("Ich wünsche mir");
 });
+
+test("Raster: Bewertungsebene pauschal für ein Fach und einen Lernbereich festlegen", async ({ page }) => {
+  await neueKlasse(page);
+  await page.evaluate(() => { ACT.tab({ dataset: { v: "raster" } }); UI.rF = "Deutsch"; render(); });
+  const vorher = await page.evaluate(() => S.eintraege.filter((e) => knoten(e.c)?.fach === "Deutsch").length);
+  const leiste = page.locator(".rebene");
+  await expect(leiste).toContainText("Bewertungsebene in");
+  // ganzes Fach auf Kompetenzen
+  await leiste.locator('[data-e="2"]').click();
+  await expect(page.locator("#msgJa")).toContainText("Kompetenzen");
+  await page.click("#msgJa");
+  await expect(leiste.locator('[data-e="2"]')).toHaveClass(/on/);
+  const k = await page.evaluate(() => {
+    const d = S.raster.filter((r) => r.fach === "Deutsch");
+    return {
+      falsch: d.filter((r) => bewertbar(r) && hatKinder(r) && ebeneVon(r) !== 2).length,
+      kOhne: d.filter((r) => ebeneVon(r) === 2 && hatKinder(r) && !r.hier).length,
+      tief: d.filter((r) => bewertbar(r) && ebeneVon(r) > 2).length,
+      n: S.eintraege.filter((e) => knoten(e.c)?.fach === "Deutsch").length,
+    };
+  });
+  expect(k).toEqual({ falsch: 0, kOhne: 0, tief: 0, n: vorher });
+  // Erfassen zeigt in Deutsch nur noch Kompetenzen (oder kleinere Bereiche ohne Unterbereiche)
+  expect(await page.evaluate(() => S.raster.filter((r) => r.fach === "Deutsch" && bewertbar(r)).every((r) => ebeneVon(r) <= 2))).toBe(true);
+
+  // ein Lernbereich wieder feiner: dort auf Kompetenzerwartungen
+  const lb = await page.evaluate(() => wurzeln("Deutsch").find((r) => nachfahren(r.id).some((x) => ebeneVon(x) === 3 && hatKinder(x))).id);
+  await page.click(`.rz[data-v="${lb}"]`);
+  const detail = page.locator(".rinline");
+  await detail.locator('[data-act="rEbene"][data-e="3"]').click();
+  await page.click("#msgJa");
+  const ke = await page.evaluate((lb) => ({
+    lb: nachfahren(lb).filter(bewertbar).every((r) => ebeneVon(r) >= 3),
+    andere: S.raster.filter((r) => r.fach === "Deutsch" && r.hier && !nachfahren(lb).includes(r)).every((r) => ebeneVon(r) === 2),
+  }), lb);
+  expect(ke).toEqual({ lb: true, andere: true });
+  await expect(leiste).toContainText("gemischt");
+
+  // Abbrechen ändert nichts, „einzeln“ bewertet wieder bis zur untersten Ebene
+  await leiste.locator('[data-e="4"]').click();
+  await page.click("#msgNein");
+  expect(await page.evaluate(() => S.raster.some((r) => r.fach === "Deutsch" && r.hier))).toBe(true);
+  await leiste.locator('[data-e="4"]').click();
+  await page.click("#msgJa");
+  expect(await page.evaluate(() => S.raster.some((r) => r.fach === "Deutsch" && r.hier))).toBe(false);
+  await expect(leiste.locator('[data-e="4"]')).toHaveClass(/on/);
+});
