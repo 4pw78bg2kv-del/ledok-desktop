@@ -494,6 +494,7 @@ npm run dist:win | dist:mac | dist:linux
 | Startbildschirm lädt ohne Fehler | Start, Versionsanzeige |
 | Passwort-Regeln beim Anlegen | mindestens 8 Zeichen, Wiederholung |
 | Beispielklasse: alle Tabs und Einstellungen öffnen | alle Reiter und Einstellungsseiten, Hilfe |
+| Einstellungen: Bereiche in Gruppen, aktiver Bereich markiert (`@handy`) | vier Gruppen aus `EINST_GRUPPEN`, zehn Bereiche ohne Fachpakete, `aria-current` am aktiven Bereich, Sprung über die Schnellsuche |
 | Hilfe bietet die Bedienungsanleitung als Word-Datei an | Dateiname mit Version, Word-Datei, SHA-256 passt zu `data-sha256` |
 | Erfassen speichert eine Bewertung | Eintrag entsteht |
 | Ansicht: Reiter, Erfassen-Arten, Listen und Karten aus- und wieder einblenden (`@handy`) | Heute fest, Reiter verschwindet aus Leiste und Schnellsuche, abhängige Karte mit Hinweis, letzter Modus gesperrt, Listen-Seite und Karte weg, Link öffnet ausgeblendeten Modus, alle Listen aus → Reiter weg, „Alles wieder einblenden“, `ausListe` filtert fremde Werte |
@@ -503,7 +504,7 @@ npm run dist:win | dist:mac | dist:linux
 | Heute: Tagesfortschritt zeigt Fokustag und Fokuswoche und lässt sich ausblenden | Zählung, Ausblenden bleibt nach erneutem Zeichnen, Einblenden über den Knopf oben |
 | Daten bleiben verschlüsselt erhalten … | Neuladen, falsches und richtiges Passwort |
 | Zweites LeDoK am selben Rechner löschen … | Profile, Löschen nur des gewählten |
-| Fachlehrkraft startet ohne Klasse | Willkommensseite |
+| Fachlehrkraft startet ohne Klasse | Willkommensseite, Einstellungen nur mit Fachpaketen, Ansicht, Daten & Sicherheit (leere Gruppen fehlen) |
 | Versionsdialog und Problembericht ohne Schülernamen | Bericht enthält keine Namen |
 | Rückmeldung einer Fachlehrkraft am selben Rechner … | Rundlauf über `ledok.post.*` mit Bestätigung |
 | Dokumente: Briefkopf und Fußzeile … | Logo-Upload, Speichern, Briefkopf auf LEG-Bogen und Bericht |

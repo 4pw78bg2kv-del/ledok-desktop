@@ -72,6 +72,22 @@ test("Beispielklasse: alle Tabs und Einstellungen öffnen @handy", async ({ page
   await expect(page.locator(".hilfe h2", { hasText: "Hilfe" })).toBeVisible();
 });
 
+test("Einstellungen: Bereiche in Gruppen, aktiver Bereich markiert @handy", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await expect(page.locator("nav.snav .sgl")).toHaveText(["Klasse & Team", "Schuljahr & Zeit", "Bewerten & Dokumente", "Programm"]);
+  await expect(page.locator("nav.snav button")).toHaveCount(10);
+  await expect(page.locator('nav.snav [data-v="pakete"]')).toHaveCount(0);
+  await page.click('nav.snav [data-v="ferien"]');
+  await expect(page.locator('nav.snav button[aria-current="page"]')).toHaveAttribute("data-v", "ferien");
+  await expect(page.locator(".sgrp", { hasText: "Schuljahr & Zeit" }).locator("button.on")).toHaveCount(1);
+  // Über die Schnellsuche landet man im selben Bereich
+  await page.click('[data-act="suche"]');
+  await page.keyboard.type("Textbausteine");
+  await page.keyboard.press("Enter");
+  await expect(page.locator('nav.snav button.on')).toHaveAttribute("data-v", "bausteine");
+});
+
 test("Hilfe bietet die Bedienungsanleitung als Word-Datei an", async ({ page }) => {
   await neueKlasse(page);
   await page.keyboard.press("?");
@@ -259,6 +275,10 @@ test("Zweites LeDoK am selben Rechner löschen lässt das erste erhalten", async
 test("Fachlehrkraft startet ohne Klasse", async ({ page }) => {
   await neueKlasse(page, { rolle: "fl" });
   expect(await page.evaluate(() => [S.meta.rolle, S.kinder.length])).toEqual(["fl", 0]);
+  // Einstellungen: nur Fachpakete, Ansicht und Daten & Sicherheit; leere Gruppen fehlen
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await expect(page.locator("nav.snav .sgl")).toHaveText(["Klasse & Team", "Programm"]);
+  await expect(page.locator("nav.snav button")).toHaveText([/Fachpakete/, /Ansicht/, /Daten & Sicherheit/]);
 });
 
 test("Versionsdialog und Problembericht ohne Schülernamen", async ({ page }) => {
