@@ -66,6 +66,8 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 | `scripts/version-sync.js` | übernimmt `APP_VERSION` in `package.json`, prüft Tag und CSP-Hash |
 | `scripts/csp-hash.js` | trägt den SHA-256 des App-Skripts in die CSP ein bzw. prüft ihn (`--pruefen`) |
 | `scripts/pruefen.js` | schnelle Prüfung ohne Browser: Syntax, Version, CHANGELOG, CSP-Hash, eingebettete Anleitung |
+| `scripts/anleitung-bauen.js` | `npm run anleitung`: baut die Word-Anleitung mit pandoc aus `docs/anleitung/` und bettet sie ein; `--pruefen` (ohne pandoc), `--aus-word` holt Word-Änderungen zurück |
+| `scripts/bildschirmfoto.js` | `npm run bild -- ziel.png --klick …`: Bildschirmfoto der Beispielklasse für die Anleitung |
 | `scripts/anleitung.js` | bettet `docs/LeDoK-Bedienungsanleitung.docx` in `app/LeDoK.html` ein bzw. prüft sie (`--pruefen`) |
 | `scripts/release.js` | `npm run release x.y.z`: Version, Datum, CHANGELOG, Tests, Commit, optional Tag |
 | `tests/ledok.spec.js`, `playwright.config.js` | Oberflächentests (Playwright, Chromium) |
@@ -75,7 +77,9 @@ Feste Grundsätze, die jede Änderung einhalten muss:
 | `.gitattributes` | erzwingt LF, damit der CSP-Hash auf Windows stimmt |
 | `.gitignore` | schließt u. a. `*.ledok-updatekey` und `*-PRIVAT*` aus |
 | `ANLEITUNG.md` | Bauen, Updates verteilen, Installation, Arbeitsweise |
-| `docs/LeDoK-Bedienungsanleitung.docx` | Bedienungsanleitung für Lehrkräfte (Word, mit Bildern); wird in die App eingebettet |
+| `docs/anleitung/` | Quelle der Bedienungsanleitung: `LeDoK-Bedienungsanleitung.md`, `bilder/`, `vorlage.docx` (Formatvorlagen), `tabellen.lua` |
+| `docs/LeDoK-Bedienungsanleitung.docx` | Bedienungsanleitung für Lehrkräfte (Word, mit Bildern), aus `docs/anleitung/` gebaut; wird in die App eingebettet |
+| `CLAUDE.md`, `.claude/` | Kurzüberblick und Startskript für Claude-Code-Sitzungen |
 | `docs/TECHNIK.md` | diese Datei |
 | `CHANGELOG.md` | Änderungen für Lehrkräfte, Abschnitt „Unveröffentlicht“ zuerst |
 
@@ -468,7 +472,7 @@ npm run dist:win | dist:mac | dist:linux
 4. Update-Paket erzeugen und verteilen: entweder **Actions → Update veröffentlichen → Run workflow** (siehe unten) oder von Hand in `LeDoK.html#hersteller` und als Release-Anhang hochladen.
 5. Nur bei Änderungen an der Hülle: `--tag` bzw. Tag `vx.y.z` pushen. `build.yml` baut dann beide Installer und legt einen Release-Entwurf an.
 
-**Bedienungsanleitung:** Die Word-Datei `docs/LeDoK-Bedienungsanleitung.docx` ist die Fassung für Lehrkräfte. Nach jeder neuen Fassung `node scripts/anleitung.js` ausführen; es schreibt sie als Base64 mit SHA-256 (`data-sha256`) in `<template id="anleitung-docx">` vor `#print-root`. Weil der Block außerhalb des Skripts steht, bleibt der CSP-Hash gleich. `pruefen.js` (also `npm test` und CI) schlägt fehl, wenn eingebettete und abgelegte Datei voneinander abweichen. Da das Update-Paket die ganze `LeDoK.html` enthält, kommt die Anleitung mit jedem Update zu den Lehrkräften (die App wächst dadurch auf ca. 2,7 MB, Grenze für Update-Pakete 30 MB).
+**Bedienungsanleitung:** Die Word-Datei `docs/LeDoK-Bedienungsanleitung.docx` ist die Fassung für Lehrkräfte. Sie wird mit `npm run anleitung` (pandoc) aus `docs/anleitung/LeDoK-Bedienungsanleitung.md` und den Bildern in `docs/anleitung/bilder/` gebaut und trägt den SHA-256 ihrer Quelle als Dokumenteigenschaft `quelle-sha256`; `pruefen.js` meldet, wenn Quelle und Word-Datei nicht zusammenpassen. Wer direkt in Word ändert, holt das mit `npm run anleitung:aus-word` in die Quelle zurück. `npm run release` zieht Stand und Versionsnummer in der Anleitung mit. Das Einbetten erledigt `node scripts/anleitung.js` (`npm run anleitung` ruft es selbst auf); es schreibt sie als Base64 mit SHA-256 (`data-sha256`) in `<template id="anleitung-docx">` vor `#print-root`. Weil der Block außerhalb des Skripts steht, bleibt der CSP-Hash gleich. `pruefen.js` (also `npm test` und CI) schlägt fehl, wenn eingebettete und abgelegte Datei voneinander abweichen. Da das Update-Paket die ganze `LeDoK.html` enthält, kommt die Anleitung mit jedem Update zu den Lehrkräften (die App wächst dadurch auf ca. 2,7 MB, Grenze für Update-Pakete 30 MB).
 
 **Versionsanzeige:** `const APP_VERSION="x.y.z", APP_DATUM="JJJJ-MM-TT";` und `const APP_KANAL="Beta";` in `app/LeDoK.html`. Unten rechts erscheint „Version x.y.z Beta“ (bzw. „Update x.y.z verfügbar“); ein Klick öffnet `ueberDialog()`. Den Abschnitt „Automatisch suchen“ zeigt der Dialog nur, wenn die Hülle `window.ledokDesktop.updateSuchen` anbietet; mit einem älteren Installer fehlt er. `version-sync.js` überträgt die Nummer beim Bauen in `package.json` und bricht ab, wenn ein Tag nicht zur Version passt.
 
@@ -563,7 +567,7 @@ connect-src 'none'; form-action 'none'; base-uri 'none'
 ## 14 · Regeln für Änderungen
 
 1. Nur `app/LeDoK.html` in diesem Repository bearbeiten. Das private Repository `LeDoK` wird nicht mehr gebraucht.
-2. Nach Skriptänderungen `node scripts/csp-hash.js`, nach einer neuen Fassung der Word-Anleitung `node scripts/anleitung.js`, dann `npm test`.
+2. Nach Skriptänderungen `node scripts/csp-hash.js`, nach Änderungen an der Anleitung (`docs/anleitung/`) `npm run anleitung`, dann `npm test`.
 3. Jede für Lehrkräfte sichtbare Änderung unter „Unveröffentlicht“ in `CHANGELOG.md` eintragen, in ganzen Sätzen und mit den Namen aus der App.
 4. Rückfragen nie mit `prompt()`/`confirm()`/`alert()`, sondern mit `askText`, `frage`, `info`. Einen zweiten Dateidialog nie automatisch öffnen, sondern über `askFile`.
 5. Daten aus fremden Dateien immer durch `eintragOk`, `notizOk`, `idOk` bzw. `datenBereinigen` schicken und alles Angezeigte durch `esc()`.

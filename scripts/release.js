@@ -1,5 +1,5 @@
 // Bereitet eine neue Version vor: npm run release 1.0.1
-//   setzt APP_VERSION und APP_DATUM in app/LeDoK.html (und package.json),
+//   setzt APP_VERSION und APP_DATUM in app/LeDoK.html (und package.json) sowie Stand und Version in der Bedienungsanleitung,
 //   macht aus "## Unveröffentlicht" in CHANGELOG.md den Abschnitt der neuen Version,
 //   führt die Tests aus, committet und setzt auf Wunsch den Tag für neue Installer.
 // Optionen:
@@ -12,6 +12,7 @@
 const fs = require("fs"), path = require("path"), { execFileSync } = require("child_process");
 const root = path.join(__dirname, "..");
 const HTML = path.join(root, "app", "LeDoK.html"), CL = path.join(root, "CHANGELOG.md");
+const ANL = path.join(root, "docs", "anleitung", "LeDoK-Bedienungsanleitung.md"), DOCX = "docs/LeDoK-Bedienungsanleitung.docx";
 
 const args = process.argv.slice(2);
 const opt = (n) => args.includes(n);
@@ -55,6 +56,21 @@ if (kanal !== undefined) {
   html = html.replace(/const APP_KANAL="[^"]*"/, `const APP_KANAL="${kanal.replace(/["\\]/g, "")}"`);
 }
 
+// Bedienungsanleitung: Stand und Versionsnummer nachziehen (die Word-Datei baut danach scripts/anleitung-bauen.js)
+let anl = null;
+if (fs.existsSync(ANL)) {
+  try { execFileSync("pandoc", ["--version"], { stdio: "ignore" }); }
+  catch (e) { stopp("pandoc ist nicht installiert, damit wird die Word-Anleitung gebaut (https://pandoc.org)."); }
+  const vk = neu + (kanalNeu ? " " + kanalNeu : "");
+  const [j, mo, t] = heute.split("-");
+  const lang = `${Number(t)}. ${new Date(heute + "T12:00:00").toLocaleDateString("de-DE", { month: "long" })} ${j}`;
+  anl = fs.readFileSync(ANL, "utf8")
+    .replace(/^Stand: .* · Version .*$/m, `Stand: ${lang} · Version ${vk}`)
+    .replace(/(Diese Anleitung beschreibt die Version )\*\*[^*]+\*\* vom \d{1,2}\.\d{1,2}\.\d{4}/, `$1**${vk}** vom ${t}.${mo}.${j}`)
+    .replace(/„Version \d+\.\d+\.\d+[^“]*“ \(bzw\. die aktuelle Nummer\)/, `„Version ${vk}“ (bzw. die aktuelle Nummer)`);
+  if (!anl.includes("Version " + vk)) console.warn("Hinweis: Die Zeile „Stand: … · Version …“ fehlt in der Bedienungsanleitung.");
+}
+
 // Hat sich die Hülle seit der letzten Version mit Tag geändert?
 let huelle = null;
 try {
@@ -71,19 +87,21 @@ if (probe) { console.log("Probelauf: nichts geändert."); process.exit(0); }
 
 fs.writeFileSync(HTML, html);
 fs.writeFileSync(CL, cl);
+if (anl !== null) fs.writeFileSync(ANL, anl);
 // Die Versionszeile steht im App-Skript, also ändert sich dessen CSP-Hash mit
 execFileSync(process.execPath, [path.join(__dirname, "csp-hash.js")], { cwd: root, stdio: "inherit" });
 // Die aktuelle Word-Anleitung kommt mit jeder Version mit (Hilfe → „Bedienungsanleitung (Word)“)
-execFileSync(process.execPath, [path.join(__dirname, "anleitung.js")], { cwd: root, stdio: "inherit" });
+execFileSync(process.execPath, [path.join(__dirname, anl !== null ? "anleitung-bauen.js" : "anleitung.js")], { cwd: root, stdio: "inherit" });
 execFileSync(process.execPath, [path.join(__dirname, "version-sync.js")], { cwd: root, stdio: "inherit" });
 
-const rueckgaengig = () => { try { git("checkout", "--", "app/LeDoK.html", "CHANGELOG.md", "package.json"); } catch (e) {} };
+const geaendert = ["app/LeDoK.html", "CHANGELOG.md", "package.json", ...(anl !== null ? ["docs/anleitung/LeDoK-Bedienungsanleitung.md", DOCX] : [])];
+const rueckgaengig = () => { try { git("checkout", "--", ...geaendert); } catch (e) {} };
 if (!opt("--ohne-tests")) {
   try { execFileSync("npm", ["test"], { cwd: root, stdio: "inherit", shell: process.platform === "win32" }); }
   catch (e) { rueckgaengig(); stopp("Die Tests sind fehlgeschlagen. Die Änderungen an Version und CHANGELOG wurden zurückgenommen."); }
 }
 
-git("add", "app/LeDoK.html", "CHANGELOG.md", "package.json");
+git("add", ...geaendert);
 git("commit", "-m", `Version ${neu}`);
 if (opt("--tag")) git("tag", "v" + neu);
 

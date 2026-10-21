@@ -1,6 +1,6 @@
 // Schnelle Prüfung von app/LeDoK.html ohne Browser:
 // Skript fehlerfrei lesbar, Versionsnummer und Datum gültig, CHANGELOG-Eintrag vorhanden,
-// CSP-Hash und eingebettete Bedienungsanleitung aktuell.
+// CSP-Hash, Word-Anleitung (passt zu docs/anleitung/) und eingebettete Bedienungsanleitung aktuell.
 "use strict";
 const fs = require("fs"), path = require("path"), vm = require("vm");
 const root = path.join(__dirname, "..");
@@ -24,7 +24,7 @@ else {
     fehler.push(`In CHANGELOG.md fehlt ein Abschnitt "## ${v[1]}".`);
 }
 
-for (const s of ["csp-hash.js", "anleitung.js"]) {
+for (const s of ["csp-hash.js", "anleitung-bauen.js", "anleitung.js"]) {
   try { require("child_process").execFileSync(process.execPath, [path.join(__dirname, s), "--pruefen"], { stdio: ["ignore", "ignore", "pipe"] }); }
   catch (e) { fehler.push(String(e.stderr || e.message).trim()); }
 }

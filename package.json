@@ -14,7 +14,10 @@
     "release": "node scripts/release.js",
     "dist:win": "node scripts/version-sync.js && electron-builder --win --publish never",
     "dist:mac": "node scripts/version-sync.js && electron-builder --mac --publish never",
-    "dist:linux": "node scripts/version-sync.js && electron-builder --linux --publish never"
+    "dist:linux": "node scripts/version-sync.js && electron-builder --linux --publish never",
+    "anleitung": "node scripts/anleitung-bauen.js",
+    "anleitung:aus-word": "node scripts/anleitung-bauen.js --aus-word",
+    "bild": "node scripts/bildschirmfoto.js"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
