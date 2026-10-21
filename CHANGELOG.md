@@ -11,6 +11,7 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 **Neu**
 - **Bewertungsebene pauschal festlegen:** Unter **Einstellungen → Fächer & Raster** legst du mit **Bewertungsebene in …** für ein ganzes Fach fest, ob du auf der Ebene der Lernbereiche (**LB**), Kompetenzen (**K**) oder Kompetenzerwartungen (**KE**) bewertest oder **einzeln** bis zu den Teilbereichen. Klickst du einen Bereich an, stellst du dort unter **Bewertungsebene für alle Unterbereiche** nur diesen Bereich anders ein, zum Beispiel einen Lernbereich feiner als den Rest des Fachs. Die feineren Bereiche erscheinen beim Bewerten als Hinweise „Worauf achten“. Bisherige Bewertungen bleiben erhalten und fließen weiter in Übersicht, Bericht und LEG-Bogen ein. Ist ein Fach unterschiedlich eingestellt, steht dort „gemischt“.
+- **LEG-Planer:** Bei „Termine fortlaufend vergeben“ legst du fest, wie viele Gespräche höchstens an einem Tag stattfinden und wann das letzte Gespräch spätestens endet (vorgeschlagen: 8 Termine, bis 18:00 Uhr). Ist ein Tag voll, plant LeDoK am nächsten Schultag weiter und überspringt dabei Wochenenden, Ferien und Feiertage. Im Fenster siehst du vorab, auf wie viele Tage sich die Termine verteilen und wann der letzte ist. LeDoK merkt sich deine Angaben für das nächste Mal.
 
 ## 1.1.4 (Beta)
 
