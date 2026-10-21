@@ -153,6 +153,7 @@ Mit einem Apple-Developer-Konto (99 €/Jahr) bzw. einem Windows-Code-Signing-Ze
 **Neue Version mit einem Befehl.** `npm run release 1.0.1` erledigt die Handarbeit für ein Release:
 - setzt `APP_VERSION` und `APP_DATUM` (heute) in `app/LeDoK.html` und in `package.json`,
 - macht aus „Unveröffentlicht“ in `CHANGELOG.md` den Abschnitt der neuen Version und zeigt dir den Text für das Hinweisfeld des Update-Pakets,
+- setzt Stand und Versionsnummer in der Bedienungsanleitung und baut die Word-Datei neu,
 - führt die Tests aus und legt nur bei Erfolg einen Commit „Version 1.0.1“ an.
 
 Mit `--tag` setzt der Befehl zusätzlich den Tag `v1.0.1` für neue Installer. Das brauchst du nur, wenn sich die Hülle geändert hat, und der Befehl weist dich darauf hin. `--kanal Beta` setzt den Zusatz neben der Versionsnummer, und `--kanal ""` entfernt ihn für die finale Version. `--probe` zeigt nur an, was passieren würde. Hochladen und das Update-Paket erzeugen machst du danach wie gewohnt.
@@ -172,4 +173,6 @@ npm run dist:mac     # nur auf einem Mac
 
 Nach jeder Änderung am Skript in `app/LeDoK.html` einmal `node scripts/csp-hash.js` ausführen. Es trägt den Hash des Skripts in die Content-Security-Policy ein; ohne passenden Hash startet die App nicht. Der Build prüft das automatisch.
 
-Die Bedienungsanleitung für Lehrkräfte liegt als `docs/LeDoK-Bedienungsanleitung.docx` im Repository und steckt zusätzlich in `app/LeDoK.html`, damit sie in der App unter **Hilfe → Bedienungsanleitung (Word)** heruntergeladen werden kann. Ersetzt du die Word-Datei durch eine neue Fassung, führe `node scripts/anleitung.js` aus. `npm run release` macht das ebenfalls und weist dich darauf hin, wenn in der Anleitung noch nicht die neue Versionsnummer steht. So kommt mit jedem Update auch die passende Anleitung zu den Schulen.
+Die Bedienungsanleitung für Lehrkräfte schreibst du in `docs/anleitung/LeDoK-Bedienungsanleitung.md` (Markdown, Bilder in `docs/anleitung/bilder/`). `npm run anleitung` baut daraus mit [pandoc](https://pandoc.org) die Word-Datei `docs/LeDoK-Bedienungsanleitung.docx` und bettet sie ein. Hast du direkt in Word etwas geändert, holt `npm run anleitung:aus-word` die Änderungen in die Markdown-Datei zurück. Bildschirmfotos der Beispielklasse macht `npm run bild -- docs/anleitung/bilder/name.png --klick 'text=Listen'` (Optionen stehen oben in `scripts/bildschirmfoto.js`).
+
+Die Word-Datei liegt als `docs/LeDoK-Bedienungsanleitung.docx` im Repository und steckt zusätzlich in `app/LeDoK.html`, damit sie in der App unter **Hilfe → Bedienungsanleitung (Word)** heruntergeladen werden kann. `npm run release` setzt dort Stand und Versionsnummer und baut sie neu. So kommt mit jedem Update auch die passende Anleitung zu den Schulen.
