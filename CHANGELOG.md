@@ -9,6 +9,9 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+**Neu**
+- **Bewertungsebene pauschal festlegen:** Unter **Einstellungen → Fächer & Raster** legst du mit **Bewertungsebene in …** für ein ganzes Fach fest, ob du auf der Ebene der Lernbereiche (**LB**), Kompetenzen (**K**) oder Kompetenzerwartungen (**KE**) bewertest oder **einzeln** bis zu den Teilbereichen. Klickst du einen Bereich an, stellst du dort unter **Bewertungsebene für alle Unterbereiche** nur diesen Bereich anders ein, zum Beispiel einen Lernbereich feiner als den Rest des Fachs. Die feineren Bereiche erscheinen beim Bewerten als Hinweise „Worauf achten“. Bisherige Bewertungen bleiben erhalten und fließen weiter in Übersicht, Bericht und LEG-Bogen ein. Ist ein Fach unterschiedlich eingestellt, steht dort „gemischt“.
+
 ## 1.1.4 (Beta)
 
 **Neu**
