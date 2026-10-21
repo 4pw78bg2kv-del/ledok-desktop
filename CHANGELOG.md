@@ -9,6 +9,8 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 
 ## Unveröffentlicht
 
+## 1.1.4 (Beta)
+
 **Neu**
 - **Ferien und Feiertage:** LeDoK kennt jetzt die Schulferien in Bayern bis zu den Sommerferien 2030 (nach der Ferienordnung des Kultusministeriums) und alle Feiertage, auch ohne Internet. Unter **Einstellungen → Ferien & Feiertage** siehst du für jedes Schuljahr den ersten und letzten Schultag, die Zahl der Schultage, alle Ferien und freien Tage und einen Kalender von September bis August. **Drucken** gibt den Ferienkalender auf einer Seite aus.
 - Unter **Freie Tage deiner Schule** trägst du zusätzliche schulfreie Tage ein, zum Beispiel einen pädagogischen Tag. Sie zählen in LeDoK wie Ferien.
