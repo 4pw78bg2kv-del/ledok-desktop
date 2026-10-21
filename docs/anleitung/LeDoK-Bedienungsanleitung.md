@@ -486,13 +486,16 @@ Auf **Heute** zeigt die Karte **Klassenbuch** die Stunden des Tages und wie viel
 
 ### 5.9 Einstellungen
 
-Über **⚙ Einstellungen** erreichst du zehn Bereiche (als Fachlehrkraft drei).
+Über **⚙ Einstellungen** erreichst du zehn Bereiche (als Fachlehrkraft drei). Sie stehen links in einer Seitenleiste, in vier Gruppen geordnet:
+
+-   **Klasse & Team:** Klasse, Fachlehrkräfte (als Fachlehrkraft: Fachpakete)
+-   **Schuljahr & Zeit:** Schuljahr, Stundenplan, Ferien & Feiertage
+-   **Bewerten & Dokumente:** Fächer & Raster, Textbausteine, Dokumente
+-   **Programm:** Ansicht, Daten & Sicherheit
+
+Der Bereich, in dem du gerade bist, ist farbig markiert und zeigt darunter in einer Zeile, was du dort einstellst. Die Seitenleiste bleibt beim Scrollen stehen, so wechselst du auch von weit unten mit einem Klick, etwa vom Raster zu den Textbausteinen. Mit **← Zurück zum Erfassen** unter der Leiste geht es zurück. Auf schmalen Bildschirmen (Tablet, Handy) stehen die vier Gruppen nebeneinander über dem Inhalt. Mit der Schnellsuche (Strg+K) erreichst du jeden Bereich auch direkt.
 
 **Klasse.** Schule, Klasse, Lehrkraft, Schuljahr und die Klassenliste. Weil sie Klarnamen enthält, fragt LeDoK hier noch einmal nach deinem Passwort. Je Kind trägst du Kürzel, Vorname, Nachname, Geburtsdatum, Klasse (eigene oder Parallelklasse), Jahrgangsstufe, Fokustag, Fächer, Lernniveau und Pronomen ein. Mit **Mehrere auf einmal …** legst du viele Kinder schnell an, mit **Kind importieren …** übernimmst du eine Übergabedatei oder eine LeDoK-CSV. **Fokustage neu verteilen** verteilt alle Kinder gleichmäßig auf Montag bis Freitag.
-
-**Stundenplan.** Trag ein, welches Fach du in welcher Stunde hast: oben die Zahl der **Stunden am Tag** (4 bis 8), links auf Wunsch die Uhrzeit, zu der die Stunde beginnt, dann je Wochentag das Fach. Fächer aus „Fächer & Raster“ erkennt LeDoK auch abgekürzt (z. B. „Mathe“) und färbt sie grün; andere Einträge wie „Religion“ oder „AG“ erscheinen nur im Plan. **Drucken** gibt den Stundenplan aus. Auf **Heute** zeigt LeDoK dann die Stunden des Tages (5.2).
-
-![Einstellungen → Stundenplan](bilder/einstellungen-stundenplan.jpg){width="15.0cm"}
 
 **Fachlehrkräfte.** Siehe Kapitel 6.
 
@@ -512,6 +515,10 @@ Auf **Heute** zeigt die Karte **Klassenbuch** die Stunden des Tages und wie viel
 10. Ferien und freie Tage prüfen
 11. ★-Markierungen zurücksetzen
 12. Sicherungskopie des neuen Stands
+
+**Stundenplan.** Trag ein, welches Fach du in welcher Stunde hast: oben die Zahl der **Stunden am Tag** (4 bis 8), links auf Wunsch die Uhrzeit, zu der die Stunde beginnt, dann je Wochentag das Fach. Fächer aus „Fächer & Raster“ erkennt LeDoK auch abgekürzt (z. B. „Mathe“) und färbt sie grün; andere Einträge wie „Religion“ oder „AG“ erscheinen nur im Plan. **Drucken** gibt den Stundenplan aus. Auf **Heute** zeigt LeDoK dann die Stunden des Tages (5.2).
+
+![Einstellungen → Stundenplan](bilder/einstellungen-stundenplan.jpg){width="15.0cm"}
 
 **Ferien & Feiertage.** Die Schulferien in Bayern nach der Ferienordnung des Kultusministeriums (bis zu den Sommerferien 2030) und die gesetzlichen Feiertage sind in LeDoK hinterlegt und funktionieren ohne Internet. Oben wählst du das Schuljahr. Du siehst den ersten und den letzten Schultag, die Zahl der Schultage, eine Liste aller Ferien und freien Tage und die Monate von September bis August mit Ferien (gelb), Feiertagen (rot) und unterrichtsfreien Tagen (grün). **Drucken** gibt den Ferienkalender auf einer Seite aus, zum Beispiel für die Pinnwand.
 
