@@ -1715,3 +1715,55 @@ test("Raster: Bewertungsebene pauschal für ein Fach und einen Lernbereich festl
   expect(await page.evaluate(() => S.raster.some((r) => r.fach === "Deutsch" && r.hier))).toBe(false);
   await expect(leiste.locator('[data-e="4"]')).toHaveClass(/on/);
 });
+
+test("Kind: Kompetenzen im Detail bis zur Bewertungsebene, Überblick je Ebene und Zeilen ausblenden", async ({ page }) => {
+  await neueKlasse(page);
+  // Deutsch wird auf Kompetenzen bewertet, ein Lernbereich feiner auf Kompetenzerwartungen.
+  const lb = await page.evaluate(() => {
+    const d = S.raster.filter((r) => r.fach === "Deutsch");
+    ebeneSetzen(d, 2);
+    const lb = wurzeln("Deutsch").find((r) => nachfahren(r.id).some((x) => ebeneVon(x) === 3 && hatKinder(x)));
+    ebeneSetzen(nachfahren(lb.id), 3);
+    save();
+    ACT.tab({ dataset: { v: "kind" } });
+    UI.bOffen = { Deutsch: true };
+    render();
+    return lb.id;
+  });
+  const karte = page.locator(".card", { hasText: "Kompetenzen im Detail" });
+  const zeilen = karte.locator("table.btree tr[data-id]");
+  const ebenen = () => page.evaluate(() => [...document.querySelectorAll("table.btree tr[data-id]")].map((t) => ({ id: t.dataset.id, eb: ebeneVon(knoten(t.dataset.id)) })));
+  // Standard: bis zur Bewertungsebene, also K, im feineren Lernbereich KE, darunter nichts.
+  await expect(karte.locator('[data-act="bTiefe"][data-v="0"]')).toHaveClass(/on/);
+  let z = await ebenen();
+  expect(z.some((x) => x.eb === 4)).toBe(false);
+  const inLb = await page.evaluate((lb) => nachfahren(lb).map((r) => r.id), lb);
+  expect(z.filter((x) => x.eb === 3).every((x) => inLb.includes(x.id))).toBe(true);
+  expect(z.some((x) => x.eb === 3)).toBe(true);
+  // Überblick bis LB: nur Lernbereiche, gemerkt in S.meta.kompBaum.
+  await karte.locator('[data-act="bTiefe"][data-v="1"]').click();
+  z = await ebenen();
+  expect(z.every((x) => x.eb === 1)).toBe(true);
+  expect(await page.evaluate(() => S.meta.kompBaum)).toEqual({ tiefe: 1, aus: [] });
+  // einen Lernbereich einzeln aufklappen
+  await karte.locator(`[data-act="bOpen"][data-v="${lb}"]`).click();
+  z = await ebenen();
+  expect(z.some((x) => x.eb === 2)).toBe(true);
+  // alles, dann Lernbereiche und Kompetenzen ausblenden: Kompetenzerwartungen und Teilbereiche bleiben
+  await karte.locator('[data-act="bTiefe"][data-v="4"]').click();
+  await karte.locator('[data-act="bEbene"][data-v="1"]').click();
+  await karte.locator('[data-act="bEbene"][data-v="2"]').click();
+  z = await ebenen();
+  expect(z.length).toBeGreaterThan(0);
+  expect(z.every((x) => x.eb >= 3)).toBe(true);
+  expect(await page.evaluate(() => S.meta.kompBaum)).toEqual({ tiefe: 4, aus: [1, 2] });
+  // Eine Ebene bleibt immer sichtbar.
+  const da = await page.evaluate(() => [...document.querySelectorAll('[data-act="bEbene"]')].map((b) => +b.dataset.v));
+  for (const e of da.filter((e) => e > 3)) await karte.locator(`[data-act="bEbene"][data-v="${e}"]`).click();
+  await expect(karte.locator('[data-act="bEbene"][data-v="3"]')).toBeDisabled();
+  // Auswahl bleibt nach Reiterwechsel erhalten.
+  await page.click('nav.tabs [data-v="heute"]');
+  await page.evaluate(() => { ACT.tab({ dataset: { v: "kind" } }); UI.bOffen = { Deutsch: true }; render(); });
+  await expect(karte.locator('[data-act="bTiefe"][data-v="4"]')).toHaveClass(/on/);
+  await expect(zeilen.first()).toBeVisible();
+});
