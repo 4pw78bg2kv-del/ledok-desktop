@@ -12,9 +12,25 @@ Neue Einträge kommen zuerst unter **Unveröffentlicht** und wandern beim Releas
 **Neu**
 - **Kompetenzen im Detail nach Ebenen:** Unter **Kind → Kompetenzen im Detail** wählst du mit **Überblick bis**, wie weit der Kompetenzbaum aufgeklappt ist. **Bewertungsebene** (Voreinstellung) klappt jedes Fach bis zu der Ebene auf, die du unter **Einstellungen → Fächer & Raster** bei „Bewertungsebene in …“ eingestellt hast. **LB**, **K** und **KE** zeigen alle Fächer bis zu den Lernbereichen, Kompetenzen oder Kompetenzerwartungen mit den zusammengefassten Werten (Σ), **alles** klappt alles auf. Einzelne Bereiche klappst du mit ▸ und ▾ auf und zu.
 - Mit **Zeilen zeigen** blendest du alle Zeilen einer Ebene aus, zum Beispiel die Teilbereiche oder die Lernbereiche. LeDoK merkt sich die Auswahl für alle Kinder. Bereiche, die du als Ganzes bewertest, sind mit ◎ markiert.
+- **Passwortstärke:** Wo du ein neues Passwort festlegst, zeigt LeDoK unter dem Feld, wie stark es ist: sehr schwach, schwach, mittel, stark oder sehr stark. Das gilt beim Einrichten, beim Ändern des Passworts, für Fachpakete, Übergabedateien und das Masterkennwort.
+- **Sichtschutz:** Der Knopf 🙈 oben oder Strg+Umschalt+S verdeckt sofort den ganzen Bildschirm, zum Beispiel am Beamer. Ein Klick hebt ihn wieder auf. Mit **Strg+L** sperrst du LeDoK sofort.
+- **Sicherungen verwalten (Desktop-App):** Unter **Einstellungen → Daten & Sicherheit → Sicherungen** siehst du, wo deine Sicherungen liegen und wie viele es sind. Du kannst einen eigenen Ordner wählen, etwa einen verschlüsselten USB-Stick, und mit **Ältere Sicherungen löschen …** alle alten Stände entfernen. Vorher legt LeDoK eine frische Sicherung an.
 
 **Geändert**
 - **Einstellungen übersichtlicher:** Die zehn Bereiche der Einstellungen stehen jetzt links in einer Seitenleiste, geordnet in vier Gruppen: **Klasse & Team**, **Schuljahr & Zeit**, **Bewerten & Dokumente** und **Programm**. Der Bereich, in dem du gerade bist, ist farbig markiert und zeigt eine kurze Beschreibung. Die Leiste bleibt beim Scrollen stehen, so wechselst du auch von weit unten mit einem Klick, etwa vom Raster zu den Textbausteinen. Auf schmalen Bildschirmen stehen die Gruppen nebeneinander über dem Inhalt. Alle Einstellungen sind unverändert.
+- **Keine Sicherungen in der Cloud:** Wird der Ordner „Dokumente“ mit OneDrive oder iCloud abgeglichen, legt die Desktop-App ihre Sicherungen jetzt im eigenen Programmordner auf deinem Rechner ab. Sicherungen aus dem alten Ordner holst du mit **Hierher verschieben** aus der Cloud.
+- **Sicherungen werden ausgedünnt:** Sicherungen vor einem Update bleiben nur noch die drei neuesten (höchstens ein halbes Jahr), Sicherungen vor dem Löschen, vor dem Schuljahreswechsel und Notfallkopien höchstens 90 Tage. Bisher blieben manche für immer liegen, auch mit Daten gelöschter Kinder. Nach dem Löschen von Kindern weist LeDoK darauf hin, dass ältere Sicherungen diese Daten noch enthalten.
+- **Sperre:** Die Zeit bis zur automatischen Sperre wählst du unter **Passwort & Sperre** (5, 10, 15 oder 30 Minuten). Die Desktop-App sperrt sich außerdem sofort bei Bildschirmsperre, Ruhezustand oder zugeklapptem Deckel.
+- **Schutz vor Bildschirmaufnahmen (Desktop-App):** Screenshot-Programme, Windows Recall und „Bildschirm teilen“ sehen das LeDoK-Fenster nicht mehr. Ein per Kabel angeschlossener Beamer zeigt es weiterhin. Unter **Passwort & Sperre** kannst du Aufnahmen bei Bedarf erlauben.
+- **Beispielklasse:** Ihre Bewertungen, Notizen, Fehltage, Listen und der Klassenrat liegen jetzt immer in den letzten Schulwochen. So zeigt **Heute** auch Wochen nach dem Installieren Schwierigkeiten und Trends an.
+- **Schneller bei vielen Daten:** **Heute**, **Übersicht** und **Kind** bauen sich nach einem Schuljahr mit vielen Bewertungen deutlich schneller auf.
+- **Problem melden:** Namen aus deiner Klasse in deiner Beschreibung ersetzt LeDoK automatisch durch Kürzel.
+- Die Browser-Fassung weist in Chrome und Edge darauf hin, dass für echte Schülerdaten die Desktop-App oder Firefox besser geeignet ist.
+- Beim Ausschalten des Hersteller-Supports erklärt LeDoK, dass bereits angelegte Sicherungen und Dateien bis zum Löschen freigegeben bleiben.
+
+**Behoben**
+- Der KI-Export schrieb in die Überschrift immer „kombinierte Klasse 1/2“. Jetzt stehen dort die Jahrgangsstufen der ausgewählten Kinder.
+- Übergabedateien und Fachpakete werden beim Einlesen gleich geprüft: Einträge ohne gültiges Datum oder mit ungültigem Wert werden nicht übernommen.
 
 ## 1.1.5 (Beta)
 

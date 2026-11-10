@@ -5,7 +5,7 @@
 // Nur wenn die Schule es im Schulschlüssel einschaltet, fragt der Hauptprozess zusätzlich die GitHub-Releases ab
 // (einziger Netzwerkzugriff von LeDoK, eigene Sitzung, feste Hosts; die Oberfläche selbst bleibt ohne Netzwerk).
 "use strict";
-const { app, BrowserWindow, protocol, ipcMain, shell, Menu, session, dialog } = require("electron");
+const { app, BrowserWindow, protocol, ipcMain, shell, Menu, session, dialog, powerMonitor } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const U = require("./update");
@@ -18,7 +18,32 @@ if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 const MITGELIEFERT = path.join(__dirname, "..", "app", "LeDoK.html");
 const SCHLUESSEL_DATEI = path.join(__dirname, "ledok-update-key.json");
 const updateOrdner = () => path.join(app.getPath("userData"), "update");
-const sicherungsOrdner = () => path.join(app.getPath("documents"), "LeDoK-Sicherungen");
+// Sicherungen: früher immer Dokumente/LeDoK-Sicherungen. „Dokumente“ wird unter Windows 11 und macOS aber oft still mit
+// OneDrive bzw. iCloud abgeglichen – dann liegen sie stattdessen im Benutzerordner der App, außer die Lehrkraft wählt selbst einen Ordner.
+const einstellungDatei = () => path.join(app.getPath("userData"), "einstellungen.json");
+const einstellungen = () => leseJson(einstellungDatei()) || {};
+const einstellungSetzen = (x) => schreibeAtomar(einstellungDatei(), JSON.stringify({ ...einstellungen(), ...x }, null, 2));
+const dokumenteOrdner = () => path.join(app.getPath("documents"), "LeDoK-Sicherungen");
+const appSicherungsOrdner = () => path.join(app.getPath("userData"), "Sicherungen");
+// Liegt ein Pfad in einem Ordner, den ein Cloud-Dienst abgleicht? Liefert den Namen des Dienstes oder null.
+function cloudDienst(p) {
+  const n = path.resolve(String(p || "")).toLowerCase();
+  const unter = (basis) => !!basis && (n === path.resolve(basis).toLowerCase() || n.startsWith(path.resolve(basis).toLowerCase() + path.sep));
+  for (const v of ["OneDrive", "OneDriveCommercial", "OneDriveConsumer"]) if (unter(process.env[v])) return "OneDrive";
+  if (/[\\/]onedrive( - [^\\/]*)?([\\/]|$)/i.test(n)) return "OneDrive";
+  if (n.includes(`${path.sep}library${path.sep}mobile documents${path.sep}`) || n.includes(`${path.sep}library${path.sep}cloudstorage${path.sep}icloud`)) return "iCloud";
+  if (/[\\/](dropbox|google drive|googledrive|nextcloud|owncloud|seadrive)([\\/]|$)/i.test(n)) return n.includes("dropbox") ? "Dropbox" : n.includes("google") ? "Google Drive" : "einem Cloud-Ordner";
+  // macOS: „Schreibtisch & Dokumente“ in iCloud – Dokumente ist dann ein Verweis in die iCloud-Ablage
+  if (process.platform === "darwin") { try { const echt = fs.realpathSync(p).toLowerCase(); if (echt !== n && echt.includes("mobile documents")) return "iCloud"; } catch (e) { /* Ordner gibt es noch nicht */ } }
+  return null;
+}
+function dokumenteCloud() { try { return cloudDienst(app.getPath("documents")); } catch (e) { return null; } }
+function sicherungsOrt() {
+  const e = einstellungen();
+  if (typeof e.sicherungsOrdner === "string" && e.sicherungsOrdner) return { ordner: e.sicherungsOrdner, gewaehlt: true };
+  return dokumenteCloud() ? { ordner: appSicherungsOrdner(), gewaehlt: false, ausgewichen: true } : { ordner: dokumenteOrdner(), gewaehlt: false };
+}
+const sicherungsOrdner = () => sicherungsOrt().ordner;
 
 const suchEinstellung = () => path.join(app.getPath("userData"), "update-suche.json");
 // Nach „zurück zur vorherigen Version“ bietet die Suche diese und ältere Versionen nicht erneut an, erst eine neuere
@@ -66,23 +91,41 @@ function aktiv() {
 
 function zeitstempel() { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
 
-const AUFHEBEN = 15; // je Anlass so viele Sicherungen behalten, ältere automatisch löschen
+// Aufbewahrung je Art der Sicherung (Datenschutz: nicht länger aufheben als nötig).
+// Die Versionsnummer gehört nicht zur Art: „vor-update-1.1.4“ und „vor-update-1.1.5“ zählen gemeinsam.
+// n = höchstens so viele Stände, tage = ältere als so viele Tage löschen (auch den letzten Stand dieser Art).
+const AUFBEWAHRUNG = {
+  tag: { n: 14 }, kopie: { n: 15 },
+  "vor-update": { n: 3, tage: 180 }, "vor-zurueck": { n: 3, tage: 180 }, "vor-zuruecksetzen": { n: 3, tage: 180 },
+};
+const AUFBEWAHRUNG_SONST = { n: 10, tage: 90 }; // vor-loeschen, vor-schuljahreswechsel, notfall, vor-aufraeumen …
+const SICHERUNG_RE = /^ledok-sicherung-([a-z0-9.-]+?)-(\d{4}-\d{2}-\d{2}-\d{4})(-\d+)?\.lernstand$/;
+const artVon = (anlass) => String(anlass).replace(/-\d+\.\d+\.\d+$/, "");
+function sicherungenListe(ordner = sicherungsOrdner()) {
+  let namen = [];
+  try { namen = fs.readdirSync(ordner); } catch (e) { return []; }
+  return namen.map((f) => { const m = SICHERUNG_RE.exec(f); if (!m) return null; let t = 0; try { t = fs.statSync(path.join(ordner, f)).mtimeMs; } catch (e) { return null; } return { f, art: artVon(m[1]), t }; })
+    .filter(Boolean).sort((a, b) => b.t - a.t);
+}
 function sichern(daten, anlass) {
   if (!daten) return null;
   anlass = String(anlass || "kopie").toLowerCase().replace(/[^a-z0-9.-]+/g, "-").slice(0, 40) || "kopie";
-  fs.mkdirSync(sicherungsOrdner(), { recursive: true });
-  let datei = path.join(sicherungsOrdner(), `ledok-sicherung-${anlass}-${zeitstempel()}.lernstand`);
-  for (let n = 2; fs.existsSync(datei); n++) datei = path.join(sicherungsOrdner(), `ledok-sicherung-${anlass}-${zeitstempel()}-${n}.lernstand`);
+  const ordner = sicherungsOrdner();
+  fs.mkdirSync(ordner, { recursive: true });
+  let datei = path.join(ordner, `ledok-sicherung-${anlass}-${zeitstempel()}.lernstand`);
+  for (let n = 2; fs.existsSync(datei); n++) datei = path.join(ordner, `ledok-sicherung-${anlass}-${zeitstempel()}-${n}.lernstand`);
   fs.writeFileSync(datei, daten, "utf8");
-  ausduennen(anlass);
+  ausduennen(ordner);
   return datei;
 }
-function ausduennen(anlass) {
+function ausduennen(ordner = sicherungsOrdner()) {
   try {
-    const re = new RegExp(`^ledok-sicherung-${anlass.replace(/[.]/g, "\\.")}-\\d{4}-\\d{2}-\\d{2}-\\d{4}(-\\d+)?\\.lernstand$`);
-    const alle = fs.readdirSync(sicherungsOrdner()).filter((f) => re.test(f))
-      .map((f) => ({ f, t: fs.statSync(path.join(sicherungsOrdner(), f)).mtimeMs })).sort((a, b) => b.t - a.t);
-    for (const x of alle.slice(AUFHEBEN)) fs.rmSync(path.join(sicherungsOrdner(), x.f), { force: true });
+    const jetzt = Date.now(), jeArt = new Map();
+    for (const x of sicherungenListe(ordner)) { if (!jeArt.has(x.art)) jeArt.set(x.art, []); jeArt.get(x.art).push(x); }
+    for (const [art, liste] of jeArt) {
+      const r = AUFBEWAHRUNG[art] || AUFBEWAHRUNG_SONST;
+      liste.forEach((x, i) => { if (i >= r.n || (r.tage && jetzt - x.t > r.tage * 864e5)) fs.rmSync(path.join(ordner, x.f), { force: true }); });
+    }
   } catch (e) { /* Ausdünnen ist nur Komfort */ }
 }
 
@@ -227,6 +270,9 @@ function fensterOeffnen() {
       spellcheck: process.platform === "darwin", // Windows/Linux würden Wörterbücher aus dem Internet laden
     },
   });
+  // Bildschirmaufnahmen (Windows Recall, Screenshot-Programme, Bildschirm teilen) sehen das Fenster nicht – außer die Lehrkraft erlaubt es.
+  // Ein per Kabel gespiegelter Beamer zeigt LeDoK weiterhin.
+  fenster.setContentProtection(einstellungen().aufnahmenErlauben !== true);
   fenster.once("ready-to-show", () => fenster.show());
   fenster.loadURL(`${SCHEME}://app/index.html`);
 
@@ -314,7 +360,7 @@ app.whenReady().then(() => {
     catch (err) { return { ok: false, fehler: err.message }; }
   });
   handle("ledok:sicherung", (e, text, anlass) => {
-    try { const o = JSON.parse(text); if (!o || !o.ct) return { ok: false, fehler: "ungültige Daten" }; return { ok: true, datei: path.basename(sichern(text, anlass)) }; }
+    try { const o = JSON.parse(text); if (!o || !o.ct) return { ok: false, fehler: "ungültige Daten" }; const f = sichern(text, anlass); return { ok: true, datei: path.basename(f), ordner: path.dirname(f) }; }
     catch (err) { return { ok: false, fehler: err.message }; }
   });
 
@@ -377,6 +423,56 @@ app.whenReady().then(() => {
     return { ok: true };
   });
   handle("ledok:sicherungenOeffnen", () => { fs.mkdirSync(sicherungsOrdner(), { recursive: true }); return shell.openPath(sicherungsOrdner()); });
+
+  // Bildschirmsperre, Ruhezustand oder Deckel zu: LeDoK sofort sperren (speichert vorher)
+  const sperren = () => { if (fenster && !fenster.isDestroyed()) fenster.webContents.executeJavaScript("typeof ledokSperren==='function'&&ledokSperren()").catch(() => {}); };
+  powerMonitor.on("lock-screen", sperren);
+  powerMonitor.on("suspend", sperren);
+
+  // Sicherungsort: Anzeige, eigener Ordner, zurück zum Standard, alte Sicherungen aus der Cloud holen, aufräumen
+  const ortInfo = () => {
+    const o = sicherungsOrt(), liste = sicherungenListe(o.ordner);
+    const alt = o.ordner !== dokumenteOrdner() ? sicherungenListe(dokumenteOrdner()).length : 0;
+    return { ok: true, ordner: o.ordner, gewaehlt: o.gewaehlt, ausgewichen: !!o.ausgewichen, cloud: cloudDienst(o.ordner), dokumenteCloud: dokumenteCloud(),
+      anzahl: liste.length, aeltestes: liste.length ? new Date(liste[liste.length - 1].t).toISOString() : null,
+      altOrdner: alt ? dokumenteOrdner() : null, altAnzahl: alt, altCloud: alt ? cloudDienst(dokumenteOrdner()) : null, aufnahmenErlauben: einstellungen().aufnahmenErlauben === true };
+  };
+  handle("ledok:sicherungOrt", () => ortInfo());
+  handle("ledok:sicherungOrdnerWaehlen", async () => {
+    const r = await dialog.showOpenDialog(fenster, { title: "Ordner für LeDoK-Sicherungen wählen", properties: ["openDirectory", "createDirectory"] });
+    if (r.canceled || !r.filePaths[0]) return { ok: false };
+    try { fs.accessSync(r.filePaths[0], fs.constants.W_OK); } catch (e) { return { ok: false, fehler: "In diesen Ordner darf LeDoK nicht schreiben." }; }
+    einstellungSetzen({ sicherungsOrdner: r.filePaths[0] });
+    return ortInfo();
+  });
+  handle("ledok:sicherungOrdnerStandard", () => { const e = einstellungen(); delete e.sicherungsOrdner; schreibeAtomar(einstellungDatei(), JSON.stringify(e, null, 2)); return ortInfo(); });
+  // Sicherungen aus Dokumente/LeDoK-Sicherungen (z. B. in OneDrive) in den aktuellen Sicherungsordner verschieben
+  handle("ledok:sicherungenVerschieben", () => {
+    try {
+      const von = dokumenteOrdner(), nach = sicherungsOrdner();
+      if (path.resolve(von) === path.resolve(nach)) return { ok: false, fehler: "Die Sicherungen liegen schon dort." };
+      fs.mkdirSync(nach, { recursive: true });
+      let n = 0;
+      for (const x of sicherungenListe(von)) {
+        let ziel = path.join(nach, x.f); if (fs.existsSync(ziel)) ziel = ziel.replace(/\.lernstand$/, `-alt${n}.lernstand`);
+        fs.copyFileSync(path.join(von, x.f), ziel); fs.rmSync(path.join(von, x.f), { force: true }); n++;
+      }
+      ausduennen(nach);
+      return { ...ortInfo(), verschoben: n };
+    } catch (err) { return { ok: false, fehler: err.message }; }
+  });
+  // Alle Sicherungen löschen außer der neuesten (die App legt vorher eine frische Sicherung des jetzigen Stands an)
+  handle("ledok:sicherungenAufraeumen", () => {
+    try {
+      let n = 0;
+      for (const ordner of [...new Set([sicherungsOrdner(), dokumenteOrdner()])]) {
+        const liste = sicherungenListe(ordner), behalten = ordner === sicherungsOrdner() ? 1 : 0;
+        for (const x of liste.slice(behalten)) { fs.rmSync(path.join(ordner, x.f), { force: true }); n++; }
+      }
+      return { ...ortInfo(), geloescht: n };
+    } catch (err) { return { ok: false, fehler: err.message }; }
+  });
+  handle("ledok:aufnahmenErlauben", (e, an) => { einstellungSetzen({ aufnahmenErlauben: !!an }); if (fenster && !fenster.isDestroyed()) fenster.setContentProtection(!an); return ortInfo(); });
 
   menue();
   fensterOeffnen();

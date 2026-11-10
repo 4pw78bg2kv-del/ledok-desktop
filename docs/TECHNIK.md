@@ -1,6 +1,6 @@
 # LeDoK – Technische Dokumentation
 
-Stand: 20.10.2026 · `main` nach PR #29 · App-Version 1.1.3 Beta
+Stand: 10.11.2026 · App-Version 1.1.5 Beta + Unveröffentlichtes (Kapitel 5, 6, 9 und 16 auf diesem Stand; Kapitel 3–4 beschreiben Funktionen bis 1.1.3, Ergänzungen bis 1.1.5 in Kapitel 16)
 
 Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Code-Prüfungen und für alle, die später am Projekt arbeiten. Die Bedienung für Lehrkräfte steht in der Bedienungsanleitung ([`docs/LeDoK-Bedienungsanleitung.docx`](LeDoK-Bedienungsanleitung.docx), auch in der App unter Hilfe), Bauen und Verteilen Schritt für Schritt in [ANLEITUNG.md](../ANLEITUNG.md).
 
@@ -21,6 +21,7 @@ Diese Datei beschreibt, wie LeDoK innen aufgebaut ist: für die Wartung, für Co
 13. [Content-Security-Policy und Skript-Hash](#13--content-security-policy-und-skript-hash)
 14. [Regeln für Änderungen](#14--regeln-für-änderungen)
 15. [Offene Punkte](#15--offene-punkte)
+16. [Ergänzungen 1.1.4 bis Unveröffentlicht](#16--ergänzungen-114-bis-unveröffentlicht-kurzüberblick)
 
 ---
 
@@ -243,11 +244,18 @@ S = {
 - **Desktop:** `storeWrite` ruft `ledokDesktop.datenSpeichern(key, text)`. Der Hauptprozess prüft `app` und `ct`, kopiert die alte Datei nach `.vorher` und schreibt atomar (`.tmp` + `rename`). Gelesen wird synchron (`sendSync`), weil der Startbildschirm sofort wissen muss, ob Daten da sind. Liegen noch Daten aus 1.0.0 im `localStorage`, werden sie gelesen und beim ersten Speichern in die Datei übernommen.
 - **Zwei Fenster (nur Browser):** Jedes Speichern schreibt eine Stand-Marke. Weicht sie vor dem nächsten Speichern ab, sperrt das Fenster (`ST.konflikt`). Über `BroadcastChannel("ledok")` speichert und sperrt ein offenes Fenster, sobald ein zweites öffnet.
 - **Profile:** `profilStart()` wählt beim Start das zuletzt genutzte Profil. „Eigenes LeDoK anlegen“ (`ACT.profilNeu`) erzeugt einen neuen Schlüssel `STORE_BASE + ".p" + 8 Hex-Zeichen`. Jedes Profil hat eigenes Passwort und eigenen Datenschlüssel.
-- **Automatische Sperre:** nach 15 Minuten ohne Eingabe (`IDLE_MIN`). `lock()` übernimmt vorher offene Texte in Dialogen und legt eine Notfallkopie an, falls das Speichern fehlschlägt.
+- **Automatische Sperre:** nach `sperreMin()` Minuten ohne Eingabe (`S.meta.sperreMin` ∈ 5/10/15/30, Voreinstellung `IDLE_MIN` = 15). Strg+L sperrt sofort, die Desktop-App ruft bei `powerMonitor` `lock-screen`/`suspend` `window.ledokSperren()` auf. `lock()` übernimmt vorher offene Texte in Dialogen, entfernt den Sichtschutz und legt eine Notfallkopie an, falls das Speichern fehlschlägt.
+- **Sichtschutz:** `sichtschutz(an)` legt ein undurchsichtiges `#sichtschutz` über alles (Knopf 🙈, Strg+Umschalt+S); nur Anzeige, die Daten bleiben geöffnet.
 
 ### Sicherungen
 
-`sicherungAnlegen(anlass, roh)` schreibt in der Desktop-App über `ledokDesktop.sicherung` still nach `Dokumente/LeDoK-Sicherungen/ledok-sicherung-<anlass>-JJJJ-MM-TT-HHMM.lernstand`; im Browser wird die Datei heruntergeladen.
+`sicherungAnlegen(anlass, roh)` schreibt in der Desktop-App über `ledokDesktop.sicherung` still in den Sicherungsordner (`<ordner>/ledok-sicherung-<anlass>-JJJJ-MM-TT-HHMM.lernstand`, Rückgabe `{name, ort:"desktop", ordner}`); im Browser wird die Datei heruntergeladen.
+
+**Sicherungsordner** (`sicherungsOrt()` in `main.js`):
+1. selbst gewählt: `userData/einstellungen.json` → `sicherungsOrdner`;
+2. sonst `Dokumente/LeDoK-Sicherungen`, außer `cloudDienst(Dokumente)` erkennt einen Cloud-Abgleich (OneDrive über `%OneDrive%`/`%OneDriveCommercial%` oder Pfadteil `OneDrive`, iCloud über `Library/Mobile Documents` bzw. `CloudStorage/iCloud`, auf macOS auch per `realpath`, dazu Dropbox, Google Drive, Nextcloud) → dann `userData/Sicherungen`.
+
+Die Karte „Sicherungen“ unter Daten & Sicherheit (`sicherungenCard()`, `SICH_ACT`) zeigt Ort, Anzahl, älteste Sicherung und Cloud-Warnungen; „Hierher verschieben“ holt Sicherungen aus `Dokumente/LeDoK-Sicherungen`, „Ältere Sicherungen löschen …“ legt erst eine frische Sicherung an und löscht dann alle anderen in beiden Ordnern.
 
 | Anlass | Auslöser |
 |---|---|
@@ -261,7 +269,7 @@ S = {
 | `vor-update-<version>`, `vor-zuruecksetzen-<version>`, `vor-zurueck-<version>` | Update einspielen, zur ausgelieferten bzw. zur vorherigen Version zurück (im Hauptprozess) |
 | `notfall` | Sperren, obwohl das Speichern fehlgeschlagen ist |
 
-Der Hauptprozess behält je Anlass die 15 neuesten Dateien (`AUFHEBEN`) und löscht ältere. Gelöscht wird nur nach dem Muster `ledok-sicherung-<anlass>-<Datum>.lernstand`.
+Aufbewahrung (`AUFBEWAHRUNG` in `main.js`, angewandt von `ausduennen()` nach jeder Sicherung): Die Art ist der Anlass ohne Versionsnummer (`artVon`), `vor-update-1.1.4` und `vor-update-1.1.5` zählen also zusammen. `tag` 14 Stände, `kopie` 15, `vor-update`/`vor-zurueck`/`vor-zuruecksetzen` 3 und höchstens 180 Tage, alle übrigen (`AUFBEWAHRUNG_SONST`) 10 und höchstens 90 Tage. Gelöscht wird nur, was auf `SICHERUNG_RE` passt. Nach dem Löschen von Kindern, dem Schuljahreswechsel und einem Passwortwechsel weist die App auf „Ältere Sicherungen löschen“ hin (`SICH_ALT_HINWEIS`).
 
 Löschen ohne Passwort (`ACT.wipeAll`) ist vom Startbildschirm erreichbar. Deshalb legt LeDoK vorher immer eine verschlüsselte Sicherung an und verlangt „LÖSCHEN“. Bei mehreren Profilen wird nur das gewählte gelöscht.
 
@@ -280,7 +288,7 @@ Alle Kryptografie läuft über WebCrypto im Renderer.
 `versiegeln(app, obj, {dek, pwKey, salt, rawKey, sk, zip})` erzeugt:
 
 ```js
-{ app, v: 2, kdf: "PBKDF2-SHA256-250000",
+{ app, v: 2, kdf: "PBKDF2-SHA256-250000",   // Rundenzahl wird beim Öffnen gelesen (kdfRunden)
   salt, wp: {iv, ct},          // DEK, verpackt mit dem Passwort-Schlüssel
   wk:   {iv, ct},              // DEK, verpackt mit einem 256-Bit-Paketschlüssel (rawKey)
   ws:   {sid, name, fp, pub, msalt, ek, ct},   // DEK, RSA-verpackt mit dem Schulschlüssel
@@ -294,6 +302,9 @@ Alle Kryptografie läuft über WebCrypto im Renderer.
 - `entsiegeln(obj, {pw | rawKey | master | dek})` öffnet jede Variante und liest auch Container v1 (`{salt, iv, ct}` mit direkt aus dem Passwort abgeleitetem Schlüssel).
 - **Passwort ändern** erzeugt einen neuen DEK. Wer das alte Passwort und eine alte Kopie hat, kann neue Daten damit nicht öffnen.
 - Der DEK bleibt während der Sitzung in `SESSION = {dek, pwKey, salt}`, der Klartext nur in `S`.
+- **Rundenzahl:** `entsiegeln` leitet den Passwort-Schlüssel mit der Rundenzahl aus `kdf` ab (`kdfRunden`, fehlend = 250.000). Weicht sie von `KDF_IT` ab, wird der Sitzungsschlüssel gleich mit `KDF_IT` neu abgeleitet; beim nächsten Speichern steht dann die neue Zahl in der Datei. So lässt sich `KDF_IT` später erhöhen, ohne alte Dateien unlesbar zu machen.
+- **Passwortstärke:** `pwStaerke(pw)` schätzt Bits aus Länge und Zeichenarten, mit Abzügen für `PW_HAEUFIG`, Jahreszahlen, Folgen, Wiederholungen und Namen aus der Klasse; Stufen sehr schwach bis sehr stark. Angezeigt unter jedem Feld mit `data-staerke` (`pwFeld(id, ac, true)`, `askPassword(titel, text, true)`, Masterkennwort). Nur Anzeige, keine Sperre.
+- **Unverschlüsselt im Dateikopf** stehen `app`, `v`, `kdf`, `saved`, bei `ws` Name und Fingerabdruck der Schule, bei `wv` Name des Supports, beim Fachpaket zusätzlich `pid` und `info` (Klasse, Fächer, Version). Dateinamen von Fachpaketen enthalten den Klassennamen.
 
 ## 7 · Schlüssel und Dateiformate
 
@@ -393,6 +404,8 @@ Versionen in `package.json` (fest): Electron 44.9.0, electron-builder 26.17.0, P
 - Eine Instanz (`requestSingleInstanceLock`); eine zweite holt das bestehende Fenster nach vorn.
 - Electron-Fuses: `runAsNode` aus, keine `NODE_OPTIONS`, keine Inspect-Argumente, ASAR-Integrität, nur aus ASAR laden.
 - Entwicklerwerkzeuge nur in nicht gepackten Builds.
+- `setContentProtection(true)`: Bildschirmaufnahmen (Screenshot-Programme, Windows Recall, Bildschirm teilen) sehen das Fenster nicht, ein gespiegelter Beamer schon. Abschaltbar über `ledok:aufnahmenErlauben` (`userData/einstellungen.json` → `aufnahmenErlauben`).
+- `powerMonitor` `lock-screen` und `suspend` → `ledokSperren()` im Renderer.
 
 **IPC** (nur von `ledok://app/`, geprüft über `senderFrame.url`):
 
@@ -401,7 +414,12 @@ Versionen in `package.json` (fest): Electron 44.9.0, electron-builder 26.17.0, P
 | `ledok:datenLaden` (sync) | verschlüsselte Datei je Speicherschlüssel lesen; Schlüssel nur `[A-Za-z0-9._-]{1,100}` |
 | `ledok:datenSpeichern` | prüfen (`app`, `ct`), `.vorher` anlegen, atomar schreiben |
 | `ledok:datenLoeschen` | Datei und `.vorher` löschen |
-| `ledok:sicherung` | Sicherung nach `Dokumente/LeDoK-Sicherungen`, ausdünnen |
+| `ledok:sicherung` | Sicherung in den Sicherungsordner schreiben, ausdünnen; liefert `datei` und `ordner` |
+| `ledok:sicherungOrt` | Ort, Anzahl, älteste Sicherung, Cloud-Erkennung, Sicherungen im alten Ordner, `aufnahmenErlauben` |
+| `ledok:sicherungOrdnerWaehlen`, `ledok:sicherungOrdnerStandard` | eigenen Sicherungsordner festlegen bzw. zurück zum Standard |
+| `ledok:sicherungenVerschieben` | Sicherungen aus `Dokumente/LeDoK-Sicherungen` in den aktuellen Ordner verschieben |
+| `ledok:sicherungenAufraeumen` | alle Sicherungen außer der neuesten im aktuellen Ordner löschen, dazu alle im alten Ordner |
+| `ledok:aufnahmenErlauben` | Schutz vor Bildschirmaufnahmen aus- oder einschalten |
 | `ledok:info` | Programmversion, Betriebssystem, aktive und ausgelieferte Version, Update-Datum, Fingerabdruck des Update-Schlüssels, gewählter Update-Ordner (`updateSuchordner`), Ziel für „eine Stufe zurück“ (`vorherigeVersion`), ausgelassene Version (`ausgelassen`) |
 | `ledok:updatePruefen`, `ledok:updateInstallieren`, `ledok:updateZuruecksetzen`, `ledok:updateVorherige` | siehe Kapitel 10 |
 | `ledok:updateSuchen`, `ledok:updateOnlineSuchen`, `ledok:updateGefundenInstallieren` | automatische Suche, siehe Kapitel 10 |
@@ -580,5 +598,23 @@ connect-src 'none'; form-action 'none'; base-uri 'none'
 
 - **Signierte Schulvorlagen:** `.ledok-vorlage` wird nicht mit dem Schulschlüssel signiert. Das wäre nötig, wenn eine „Vorlage der Schule“ verbindlich gekennzeichnet werden soll.
 - **Import fremder Klassenlisten (CSV):** vorgeschlagen, nicht umgesetzt. Der vorhandene `csvParse()` erkennt bereits Trennzeichen, Anführungszeichen und BOM.
+- **Raster als Abweichung speichern:** Das Raster macht rund 0,77 MB jedes Speicherns aus, obwohl es fast vollständig `LP_VORLAGE` entspricht. Nur Abweichungen zu speichern spart Zeit bei jedem Speichern (heute rund 220 ms nach einem Schuljahr), braucht aber ein neues `SCHEMA`.
+- **Eingebettete Anleitung:** 6,2 MB der 7,5 MB von `LeDoK.html` sind die Word-Anleitung als Base64. In der Desktop-App könnte sie als eigene Datei im Programmpaket liegen; das verkleinert Update-Pakete und das Repo.
+- **Branch-Schutz für `main`:** Änderungen nur per PR mit grünem Test; der Workflow „Update veröffentlichen“ signiert, was auf `main` liegt.
 - **Code-Signing:** Apple-Developer-Konto bzw. Windows-Zertifikat, damit die Warnungen beim ersten Start entfallen. Ergänzung in `build.yml`.
 - **Lizenzierung:** besprochen, nicht umgesetzt.
+
+## 16 · Ergänzungen 1.1.4 bis Unveröffentlicht (Kurzüberblick)
+
+| Bereich | Wichtige Funktionen und Daten |
+|---|---|
+| Ferien und Feiertage | `FERIEN_BY` (Bayern bis Sommer 2030), `kalJahr` (Feiertage, Ostern nach Gauß), `kalTag(d)` mit Memo, `schulfrei`, `naechsterSchultag`, eigene freie Tage in `S.meta.freieTage` (`freieTageBereinigen`); Ansichten `KAL_VIEWS`, `KAL_ACT` |
+| Lern-App | Quelle `q:"a"`, Notiz über `appNotiz(pct)`, Liste der Apps in `S.meta.lernApps` |
+| Ansicht | `S.meta.aus[]`, `ANSICHT_VIEWS`/`ANSICHT_ACT`; Heute-Bereiche zuklappbar (`S.meta.heuteZu`) |
+| Bewertungsebene | Flag `hier` am Knoten; `hierBew`, `hierVon`, `bewertbar`, `ebeneSetzen`, `ebeneStand`; „Worauf achten“ über `teilaspekte` |
+| Kompetenzbaum je Kind | Überblick bis Ebene, Zeilen je Ebene ausblenden (in `S.meta` gemerkt) |
+| Einstellungen | Seitenleiste nach `EINST_GRUPPEN`, `--kopf` über `kopfMerken()` |
+| Datenschutz (Unveröffentlicht) | Sicherungsort und Aufbewahrung (Kapitel 5), Passwortstärke und `kdfRunden` (Kapitel 6), Bildschirmschutz, Sperre bei Bildschirmsperre (Kapitel 9), Sichtschutz; `browserHinweis()` auf dem Startbildschirm der Browser-Fassung in Chrome/Edge (alle `file://`-Seiten teilen dort `localStorage`) |
+| Leistung | `datenlage()` nutzt `cache().idx` und merkt sich Ergebnisse je `DV` in `CACHE.dl`; `fokusStatus()` ebenfalls über den Index |
+| Importe | `importKindDaten` und `fachpaketUebernehmen` prüfen Datum, Wert, Quelle, Notiz-Zeit, Textschlüssel, Raster-IDs und Fächer schon beim Einlesen |
+| Beispielklasse | `loadDemo()` erzeugt alle Daten relativ zu `today()` (die letzten 23 Schultage, `tagNr(i)`), `krDemo(tagNr)` ebenso |
