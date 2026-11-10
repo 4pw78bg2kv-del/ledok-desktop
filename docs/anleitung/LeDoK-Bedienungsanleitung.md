@@ -25,6 +25,8 @@ Diese Anleitung beschreibt die Version **1.1.5 Beta** vom 21.10.2026. Sie richte
 
 Beide Fassungen sehen gleich aus und können dieselben Sicherungskopien öffnen. Diese Anleitung beschreibt die Desktop-App; Unterschiede zur Browser-Fassung sind jeweils vermerkt.
 
+Für echte Schülerdaten ist die Desktop-App gedacht. In Chrome und Edge teilen sich alle Dateien, die du direkt vom Rechner öffnest, denselben Browser-Speicher: Eine andere geöffnete HTML-Datei, etwa ein Mail-Anhang, könnte den verschlüsselten Speicher von LeDoK lesen oder löschen. Die Browser-Fassung weist auf dem Startbildschirm darauf hin. Firefox trennt solche Dateien voneinander.
+
 ## 2 · Installation
 
 Du bekommst LeDoK als Installationsdatei: `LeDoK-Setup-x.y.z.exe` für Windows oder `LeDoK-x.y.z-mac.dmg` für macOS (läuft auf Intel-Macs und Macs mit Apple-Chip). Die Programme sind noch nicht mit einem gekauften Zertifikat signiert. Deshalb warnen Windows und macOS beim **ersten** Start. Das ist bei LeDoK erwartet und kein Virus.
@@ -56,10 +58,12 @@ Du bekommst LeDoK als Installationsdatei: `LeDoK-Setup-x.y.z.exe` für Windows o
 | Was                         | Windows                       | macOS                                        |
 |------------------------|------------------------|------------------------|
 | Deine Daten (verschlüsselt) | `%APPDATA%\LeDoK\daten`       | `~/Library/Application Support/LeDoK/daten`  |
-| Automatische Sicherungen    | `Dokumente\LeDoK-Sicherungen` | `Dokumente/LeDoK-Sicherungen`                |
+| Automatische Sicherungen    | `Dokumente\LeDoK-Sicherungen`, bei OneDrive `%APPDATA%\LeDoK\Sicherungen` | `Dokumente/LeDoK-Sicherungen`, bei iCloud `~/Library/Application Support/LeDoK/Sicherungen` |
 | Eingespieltes Update        | `%APPDATA%\LeDoK\update`      | `~/Library/Application Support/LeDoK/update` |
 
 Beim Deinstallieren bleiben deine Daten und Sicherungen erhalten. Ein neuer Installer ersetzt nur das Programm.
+
+Den Ordner für die Sicherungen kannst du unter **Einstellungen → Daten & Sicherheit → Sicherungen** selbst wählen (Kapitel 7).
 
 ### Vom Browser in die Desktop-App umziehen
 
@@ -115,6 +119,7 @@ Danach steht auf dem Startbildschirm die Auswahl **Wer arbeitet?**. Kein LeDoK k
 | „✓ gespeichert“                                                            | Speicherstatus. Ein roter Knopf „Nicht gespeichert“ bedeutet: sofort eine Kopie herunterladen.                       |
 | „Kopie: nie“ / „Kopie vor n Tagen“                                         | erscheint, wenn die letzte Sicherungskopie fehlt oder älter als 7 Tage ist                                           |
 | **☰**                                                                      | Halbjahr umstellen, Darstellung Hell/Dunkel/Auto, Hilfe, Sperren                                                     |
+| **🙈**                                                                     | Sichtschutz: verdeckt sofort alles, z. B. wenn der Laptop am Beamer hängt (auch **Strg+Umschalt+S**)                 |
 | **?**                                                                      | Hilfe (auch mit der Taste ?)                                                                                         |
 | **⚙ Einstellungen**                                                        | Klasse, Stundenplan, Fachlehrkräfte, Schuljahr, Fächer & Raster, Textbausteine, Dokumente, Daten & Sicherheit        |
 | **Beenden**                                                                | speichern, sichern, sperren                                                                                          |
@@ -626,7 +631,14 @@ LeDoK speichert jede Eingabe sofort verschlüsselt. Eine **Sicherungskopie** ist
 
 ### Automatische Sicherungen
 
-In der Desktop-App landen alle automatischen Sicherungen im Ordner `Dokumente/LeDoK-Sicherungen`. Du öffnest ihn über das Menü **Datei → Sicherungsordner öffnen** oder im Versionsdialog über **Sicherungen anzeigen**.
+In der Desktop-App landen alle automatischen Sicherungen im **Sicherungsordner**. Das ist normalerweise `Dokumente/LeDoK-Sicherungen`. Du öffnest ihn über das Menü **Datei → Sicherungsordner öffnen**, im Versionsdialog über **Sicherungen anzeigen** oder unter **Einstellungen → Daten & Sicherheit → Sicherungen → Ordner öffnen**.
+
+**Keine Sicherungen in der Cloud.** Unter Windows 11 wird der Ordner „Dokumente“ oft automatisch mit OneDrive abgeglichen, auf dem Mac mit iCloud („Schreibtisch & Dokumente“). Erkennt LeDoK das, legt es die Sicherungen stattdessen im eigenen Programmordner auf deinem Rechner ab (Windows: `%APPDATA%\LeDoK\Sicherungen`, macOS: `~/Library/Application Support/LeDoK/Sicherungen`). Liegen im alten Ordner noch Sicherungen, zeigt die Karte **Sicherungen** das an, und **Hierher verschieben** holt sie aus der Cloud.
+
+Unter **Einstellungen → Daten & Sicherheit → Sicherungen** siehst du außerdem, wo die Sicherungen liegen, wie viele es sind und wie alt die älteste ist:
+
+-   **Anderen Ordner wählen …** legt die Sicherungen zum Beispiel auf einem verschlüsselten USB-Stick ab. Wählst du einen Ordner, der mit einer Cloud abgeglichen wird, warnt LeDoK. **Standardordner** stellt zurück.
+-   **Ältere Sicherungen löschen …** legt zuerst eine frische Sicherung deines jetzigen Stands an und löscht dann alle älteren. Zur Bestätigung tippst du **LÖSCHEN** ein. Das ist sinnvoll nach dem Schuljahreswechsel, nach dem Löschen von Kindern und nach einer Passwortänderung: Ältere Sicherungen enthalten sonst weiter die Daten gelöschter Kinder und öffnen mit dem alten Passwort. Sicherungen auf USB-Sticks oder in anderen Ordnern löscht LeDoK nicht.
 
 | Wann                                                 | Dateiname beginnt mit                                |
 |------------------------------------|------------------------------------|
@@ -640,7 +652,16 @@ In der Desktop-App landen alle automatischen Sicherungen im Ordner `Dokumente/Le
 | vor einem Update oder dem Zurücksetzen eines Updates | `ledok-sicherung-vor-update-` / `vor-zuruecksetzen-` |
 | wenn das normale Speichern fehlschlägt               | `ledok-sicherung-notfall-`                           |
 
-Von jeder Art bleiben die 15 neuesten liegen, ältere löscht LeDoK selbst. Zusätzlich liegt neben der Datendatei eine `.vorher`-Datei mit dem vorletzten Stand.
+Ältere Sicherungen löscht LeDoK selbst, damit Daten nicht länger als nötig liegen bleiben:
+
+| Art                                                                  | so lange bleiben sie                         |
+|------------------------------------|------------------------------------|
+| beim Schließen (`tag`)                                               | die 14 neuesten                              |
+| beim Beenden und selbst angelegte Kopien (`kopie`)                   | die 15 neuesten                              |
+| vor einem Update, vor dem Zurücksetzen oder Zurückkehren             | die 3 neuesten, höchstens ein halbes Jahr    |
+| vor dem Löschen, vor dem Schuljahreswechsel, Notfall und alle übrigen | die 10 neuesten, höchstens 90 Tage          |
+
+Zusätzlich liegt neben der Datendatei eine `.vorher`-Datei mit dem vorletzten Stand.
 
 In der **Browser-Fassung** lädt LeDoK die Kopie stattdessen in deinen Download-Ordner, beim Beenden höchstens einmal am Tag.
 
@@ -667,7 +688,7 @@ Die Löschfunktionen für echte Daten legen vorher automatisch eine verschlüsse
 | Dieses LeDoK löschen … | Daten & Sicherheit oder Startbildschirm → Weitere Optionen (wenn mehrere LeDoKs am Rechner sind) | löscht nur dein LeDoK; die LeDoKs der anderen Lehrkräfte bleiben erhalten                     |
 | Alles löschen …        | wie oben, wenn nur ein LeDoK am Rechner ist                                                      | löscht alle LeDoK-Daten auf diesem Rechner bzw. in diesem Browser                             |
 
-Die Sicherung „vor-loeschen“ holst du mit dem bisherigen Passwort über **Sicherungskopie laden** zurück.
+Die Sicherung „vor-loeschen“ holst du mit dem bisherigen Passwort über **Sicherungskopie laden** zurück. Sie bleibt höchstens 90 Tage liegen. Sollen die gelöschten Daten auch aus den Sicherungen sofort verschwinden, nutze danach **Ältere Sicherungen löschen …** (siehe oben). LeDoK weist nach dem Löschen von Kindern darauf hin.
 
 ### Datenprüfung
 
@@ -681,8 +702,12 @@ Unter **Daten & Sicherheit** kannst du alle Bewertungen und Freitexte der Klasse
 
 ### Dein Passwort
 
--   **Passwort ändern:** Einstellungen → Daten & Sicherheit → **Passwort ändern …**. Erst das aktuelle, dann zweimal das neue Passwort (mindestens 8 Zeichen) eingeben. LeDoK verschlüsselt die Daten dabei mit einem neuen Schlüssel. Ältere Kopien öffnen weiter mit dem alten Passwort; lege deshalb gleich eine neue Kopie an.
--   **Jetzt sperren:** gleich daneben, oder im Menü ☰.
+-   **Passwort ändern:** Einstellungen → Daten & Sicherheit → **Passwort ändern …**. Erst das aktuelle, dann zweimal das neue Passwort (mindestens 8 Zeichen) eingeben. LeDoK verschlüsselt die Daten dabei mit einem neuen Schlüssel. Ältere Kopien öffnen weiter mit dem alten Passwort; lege deshalb gleich eine neue Kopie an und lösche in der Desktop-App die alten über **Sicherungen → Ältere Sicherungen löschen …**.
+-   **Passwortstärke:** Wo du ein neues Passwort festlegst (beim Einrichten, beim Ändern, für Fachpakete und Übergabedateien sowie für das Masterkennwort), zeigt LeDoK unter dem Feld, wie stark es ist: **sehr schwach**, **schwach**, **mittel**, **stark** oder **sehr stark**. Lang ist besser als kompliziert: Vier zufällige Wörter wie „Tafel Birne Wolke Sieben“ sind sehr stark, „Sommer2026“ ist schwach. Häufige Wörter, Jahreszahlen, Zahlenfolgen und Namen aus deiner Klasse machen ein Passwort schwächer. Die Anzeige ist ein Hinweis; LeDoK nimmt jedes Passwort ab 8 Zeichen an. Für Fachpakete und Übergabedateien, die per Mail verschickt werden, sollte sie mindestens **stark** zeigen.
+-   **Jetzt sperren:** gleich daneben, im Menü ☰ oder mit **Strg+L**.
+-   **Automatische Sperre:** Unter **Passwort & Sperre** wählst du, nach wie vielen Minuten ohne Eingabe LeDoK sich sperrt (5, 10, 15 oder 30, Voreinstellung 15). Die Desktop-App sperrt sich außerdem sofort, wenn du den Bildschirm sperrst (Windows+L, Ctrl+⌘+Q), den Deckel zuklappst oder der Rechner in den Ruhezustand geht.
+-   **Sichtschutz:** Der Knopf **🙈** oben oder **Strg+Umschalt+S** verdeckt sofort den ganzen Bildschirm, ohne zu sperren, zum Beispiel wenn Kinder ans Pult kommen oder der Beamer noch läuft. Ein Klick oder dieselbe Tastenkombination hebt ihn wieder auf.
+-   **Bildschirmaufnahmen (Desktop-App):** Screenshot-Programme, Windows Recall und „Bildschirm teilen“ in Teams oder Zoom sehen das LeDoK-Fenster nicht; dort erscheint es schwarz. Ein per Kabel angeschlossener Beamer zeigt LeDoK ganz normal. Willst du LeDoK bewusst teilen, etwa die Großanzeige in einer Videokonferenz, schalte unter **Passwort & Sperre** **Bildschirmaufnahmen erlauben** ein.
 -   **Passwort vergessen:** Ohne Schulschlüssel gibt es keinen Weg zurück, außer einer Sicherungskopie mit bekanntem Passwort. Mit Schulschlüssel hilft dir der LeDoK-Admin (siehe unten).
 
 ### Der Schulschlüssel
@@ -787,7 +812,7 @@ Wenn etwas nicht funktioniert, erstellst du einen Problembericht: unten rechts *
 
 ![Der Dialog „Problem melden“](bilder/dialog-problem-melden.jpg){width="15.0cm"}
 
-1.  Beschreibe kurz, was du tun wolltest und was stattdessen passiert ist. Namen von Kindern und Noten gehören nicht hinein.
+1.  Beschreibe kurz, was du tun wolltest und was stattdessen passiert ist. Namen von Kindern und Noten gehören nicht hinein. Rutscht dir doch ein Name aus deiner Klasse hinein, ersetzt LeDoK ihn durch das Kürzel.
 2.  LeDoK ergänzt Version, Betriebssystem und die letzten Fehlermeldungen. Namen werden aus den Fehlermeldungen entfernt. Unter „Bericht ansehen“ siehst du den vollständigen Text.
 3.  **Als Datei speichern** (`LeDoK-Problembericht-….txt`) oder **Text kopieren** und per Mail an **dominik@deep-moments.com** schicken. LeDoK selbst versendet nichts.
 

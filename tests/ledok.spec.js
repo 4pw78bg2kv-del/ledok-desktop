@@ -149,6 +149,8 @@ test("Lern-App: Ergebnisse mit Prozent oder Wert eintragen und als Quelle kennze
 });
 
 test("Heute: Karten in Bereichen, Bereiche zuklappen und Sicherung nur bei Fälligkeit", async ({ page }) => {
+  // Fester Schultag: In langen Ferien lägen die letzten Bewertungen der Beispielklasse mehr als drei Wochen zurück
+  await page.clock.setFixedTime(new Date("2026-10-20T09:00:00"));
   await neueKlasse(page);
   const bereiche = page.locator("section.hsek");
   await expect(bereiche.locator(".hsek-k")).toHaveText([/Jetzt im Unterricht/, /Lernstand im Blick/, /Organisation/]);
@@ -1786,4 +1788,146 @@ test("Kind: Kompetenzen im Detail bis zur Bewertungsebene, Überblick je Ebene u
   await page.evaluate(() => { ACT.tab({ dataset: { v: "kind" } }); UI.bOffen = { Deutsch: true }; render(); });
   await expect(karte.locator('[data-act="bTiefe"][data-v="4"]')).toHaveClass(/on/);
   await expect(zeilen.first()).toBeVisible();
+});
+
+// ---------- Code-Prüfung November 2026: Datenschutz und Sicherheit ----------
+test("Beispielklasse liegt in den letzten Schulwochen (wirkt an jedem Tag aktuell)", async ({ page }) => {
+  await neueKlasse(page);
+  const r = await page.evaluate(() => {
+    const ds = S.eintraege.map((e) => e.d).sort();
+    let gestern = today(); do gestern = kbPlus(gestern, -1); while (schulfrei(gestern));
+    return { letzt: ds[ds.length - 1], gestern, tage: new Set(ds).size, frei: ds.some((d) => schulfrei(d)), krAlt: S.klassenrat.anliegen.every((a) => a.d < today()) };
+  });
+  // Bewertet wurde bis zum letzten Schultag vor heute, an höchstens 23 Schultagen (auch in den Ferien gültig)
+  expect(r.letzt).toBe(r.gestern);
+  expect(r.tage).toBeLessThanOrEqual(23);
+  expect(r.tage).toBeGreaterThan(15);
+  expect(r.frei).toBe(false);
+  expect(r.krAlt).toBe(true);
+});
+
+test("Passwortstärke wird angezeigt, blockiert aber nichts", async ({ page }) => {
+  await page.goto(URL);
+  const st = await page.evaluate(() => ["", "1234567", "Sommer2026", "passwort1", "Kx7#mQ2!", "Tafel Birne Wolke Sieben", "a9$Lp2!qR7#vX4"].map((p) => { const r = pwStaerke(p); return r && r.text; }));
+  expect(st).toEqual([null, "sehr schwach", "schwach", "sehr schwach", "mittel", "sehr stark", "sehr stark"]);
+  await page.click('[data-act="startNew"]');
+  await page.fill("#pw1", "Sommer2026");
+  await expect(page.locator(".pwmeter")).toContainText("Stärke: schwach");
+  await page.fill("#pw1", "Tafel Birne Wolke Sieben");
+  await expect(page.locator(".pwmeter")).toContainText("Stärke: sehr stark");
+  // Wiederholungsfeld bekommt keine Anzeige
+  await page.fill("#pw2", "x");
+  await expect(page.locator(".pwmeter")).toHaveCount(1);
+});
+
+test("Sichtschutz verdeckt alles, Strg+L sperrt, Sperrzeit ist einstellbar", async ({ page }) => {
+  await neueKlasse(page);
+  await page.click('[data-act="sichtschutz"]');
+  await expect(page.locator("#sichtschutz")).toBeVisible();
+  await page.click("#sichtschutz");
+  await expect(page.locator("#sichtschutz")).toHaveCount(0);
+  await page.keyboard.press("Control+Shift+S");
+  await expect(page.locator("#sichtschutz")).toBeVisible();
+  await page.keyboard.press("Control+Shift+S");
+  await expect(page.locator("#sichtschutz")).toHaveCount(0);
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="daten"]');
+  await page.selectOption('select[data-chg="sperreMin"]', "5");
+  expect(await page.evaluate(() => [S.meta.sperreMin, sperreMin()])).toEqual([5, 5]);
+  await page.evaluate(() => ledokSperren());
+  await expect(page.locator("#openForm")).toBeVisible();
+  await page.fill("#pw", PW);
+  await page.click('#openForm button[type="submit"]');
+  await expect(page.locator("header.top")).toBeVisible({ timeout: 30000 });
+  await page.keyboard.press("Control+l");
+  await expect(page.locator("#openForm")).toBeVisible();
+});
+
+test("Desktop: Sicherungsordner mit Cloud-Hinweis, verschieben und ältere Sicherungen löschen", async ({ page }) => {
+  await page.addInitScript(() => {
+    const daten = {};
+    window.__s = { aufgeraeumt: 0, sicherungen: 0, verschoben: 0, aufnahmen: null };
+    const ort = (x = {}) => ({ ok: true, ordner: "C:\\Users\\l\\AppData\\Roaming\\LeDoK\\Sicherungen", gewaehlt: false, ausgewichen: true, cloud: null, dokumenteCloud: "OneDrive",
+      anzahl: 4, aeltestes: "2026-09-01T10:00:00Z", altOrdner: "C:\\Users\\l\\OneDrive\\Dokumente\\LeDoK-Sicherungen", altAnzahl: 3, altCloud: "OneDrive", aufnahmenErlauben: false, ...x });
+    window.ledokDesktop = {
+      info: async () => ({ shell: "1.1.5", os: "win32", version: "1.1.5", mitgeliefert: "1.1.5", aktualisiert: false, updateKey: null }),
+      datenLaden: (k) => daten[k] || null,
+      datenSpeichern: async (k, t) => { daten[k] = t; return { ok: true }; },
+      datenLoeschen: async (k) => { delete daten[k]; return { ok: true }; },
+      sicherung: async () => { window.__s.sicherungen++; return { ok: true, datei: "ledok-sicherung-kopie.lernstand", ordner: "C:\\Sicher" }; },
+      sicherungenOeffnen: async () => "",
+      updateSuchen: async () => ({ ok: true, gefunden: false }),
+      sicherungOrt: async () => ort(window.__s.verschoben ? { altAnzahl: 0, altOrdner: null, anzahl: 7 } : {}),
+      sicherungenVerschieben: async () => { window.__s.verschoben++; return { ...ort({ altAnzahl: 0, altOrdner: null, anzahl: 7 }), verschoben: 3 }; },
+      sicherungenAufraeumen: async () => { window.__s.aufgeraeumt++; return { ...ort({ altAnzahl: 0, altOrdner: null, anzahl: 1 }), geloescht: 6 }; },
+      sicherungOrdnerWaehlen: async () => ort({ ordner: "D:\\Stick", gewaehlt: true, ausgewichen: false }),
+      sicherungOrdnerStandard: async () => ort(),
+      aufnahmenErlauben: async (an) => { window.__s.aufnahmen = an; return ort({ aufnahmenErlauben: an }); },
+    };
+  });
+  await neueKlasse(page, { demo: false });
+  await page.click('[data-act="tab"][data-v="einst"]');
+  await page.click('nav.snav [data-v="daten"]');
+  const k = page.locator("#sichCard");
+  await expect(k).toContainText("AppData");
+  await expect(k).toContainText("mit OneDrive abgeglichen");
+  await expect(k).toContainText("noch 3 Sicherungen");
+  await k.locator('[data-act="sichVerschieben"]').click();
+  await expect(k).not.toContainText("noch 3 Sicherungen");
+  await expect(k).toContainText("7 Sicherungen");
+  await k.locator('[data-act="sichAufraeumen"]').click();
+  await page.fill("#msgTipp", "LÖSCHEN");
+  await page.click("#msgJa");
+  await expect.poll(() => page.evaluate(() => window.__s.aufgeraeumt)).toBe(1);
+  expect(await page.evaluate(() => window.__s.sicherungen)).toBeGreaterThan(0);
+  await expect(k).toContainText("1 Sicherung,");
+  await page.check('input[data-chg="aufnahmen"]');
+  await expect.poll(() => page.evaluate(() => window.__s.aufnahmen)).toBe(true);
+});
+
+test("Importe werden bereinigt, KI-Überschrift passt zur Klasse, Problembericht ersetzt Namen", async ({ page }) => {
+  await neueKlasse(page);
+  const r = await page.evaluate(() => {
+    const c = S.raster.find((x) => x.ebene === 3 && x.fach === "Deutsch").id, vorher = S.eintraege.length;
+    const { kid, neu } = importKindDaten({ kind: { id: "S01", vorname: "Neu", jgst: 2 }, raster: [],
+      eintraege: [{ c, d: "2026-11-01", w: 5, q: "b" }, { c, d: "<b>x</b>", w: 5 }, { c, d: "2026-11-02", w: 12 }, { c, d: "2026-11-03", w: 3, q: "<i>" }],
+      notizen: [{ text: "gut", ts: "2026-11-01T10:00:00Z" }, { text: "kaputt", ts: "<x>" }], texte: { "S01|2026/27|1": { bericht: "ok" }, "S01|<x>": { bericht: "nein" } } });
+    UI.ki.von = ""; UI.ki.bis = ""; UI.expJgst = "alle";
+    return { neu: S.eintraege.length - vorher, quelle: S.eintraege.filter((e) => e.k === kid.id).map((e) => e.q), notizen: S.notizen.filter((n) => n.k === kid.id).length,
+      texte: Object.keys(S.texte).filter((x) => x.startsWith(kid.id + "|")), ki: buildKI().txt.split("\n").find((z) => z.startsWith("# ")) };
+  });
+  expect(r.neu).toBe(2);
+  expect(r.quelle).toEqual(["b", "b"]);
+  expect(r.notizen).toBe(1);
+  expect(r.texte).toEqual([expect.stringMatching(/\|2026\/27\|1$/)]);
+  expect(r.ki).toContain("kombinierte Klasse, Jahrgangsstufen 1/2");
+  const b = await page.evaluate(() => problemBericht("Bei Anna Müller und Ben ging nichts"));
+  expect(b).toContain("Bei S01 und S02 ging nichts");
+});
+
+test("Datenlage aus dem Index stimmt mit der direkten Zählung überein", async ({ page }) => {
+  await neueKlasse(page);
+  const diff = await page.evaluate(() => {
+    const [von, bis] = hjFenster(), fehler = [];
+    for (const k of S.kinder) for (const f of [...FAECHER, "ASV"]) {
+      const ids = f === "ASV" ? new Set(ASV_IDS) : new Set(S.raster.filter((r) => r.fach === f && !r.aus).map((r) => r.id));
+      const es = S.eintraege.filter((e) => e.k === k.id && ids.has(e.c) && e.d >= von && e.d <= bis);
+      const d = datenlage(k.id, f);
+      if (d.n !== es.length || d.themen !== new Set(es.map((e) => e.c)).size || d.last !== es.reduce((m, e) => (e.d > m ? e.d : m), "")) fehler.push(k.id + f);
+    }
+    return fehler;
+  });
+  expect(diff).toEqual([]);
+});
+
+test("Container: Rundenzahl der Schlüsselableitung wird aus der Datei gelesen", async ({ page }) => {
+  await page.goto(URL);
+  const r = await page.evaluate(async () => {
+    const salt = rnd(16), obj = await versiegeln("x", { a: 1 }, { pwKey: await deriveKey("geheim123", salt, 100000), salt, sk: null });
+    obj.kdf = "PBKDF2-SHA256-100000";
+    const ok = (await entsiegeln(obj, { pw: "geheim123" })).data.a;
+    let falsch = null; obj.kdf = "PBKDF2-SHA256-250000"; try { await entsiegeln(obj, { pw: "geheim123" }); } catch (e) { falsch = e.message; }
+    return { ok, falsch, runden: [kdfRunden("PBKDF2-SHA256-600000"), kdfRunden(undefined), kdfRunden("murks")] };
+  });
+  expect(r).toEqual({ ok: 1, falsch: "pw", runden: [600000, 250000, 250000] });
 });
